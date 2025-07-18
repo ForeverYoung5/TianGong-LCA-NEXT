@@ -1,3 +1,4 @@
+import { createUnitGroup as createUnitGroupTidas } from '@tiangong-lca/tidas-sdk';
 import {
   classificationToJsonList,
   classificationToStringList,
@@ -24,163 +25,158 @@ export function genUnitGroupJsonOrdered(id: string, data: any) {
       };
     }) ?? [];
 
-  return removeEmptyObjects({
-    unitGroupDataSet: {
-      // '@xmlns': oldData.unitGroupDataSet?.['@xmlns'] ?? {},
-      // '@xmlns:common': oldData.unitGroupDataSet?.['@xmlns:common'] ?? {},
-      // '@xmlns:xsi': oldData.unitGroupDataSet?.['@xmlns:xsi'] ?? {},
-      // '@version': oldData.unitGroupDataSet?.['@version'] ?? {},
-      // '@xsi:schemaLocation': oldData.unitGroupDataSet?.['@xsi:schemaLocation'] ?? {},
-      '@xmlns': 'http://lca.jrc.it/ILCD/UnitGroup',
-      '@xmlns:common': 'http://lca.jrc.it/ILCD/Common',
-      '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-      '@version': '1.1',
-      '@xsi:schemaLocation':
-        'http://lca.jrc.it/ILCD/UnitGroup ../../schemas/ILCD_UnitGroupDataSet.xsd',
-      unitGroupInformation: {
-        dataSetInformation: {
-          'common:UUID': id,
-          'common:name': getLangJson(
-            data?.unitGroupInformation?.dataSetInformation?.['common:name'],
-          ),
-          classificationInformation: {
-            'common:classification': {
-              'common:class': classificationToJsonList(
-                data?.unitGroupInformation?.dataSetInformation?.classificationInformation?.[
-                  'common:classification'
-                ]?.['common:class'],
-              ),
-            },
+  const unitGroupTidas = createUnitGroupTidas();
+  unitGroupTidas.unitGroupDataSet = {
+    // '@xmlns': oldData.unitGroupDataSet?.['@xmlns'] ?? {},
+    // '@xmlns:common': oldData.unitGroupDataSet?.['@xmlns:common'] ?? {},
+    // '@xmlns:xsi': oldData.unitGroupDataSet?.['@xmlns:xsi'] ?? {},
+    // '@version': oldData.unitGroupDataSet?.['@version'] ?? {},
+    // '@xsi:schemaLocation': oldData.unitGroupDataSet?.['@xsi:schemaLocation'] ?? {},
+    '@xmlns': 'http://lca.jrc.it/ILCD/UnitGroup',
+    '@xmlns:common': 'http://lca.jrc.it/ILCD/Common',
+    '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+    '@version': '1.1',
+    '@xsi:schemaLocation':
+      'http://lca.jrc.it/ILCD/UnitGroup ../../schemas/ILCD_UnitGroupDataSet.xsd',
+    unitGroupInformation: {
+      dataSetInformation: {
+        'common:UUID': id,
+        'common:name': getLangJson(data?.unitGroupInformation?.dataSetInformation?.['common:name']),
+        classificationInformation: {
+          'common:classification': {
+            'common:class': classificationToJsonList(
+              data?.unitGroupInformation?.dataSetInformation?.classificationInformation?.[
+                'common:classification'
+              ]?.['common:class'],
+            ),
           },
-          'common:generalComment': getLangJson(
-            data?.unitGroupInformation?.dataSetInformation?.['common:generalComment'],
-          ),
-          email: data?.unitGroupInformation?.dataSetInformation?.email ?? {},
         },
-        quantitativeReference: quantitativeReference,
+        'common:generalComment': getLangJson(
+          data?.unitGroupInformation?.dataSetInformation?.['common:generalComment'],
+        ),
+        // email: data?.unitGroupInformation?.dataSetInformation?.email ?? {},
       },
-      modellingAndValidation: {
-        complianceDeclarations: {
-          compliance: {
-            'common:referenceToComplianceSystem': {
-              '@refObjectId':
-                data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                  'common:referenceToComplianceSystem'
-                ]?.['@refObjectId'] ?? {},
-              '@type':
-                data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                  'common:referenceToComplianceSystem'
-                ]?.['@type'] ?? {},
-              '@uri':
-                data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                  'common:referenceToComplianceSystem'
-                ]?.['@uri'] ?? {},
-              '@version':
-                data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                  'common:referenceToComplianceSystem'
-                ]?.['@version'] ?? {},
-              'common:shortDescription': getLangJson(
-                data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                  'common:referenceToComplianceSystem'
-                ]?.['common:shortDescription'],
-              ),
-            },
-            'common:approvalOfOverallCompliance':
+      quantitativeReference: quantitativeReference as any,
+    },
+    modellingAndValidation: {
+      complianceDeclarations: {
+        compliance: {
+          'common:referenceToComplianceSystem': {
+            '@refObjectId':
               data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                'common:approvalOfOverallCompliance'
-              ] ?? {},
-          },
-        },
-      },
-      administrativeInformation: {
-        dataEntryBy: {
-          'common:timeStamp':
-            data?.administrativeInformation?.dataEntryBy?.['common:timeStamp'] ?? {},
-          'common:referenceToDataSetFormat': {
-            '@refObjectId':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@refObjectId'
-              ] ?? {},
+                'common:referenceToComplianceSystem'
+              ]?.['@refObjectId'] ?? {},
             '@type':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@type'
-              ] ?? {},
+              data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+                'common:referenceToComplianceSystem'
+              ]?.['@type'] ?? {},
             '@uri':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@uri'
-              ] ?? {},
+              data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+                'common:referenceToComplianceSystem'
+              ]?.['@uri'] ?? {},
             '@version':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@version'
-              ] ?? {},
+              data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+                'common:referenceToComplianceSystem'
+              ]?.['@version'] ?? {},
             'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                'common:shortDescription'
-              ],
-            ),
-          },
-        },
-        publicationAndOwnership: {
-          'common:dataSetVersion':
-            data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'] ??
-            {},
-          'common:permanentDataSetURI':
-            data?.administrativeInformation?.publicationAndOwnership?.[
-              'common:permanentDataSetURI'
-            ],
-          'common:referenceToOwnershipOfDataSet': {
-            '@refObjectId':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
+              data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+                'common:referenceToComplianceSystem'
               ]?.['common:shortDescription'],
             ),
           },
-          'common:referenceToPrecedingDataSetVersion': {
-            '@refObjectId':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
-              ]?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
-              ]?.['common:shortDescription'],
-            ),
-          },
+          'common:approvalOfOverallCompliance':
+            data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+              'common:approvalOfOverallCompliance'
+            ] ?? {},
         },
-      },
-      units: {
-        unit: unit,
       },
     },
-  });
+    administrativeInformation: {
+      dataEntryBy: {
+        'common:timeStamp':
+          data?.administrativeInformation?.dataEntryBy?.['common:timeStamp'] ?? {},
+        'common:referenceToDataSetFormat': {
+          '@refObjectId':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@refObjectId'
+            ] ?? {},
+          '@type':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@type'
+            ] ?? {},
+          '@uri':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@uri'
+            ] ?? {},
+          '@version':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@version'
+            ] ?? {},
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              'common:shortDescription'
+            ],
+          ),
+        },
+      },
+      publicationAndOwnership: {
+        'common:dataSetVersion':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'] ?? {},
+        permanentDataSetURI:
+          data?.administrativeInformation?.publicationAndOwnership?.['permanentDataSetURI'],
+        'common:referenceToOwnershipOfDataSet': {
+          '@refObjectId':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['common:shortDescription'],
+          ),
+        },
+        'common:referenceToPrecedingDataSetVersion': {
+          '@refObjectId':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToPrecedingDataSetVersion'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToPrecedingDataSetVersion'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToPrecedingDataSetVersion'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToPrecedingDataSetVersion'
+            ]?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToPrecedingDataSetVersion'
+            ]?.['common:shortDescription'],
+          ),
+        },
+      },
+    },
+    units: {
+      unit: unit,
+    },
+  };
+  return unitGroupTidas.toJSON();
 }
 
 export function genUnitGroupFromData(data: any) {
@@ -275,8 +271,8 @@ export function genUnitGroupFromData(data: any) {
       publicationAndOwnership: {
         'common:dataSetVersion':
           data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'],
-        'common:permanentDataSetURI':
-          data?.administrativeInformation?.publicationAndOwnership?.['common:permanentDataSetURI'],
+        permanentDataSetURI:
+          data?.administrativeInformation?.publicationAndOwnership?.['permanentDataSetURI'],
         'common:referenceToOwnershipOfDataSet': {
           '@refObjectId':
             data?.administrativeInformation?.publicationAndOwnership?.[

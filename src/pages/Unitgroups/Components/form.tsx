@@ -435,11 +435,7 @@ export const UnitGroupForm: FC<Props> = ({
               defaultMessage='Permanent data set URI'
             />
           }
-          name={[
-            'administrativeInformation',
-            'publicationAndOwnership',
-            'common:permanentDataSetURI',
-          ]}
+          name={['administrativeInformation', 'publicationAndOwnership', 'permanentDataSetURI']}
         >
           <Input />
         </Form.Item>
