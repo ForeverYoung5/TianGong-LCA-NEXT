@@ -251,7 +251,7 @@ const ContactView: FC<Props> = ({ id, version, lang, buttonType }) => {
           <ContractDescription
             data={
               initData.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
+                'referenceToPrecedingDataSetVersion'
               ]
             }
             lang={lang}
