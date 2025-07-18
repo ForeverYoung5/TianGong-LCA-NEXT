@@ -1,3 +1,4 @@
+import { createLifeCycleModel as createLifeCycleModelTidas } from '@tiangong-lca/tidas-sdk';
 import BigNumber from 'bignumber.js';
 import { v4 } from 'uuid';
 import {
@@ -88,745 +89,739 @@ export function genLifeCycleModelJsonOrdered(id: string, data: any, oldData: any
     });
   });
 
-  return removeEmptyObjects({
-    lifeCycleModelDataSet: {
-      '@xmlns': oldData?.lifeCycleModelDataSet?.['@xmlns'],
-      '@xmlns:acme': oldData?.lifeCycleModelDataSet?.['@xmlns:acme'],
-      '@xmlns:common': oldData?.lifeCycleModelDataSet?.['@xmlns:common'],
-      '@xmlns:ecn': oldData?.lifeCycleModelDataSet?.['@xmlns:ecn'],
-      '@xmlns:xsi': oldData?.lifeCycleModelDataSet?.['@xmlns:xsi'],
-      '@locations': oldData?.lifeCycleModelDataSet?.['@locations'],
-      '@version': oldData?.lifeCycleModelDataSet?.['@version'],
-      '@xsi:schemaLocation': oldData?.lifeCycleModelDataSet?.['@xsi:schemaLocation'],
-      lifeCycleModelInformation: {
-        dataSetInformation: {
-          'common:UUID': id,
-          name: {
-            baseName: getLangJson(
-              data?.lifeCycleModelInformation?.dataSetInformation?.name?.baseName,
-            ),
-            treatmentStandardsRoutes: getLangJson(
-              data?.lifeCycleModelInformation?.dataSetInformation?.name?.treatmentStandardsRoutes,
-            ),
-            mixAndLocationTypes: getLangJson(
-              data?.lifeCycleModelInformation?.dataSetInformation?.name?.mixAndLocationTypes,
-            ),
-            functionalUnitFlowProperties: getLangJson(
-              data?.lifeCycleModelInformation?.dataSetInformation?.name
-                ?.functionalUnitFlowProperties,
-            ),
-          },
-          identifierOfSubDataSet:
-            data?.lifeCycleModelInformation?.dataSetInformation?.identifierOfSubDataSet,
-          'common:synonyms': getLangJson(
-            data?.lifeCycleModelInformation?.dataSetInformation?.['common:synonyms'],
+  const lifeCycleModelTidas = createLifeCycleModelTidas();
+  lifeCycleModelTidas.lifeCycleModelDataSet = {
+    '@xmlns': oldData?.lifeCycleModelDataSet?.['@xmlns'],
+    '@xmlns:acme': oldData?.lifeCycleModelDataSet?.['@xmlns:acme'],
+    '@xmlns:common': oldData?.lifeCycleModelDataSet?.['@xmlns:common'],
+    '@xmlns:ecn': oldData?.lifeCycleModelDataSet?.['@xmlns:ecn'],
+    '@xmlns:xsi': oldData?.lifeCycleModelDataSet?.['@xmlns:xsi'],
+    '@locations': oldData?.lifeCycleModelDataSet?.['@locations'],
+    '@version': oldData?.lifeCycleModelDataSet?.['@version'],
+    '@xsi:schemaLocation': oldData?.lifeCycleModelDataSet?.['@xsi:schemaLocation'],
+    lifeCycleModelInformation: {
+      dataSetInformation: {
+        'common:UUID': id,
+        name: {
+          baseName: getLangJson(
+            data?.lifeCycleModelInformation?.dataSetInformation?.name?.baseName,
           ),
-          classificationInformation: {
-            'common:classification': {
-              'common:class': classificationToJsonList(
-                data?.lifeCycleModelInformation?.dataSetInformation?.classificationInformation?.[
-                  'common:classification'
-                ]?.['common:class'],
-              ),
-            },
-          },
-          referenceToResultingProcess: {
-            '@refObjectId':
-              data?.lifeCycleModelInformation?.dataSetInformation?.referenceToResultingProcess?.[
-                '@refObjectId'
-              ],
-            '@type':
-              data?.lifeCycleModelInformation?.dataSetInformation?.referenceToResultingProcess?.[
-                '@type'
-              ],
-            '@uri':
-              data?.lifeCycleModelInformation?.dataSetInformation?.referenceToResultingProcess?.[
-                '@uri'
-              ],
-            '@version':
-              data?.lifeCycleModelInformation?.dataSetInformation?.referenceToResultingProcess?.[
-                '@version'
-              ],
-            'common:shortDescription': getLangJson(
-              data?.lifeCycleModelInformation?.dataSetInformation?.referenceToResultingProcess?.[
-                '@refObjectId'
-              ],
-            ),
-          },
-          'common:generalComment': getLangJson(
-            data?.lifeCycleModelInformation?.dataSetInformation?.['common:generalComment'],
+          treatmentStandardsRoutes: getLangJson(
+            data?.lifeCycleModelInformation?.dataSetInformation?.name?.treatmentStandardsRoutes,
           ),
-          referenceToExternalDocumentation: {
-            '@refObjectId':
-              data?.lifeCycleModelInformation?.dataSetInformation
-                ?.referenceToExternalDocumentation?.['@refObjectId'],
-            '@type':
-              data?.lifeCycleModelInformation?.dataSetInformation
-                ?.referenceToExternalDocumentation?.['@type'],
-            '@uri':
-              data?.lifeCycleModelInformation?.dataSetInformation
-                ?.referenceToExternalDocumentation?.['@uri'],
-            '@version':
-              data?.lifeCycleModelInformation?.dataSetInformation
-                ?.referenceToExternalDocumentation?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.lifeCycleModelInformation?.dataSetInformation
-                ?.referenceToExternalDocumentation?.['common:shortDescription'],
+          mixAndLocationTypes: getLangJson(
+            data?.lifeCycleModelInformation?.dataSetInformation?.name?.mixAndLocationTypes,
+          ),
+          functionalUnitFlowProperties: getLangJson(
+            data?.lifeCycleModelInformation?.dataSetInformation?.name?.functionalUnitFlowProperties,
+          ),
+        },
+        identifierOfSubDataSet:
+          data?.lifeCycleModelInformation?.dataSetInformation?.identifierOfSubDataSet,
+        'common:synonyms': getLangJson(
+          data?.lifeCycleModelInformation?.dataSetInformation?.['common:synonyms'],
+        ),
+        classificationInformation: {
+          'common:classification': {
+            'common:class': classificationToJsonList(
+              data?.lifeCycleModelInformation?.dataSetInformation?.classificationInformation?.[
+                'common:classification'
+              ]?.['common:class'],
             ),
           },
         },
-        quantitativeReference: {
-          referenceToReferenceProcess: referenceToReferenceProcess ?? {},
-        },
-        time: {
-          'common:referenceYear':
-            data?.lifeCycleModelInformation?.time?.['common:referenceYear'] ?? {},
-          'common:dataSetValidUntil':
-            data?.lifeCycleModelInformation?.time?.['common:dataSetValidUntil'],
-          'common:timeRepresentativenessDescription': getLangJson(
-            data?.lifeCycleModelInformation?.time?.['common:timeRepresentativenessDescription'],
-          ),
-        },
-        geography: {
-          locationOfOperationSupplyOrProduction: {
-            '@location':
-              data?.lifeCycleModelInformation?.geography?.locationOfOperationSupplyOrProduction?.[
-                '@location'
-              ] === 'NULL'
-                ? {}
-                : (data?.lifeCycleModelInformation?.geography
-                    ?.locationOfOperationSupplyOrProduction?.['@location'] ?? {}),
-            descriptionOfRestrictions: getLangJson(
-              data?.lifeCycleModelInformation?.geography?.locationOfOperationSupplyOrProduction
-                ?.descriptionOfRestrictions,
-            ),
-          },
-          subLocationOfOperationSupplyOrProduction: {
-            '@subLocation':
-              data?.lifeCycleModelInformation?.geography
-                ?.subLocationOfOperationSupplyOrProduction?.['@subLocation'] === 'NULL'
-                ? {}
-                : (data?.lifeCycleModelInformation?.geography
-                    ?.subLocationOfOperationSupplyOrProduction?.['@subLocation'] ?? {}),
-            descriptionOfRestrictions: getLangJson(
-              data?.lifeCycleModelInformation?.geography?.subLocationOfOperationSupplyOrProduction
-                ?.descriptionOfRestrictions,
-            ),
-          },
-        },
-        technology: {
-          technologyDescriptionAndIncludedProcesses: getLangJson(
-            data?.lifeCycleModelInformation?.technology?.technologyDescriptionAndIncludedProcesses,
-          ),
-          technologicalApplicability: getLangJson(
-            data?.lifeCycleModelInformation?.technology?.technologicalApplicability,
-          ),
-          referenceToTechnologyPictogramme: {
-            '@type':
-              data?.lifeCycleModelInformation?.technology?.referenceToTechnologyPictogramme?.[
-                '@type'
-              ] ?? {},
-            '@version':
-              data?.lifeCycleModelInformation?.technology?.referenceToTechnologyPictogramme?.[
-                '@version'
-              ] ?? {},
-            '@refObjectId':
-              data?.lifeCycleModelInformation?.technology?.referenceToTechnologyPictogramme?.[
-                '@refObjectId'
-              ] ?? {},
-            '@uri':
-              data?.lifeCycleModelInformation?.technology?.referenceToTechnologyPictogramme?.[
-                '@uri'
-              ] ?? {},
-            'common:shortDescription': getLangJson(
-              data?.lifeCycleModelInformation?.technology?.referenceToTechnologyPictogramme?.[
-                'common:shortDescription'
-              ],
-            ),
-          },
-          referenceToTechnologyFlowDiagrammOrPicture: {
-            '@type':
-              data?.lifeCycleModelInformation?.technology
-                ?.referenceToTechnologyFlowDiagrammOrPicture?.['@type'] ?? {},
-            '@version':
-              data?.lifeCycleModelInformation?.technology
-                ?.referenceToTechnologyFlowDiagrammOrPicture?.['@version'],
-            '@refObjectId':
-              data?.lifeCycleModelInformation?.technology
-                ?.referenceToTechnologyFlowDiagrammOrPicture?.['@refObjectId'] ?? {},
-            '@uri':
-              data?.lifeCycleModelInformation?.technology
-                ?.referenceToTechnologyFlowDiagrammOrPicture?.['@uri'] ?? {},
-            'common:shortDescription': getLangJson(
-              data?.lifeCycleModelInformation?.technology
-                ?.referenceToTechnologyFlowDiagrammOrPicture?.['common:shortDescription'],
-            ),
-          },
-          groupDeclarations: {},
-          processes: {
-            processInstance: listToJson(processInstance),
-          },
-          referenceToDiagram: {
-            '@refObjectId':
-              data?.lifeCycleModelInformation?.technology?.referenceToDiagram?.['@refObjectId'],
-            '@type': data?.lifeCycleModelInformation?.technology?.referenceToDiagram?.['@type'],
-            '@uri': data?.lifeCycleModelInformation?.technology?.referenceToDiagram?.['@uri'],
-            '@version':
-              data?.lifeCycleModelInformation?.technology?.referenceToDiagram?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.lifeCycleModelInformation?.technology?.referenceToDiagram?.[
-                'common:shortDescription'
-              ],
-            ),
-          },
-        },
-        mathematicalRelations: {
-          modelDescription: getLangJson(
-            data?.lifeCycleModelInformation?.mathematicalRelations?.modelDescription,
-          ),
-          variableParameter: {
-            '@name':
-              data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter?.['@name'],
-            formula:
-              data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter?.formula,
-            meanValue:
-              data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter?.meanValue,
-            minimumValue:
-              data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter
-                ?.minimumValue,
-            maximumValue:
-              data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter
-                ?.maximumValue,
-            uncertaintyDistributionType:
-              data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter
-                ?.uncertaintyDistributionType,
-            relativeStandardDeviation95In:
-              data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter
-                ?.relativeStandardDeviation95In,
-            comment:
-              data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter?.comment,
-          },
-        },
-      },
-      modellingAndValidation: {
-        dataSourcesTreatmentEtc: {
-          useAdviceForDataSet: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentEtc?.useAdviceForDataSet,
-          ),
-        },
-        LCIMethodAndAllocation: {
-          typeOfDataSet: data?.modellingAndValidation?.LCIMethodAndAllocation?.typeOfDataSet ?? {},
-          LCIMethodPrinciple:
-            data?.modellingAndValidation?.LCIMethodAndAllocation?.LCIMethodPrinciple ?? {},
-          deviationsFromLCIMethodPrinciple: getLangJson(
-            data?.modellingAndValidation?.LCIMethodAndAllocation?.deviationsFromLCIMethodPrinciple,
-          ),
-          LCIMethodApproaches:
-            data?.modellingAndValidation?.LCIMethodAndAllocation?.LCIMethodApproaches ?? {},
-          deviationsFromLCIMethodApproaches: getLangJson(
-            data?.modellingAndValidation?.LCIMethodAndAllocation?.deviationsFromLCIMethodApproaches,
-          ),
-          modellingConstants: getLangJson(
-            data?.modellingAndValidation?.LCIMethodAndAllocation?.modellingConstants,
-          ),
-          deviationsFromModellingConstants: getLangJson(
-            data?.modellingAndValidation?.LCIMethodAndAllocation?.deviationsFromModellingConstants,
-          ),
-          referenceToLCAMethodDetails: {
-            '@type':
-              data?.modellingAndValidation?.LCIMethodAndAllocation?.referenceToLCAMethodDetails?.[
-                '@type'
-              ] ?? {},
-            '@refObjectId':
-              data?.modellingAndValidation?.LCIMethodAndAllocation?.referenceToLCAMethodDetails?.[
-                '@refObjectId'
-              ] ?? {},
-            '@uri':
-              data?.modellingAndValidation?.LCIMethodAndAllocation?.referenceToLCAMethodDetails?.[
-                '@uri'
-              ] ?? {},
-            '@version':
-              data?.modellingAndValidation?.LCIMethodAndAllocation?.referenceToLCAMethodDetails?.[
-                '@version'
-              ] ?? {},
-            'common:shortDescription': getLangJson(
-              data?.modellingAndValidation?.LCIMethodAndAllocation?.referenceToLCAMethodDetails?.[
-                'common:shortDescription'
-              ],
-            ),
-          },
-        },
-        dataSourcesTreatmentAndRepresentativeness: {
-          dataCutOffAndCompletenessPrinciples: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.dataCutOffAndCompletenessPrinciples,
-          ),
-          deviationsFromCutOffAndCompletenessPrinciples: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.deviationsFromCutOffAndCompletenessPrinciples,
-          ),
-          dataSelectionAndCombinationPrinciples: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.dataSelectionAndCombinationPrinciples,
-          ),
-          deviationsFromSelectionAndCombinationPrinciples: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.deviationsFromSelectionAndCombinationPrinciples,
-          ),
-          dataTreatmentAndExtrapolationsPrinciples: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.dataTreatmentAndExtrapolationsPrinciples,
-          ),
-          deviationsFromTreatmentAndExtrapolationPrinciples: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.deviationsFromTreatmentAndExtrapolationPrinciples,
-          ),
-          referenceToDataHandlingPrinciples: {
-            '@type':
-              data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-                ?.referenceToDataHandlingPrinciples?.['@type'] ?? {},
-            '@refObjectId':
-              data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-                ?.referenceToDataHandlingPrinciples?.['@refObjectId'] ?? {},
-            '@uri':
-              data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-                ?.referenceToDataHandlingPrinciples?.['@uri'] ?? {},
-            '@version':
-              data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-                ?.referenceToDataHandlingPrinciples?.['@version'] ?? {},
-            'common:shortDescription': getLangJson(
-              data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-                ?.referenceToDataHandlingPrinciples?.['common:shortDescription'],
-            ),
-          },
-          referenceToDataSource: {
-            '@type':
-              data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-                ?.referenceToDataSource?.['@type'] ?? {},
-            '@version':
-              data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-                ?.referenceToDataSource?.['@version'] ?? {},
-            '@refObjectId':
-              data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-                ?.referenceToDataSource?.['@refObjectId'] ?? {},
-            '@uri':
-              data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-                ?.referenceToDataSource?.['@uri'] ?? {},
-            'common:shortDescription': getLangJson(
-              data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-                ?.referenceToDataSource?.['common:shortDescription'],
-            ),
-          },
-          percentageSupplyOrProductionCovered:
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.percentageSupplyOrProductionCovered ?? {},
-          annualSupplyOrProductionVolume: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.annualSupplyOrProductionVolume,
-          ),
-          samplingProcedure: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.samplingProcedure,
-          ),
-          dataCollectionPeriod: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.dataCollectionPeriod,
-          ),
-          uncertaintyAdjustments: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.uncertaintyAdjustments,
-          ),
-          useAdviceForDataSet: getLangJson(
-            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
-              ?.useAdviceForDataSet,
-          ),
-        },
-        completeness: {
-          completenessProductModel:
-            data?.modellingAndValidation?.completeness?.completenessProductModel,
-          completenessElementaryFlows: {
-            '@type':
-              data?.modellingAndValidation?.completeness?.completenessElementaryFlows?.['@type'],
-            '@value':
-              data?.modellingAndValidation?.completeness?.completenessElementaryFlows?.['@value'],
-          },
-          completenessOtherProblemField: getLangJson(
-            data?.modellingAndValidation?.completeness?.completenessOtherProblemField,
-          ),
-          // completenessDescription: getLangJson(
-          //   data?.modellingAndValidation?.completeness?.completenessDescription,
-          // ),
-        },
-        validation: {
-          review: listToJson(
-            data?.modellingAndValidation?.validation?.review?.map((review: any) => {
-              return {
-                '@type': review?.['@type'] ?? {},
-                'common:scope': listToJson(
-                  review?.['common:scope']?.map((scope: any) => {
-                    return {
-                      '@name': scope?.['@name'] ?? {},
-                      'common:method': {
-                        '@name': scope?.['common:method']?.['@name'] ?? {},
-                      },
-                    };
-                  }),
-                ),
-                'common:dataQualityIndicators': {
-                  'common:dataQualityIndicator': listToJson(
-                    review?.['common:dataQualityIndicators']?.['common:dataQualityIndicator']?.map(
-                      (dataQualityIndicator: any) => {
-                        return {
-                          '@name': dataQualityIndicator?.['@name'] ?? {},
-                          '@value': dataQualityIndicator?.['@value'] ?? {},
-                        };
-                      },
-                    ),
-                  ),
-                },
-                'common:reviewDetails': getLangJson(review?.['common:reviewDetails']),
-                'common:referenceToNameOfReviewerAndInstitution': {
-                  '@refObjectId':
-                    review?.['common:referenceToNameOfReviewerAndInstitution']?.['@refObjectId'] ??
-                    {},
-                  '@type':
-                    review?.['common:referenceToNameOfReviewerAndInstitution']?.['@type'] ?? {},
-                  '@uri':
-                    review?.['common:referenceToNameOfReviewerAndInstitution']?.['@uri'] ?? {},
-                  '@version':
-                    review?.['common:referenceToNameOfReviewerAndInstitution']?.['@version'] ?? {},
-                  'common:shortDescription': getLangJson(
-                    review?.['common:referenceToNameOfReviewerAndInstitution']?.[
-                      'common:shortDescription'
-                    ],
-                  ),
-                },
-                'common:otherReviewDetails': getLangJson(review?.['common:otherReviewDetails']),
-                'common:referenceToCompleteReviewReport': {
-                  '@refObjectId':
-                    review?.['common:referenceToCompleteReviewReport']?.['@refObjectId'] ?? {},
-                  '@type': review?.['common:referenceToCompleteReviewReport']?.['@type'] ?? {},
-                  '@uri': review?.['common:referenceToCompleteReviewReport']?.['@uri'] ?? {},
-                  '@version':
-                    review?.['common:referenceToCompleteReviewReport']?.['@version'] ?? {},
-                  'common:shortDescription': getLangJson(
-                    review?.['common:referenceToCompleteReviewReport']?.['common:shortDescription'],
-                  ),
-                },
-              };
-            }),
-          ),
-        },
-        complianceDeclarations: {
-          compliance: listToJson(
-            data?.modellingAndValidation?.complianceDeclarations?.compliance?.map(
-              (compliance: any) => {
-                return {
-                  'common:referenceToComplianceSystem': {
-                    '@refObjectId':
-                      compliance?.['common:referenceToComplianceSystem']?.['@refObjectId'] ?? {},
-                    '@type': compliance?.['common:referenceToComplianceSystem']?.['@type'] ?? {},
-                    '@uri': compliance?.['common:referenceToComplianceSystem']?.['@uri'] ?? {},
-                    '@version':
-                      compliance?.['common:referenceToComplianceSystem']?.['@version'] ?? {},
-                    'common:shortDescription': getLangJson(
-                      compliance?.['common:referenceToComplianceSystem']?.[
-                        'common:shortDescription'
-                      ],
-                    ),
-                  },
-                  'common:approvalOfOverallCompliance':
-                    compliance?.['common:approvalOfOverallCompliance'] ?? {},
-                  'common:nomenclatureCompliance':
-                    compliance?.['common:nomenclatureCompliance'] ?? {},
-                  'common:methodologicalCompliance':
-                    compliance?.['common:methodologicalCompliance'] ?? {},
-                  'common:reviewCompliance': compliance?.['common:reviewCompliance'] ?? {},
-                  'common:documentationCompliance':
-                    compliance?.['common:documentationCompliance'] ?? {},
-                  'common:qualityCompliance': compliance?.['common:qualityCompliance'] ?? {},
-                };
-              },
-            ),
-          ),
-        },
-      },
-      administrativeInformation: {
-        'common:commissionerAndGoal': {
-          'common:referenceToCommissioner': {
-            '@refObjectId':
-              data?.administrativeInformation?.['common:commissionerAndGoal']?.[
-                'common:referenceToCommissioner'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.['common:commissionerAndGoal']?.[
-                'common:referenceToCommissioner'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.['common:commissionerAndGoal']?.[
-                'common:referenceToCommissioner'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.['common:commissionerAndGoal']?.[
-                'common:referenceToCommissioner'
-              ]?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.['common:commissionerAndGoal']?.[
-                'common:referenceToCommissioner'
-              ]?.['common:shortDescription'],
-            ),
-          },
-          'common:project': getLangJson(
-            data?.administrativeInformation?.['common:commissionerAndGoal']?.['common:project'],
-          ),
-          'common:intendedApplications': getLangJson(
-            data?.administrativeInformation?.['common:commissionerAndGoal']?.[
-              'common:intendedApplications'
+        referenceToResultingProcess: {
+          '@refObjectId':
+            data?.lifeCycleModelInformation?.dataSetInformation?.referenceToResultingProcess?.[
+              '@refObjectId'
+            ],
+          '@type':
+            data?.lifeCycleModelInformation?.dataSetInformation?.referenceToResultingProcess?.[
+              '@type'
+            ],
+          '@uri':
+            data?.lifeCycleModelInformation?.dataSetInformation?.referenceToResultingProcess?.[
+              '@uri'
+            ],
+          '@version':
+            data?.lifeCycleModelInformation?.dataSetInformation?.referenceToResultingProcess?.[
+              '@version'
+            ],
+          'common:shortDescription': getLangJson(
+            data?.lifeCycleModelInformation?.dataSetInformation?.referenceToResultingProcess?.[
+              '@refObjectId'
             ],
           ),
         },
-        dataGenerator: {
-          'common:referenceToPersonOrEntityGeneratingTheDataSet': {
-            '@refObjectId':
-              data?.administrativeInformation?.dataGenerator?.[
-                'common:referenceToPersonOrEntityGeneratingTheDataSet'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.dataGenerator?.[
-                'common:referenceToPersonOrEntityGeneratingTheDataSet'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.dataGenerator?.[
-                'common:referenceToPersonOrEntityGeneratingTheDataSet'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.dataGenerator?.[
-                'common:referenceToPersonOrEntityGeneratingTheDataSet'
-              ]?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.dataGenerator?.[
-                'common:referenceToPersonOrEntityGeneratingTheDataSet'
-              ]?.['common:shortDescription'],
-            ),
-          },
-        },
-        dataEntryBy: {
-          'common:timeStamp': data?.administrativeInformation?.dataEntryBy?.['common:timeStamp'],
-          'common:referenceToDataSetFormat': {
-            '@refObjectId':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@refObjectId'
-              ],
-            '@type':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@type'
-              ],
-            '@uri':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@uri'
-              ],
-            '@version':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@version'
-              ],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                'common:shortDescription'
-              ],
-            ),
-          },
-          'common:referenceToConvertedOriginalDataSetFrom': {
-            '@refObjectId':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToConvertedOriginalDataSetFrom'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToConvertedOriginalDataSetFrom'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToConvertedOriginalDataSetFrom'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToConvertedOriginalDataSetFrom'
-              ]?.['@version'] ?? {},
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToConvertedOriginalDataSetFrom'
-              ]?.['common:shortDescription'],
-            ),
-          },
-          'common:referenceToPersonOrEntityEnteringTheData': {
-            '@refObjectId':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToPersonOrEntityEnteringTheData'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToPersonOrEntityEnteringTheData'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToPersonOrEntityEnteringTheData'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToPersonOrEntityEnteringTheData'
-              ]?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToPersonOrEntityEnteringTheData'
-              ]?.['common:shortDescription'],
-            ),
-          },
-          'common:referenceToDataSetUseApproval': {
-            '@refObjectId':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToDataSetUseApproval'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToDataSetUseApproval'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToDataSetUseApproval'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToDataSetUseApproval'
-              ]?.['@version'] ?? {},
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToDataSetUseApproval'
-              ]?.['common:shortDescription'],
-            ),
-          },
-        },
-        publicationAndOwnership: {
-          'common:dateOfLastRevision':
-            data?.administrativeInformation?.publicationAndOwnership?.[
-              'common:dateOfLastRevision'
-            ] ?? {},
-          'common:dataSetVersion':
-            data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'],
-          'common:permanentDataSetURI':
-            data?.administrativeInformation?.publicationAndOwnership?.[
-              'common:permanentDataSetURI'
+        'common:generalComment': getLangJson(
+          data?.lifeCycleModelInformation?.dataSetInformation?.['common:generalComment'],
+        ),
+        referenceToExternalDocumentation: {
+          '@refObjectId':
+            data?.lifeCycleModelInformation?.dataSetInformation?.referenceToExternalDocumentation?.[
+              '@refObjectId'
             ],
-          'common:workflowAndPublicationStatus':
-            data?.administrativeInformation?.publicationAndOwnership?.[
-              'common:workflowAndPublicationStatus'
-            ] ?? {},
-          'common:referenceToUnchangedRepublication': {
-            '@refObjectId':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToUnchangedRepublication'
-              ]?.['@refObjectId'] ?? {},
-            '@type':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToUnchangedRepublication'
-              ]?.['@type'] ?? {},
-            '@uri':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToUnchangedRepublication'
-              ]?.['@uri'] ?? {},
-            '@version':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToUnchangedRepublication'
-              ]?.['@version'] ?? {},
-            'common:shortDescription': getLangList(
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToUnchangedRepublication'
-              ]?.['common:shortDescription'],
-            ),
-          },
-          'common:referenceToRegistrationAuthority': {
-            '@refObjectId':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToRegistrationAuthority'
-              ]?.['@refObjectId'] ?? {},
-            '@type':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToRegistrationAuthority'
-              ]?.['@type'] ?? {},
-            '@uri':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToRegistrationAuthority'
-              ]?.['@uri'] ?? {},
-            '@version':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToRegistrationAuthority'
-              ]?.['@version'] ?? {},
-            'common:shortDescription': getLangList(
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToRegistrationAuthority'
-              ]?.['common:shortDescription'],
-            ),
-          },
-          'common:registrationNumber':
-            data?.administrativeInformation?.publicationAndOwnership?.[
-              'common:registrationNumber'
-            ] ?? {},
-          'common:referenceToOwnershipOfDataSet': {
-            '@refObjectId':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['common:shortDescription'],
-            ),
-          },
-          'common:copyright':
-            data?.administrativeInformation?.publicationAndOwnership?.['common:copyright'],
-          'common:referenceToEntitiesWithExclusiveAccess': {
-            '@refObjectId':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToEntitiesWithExclusiveAccess'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToEntitiesWithExclusiveAccess'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToEntitiesWithExclusiveAccess'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToEntitiesWithExclusiveAccess'
-              ]?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToEntitiesWithExclusiveAccess'
-              ]?.['common:shortDescription'],
-            ),
-          },
-          'common:licenseType':
-            data?.administrativeInformation?.publicationAndOwnership?.['common:licenseType'],
-          'common:accessRestrictions': getLangJson(
-            data?.administrativeInformation?.publicationAndOwnership?.['common:accessRestrictions'],
+          '@type':
+            data?.lifeCycleModelInformation?.dataSetInformation?.referenceToExternalDocumentation?.[
+              '@type'
+            ],
+          '@uri':
+            data?.lifeCycleModelInformation?.dataSetInformation?.referenceToExternalDocumentation?.[
+              '@uri'
+            ],
+          '@version':
+            data?.lifeCycleModelInformation?.dataSetInformation?.referenceToExternalDocumentation?.[
+              '@version'
+            ],
+          'common:shortDescription': getLangJson(
+            data?.lifeCycleModelInformation?.dataSetInformation?.referenceToExternalDocumentation?.[
+              'common:shortDescription'
+            ],
           ),
+        },
+      },
+      quantitativeReference: {
+        referenceToReferenceProcess: referenceToReferenceProcess ?? '',
+      },
+      time: {
+        'common:referenceYear':
+          data?.lifeCycleModelInformation?.time?.['common:referenceYear'] ?? {},
+        'common:dataSetValidUntil':
+          data?.lifeCycleModelInformation?.time?.['common:dataSetValidUntil'],
+        'common:timeRepresentativenessDescription': getLangJson(
+          data?.lifeCycleModelInformation?.time?.['common:timeRepresentativenessDescription'],
+        ),
+      },
+      geography: {
+        locationOfOperationSupplyOrProduction: {
+          '@location':
+            data?.lifeCycleModelInformation?.geography?.locationOfOperationSupplyOrProduction?.[
+              '@location'
+            ] === 'NULL'
+              ? {}
+              : (data?.lifeCycleModelInformation?.geography
+                  ?.locationOfOperationSupplyOrProduction?.['@location'] ?? {}),
+          descriptionOfRestrictions: getLangJson(
+            data?.lifeCycleModelInformation?.geography?.locationOfOperationSupplyOrProduction
+              ?.descriptionOfRestrictions,
+          ),
+        },
+        subLocationOfOperationSupplyOrProduction: {
+          '@subLocation':
+            data?.lifeCycleModelInformation?.geography?.subLocationOfOperationSupplyOrProduction?.[
+              '@subLocation'
+            ] === 'NULL'
+              ? {}
+              : (data?.lifeCycleModelInformation?.geography
+                  ?.subLocationOfOperationSupplyOrProduction?.['@subLocation'] ?? {}),
+          descriptionOfRestrictions: getLangJson(
+            data?.lifeCycleModelInformation?.geography?.subLocationOfOperationSupplyOrProduction
+              ?.descriptionOfRestrictions,
+          ),
+        },
+      },
+      technology: {
+        technologyDescriptionAndIncludedProcesses: getLangJson(
+          data?.lifeCycleModelInformation?.technology?.technologyDescriptionAndIncludedProcesses,
+        ),
+        technologicalApplicability: getLangJson(
+          data?.lifeCycleModelInformation?.technology?.technologicalApplicability,
+        ),
+        referenceToTechnologyPictogramme: {
+          '@type':
+            data?.lifeCycleModelInformation?.technology?.referenceToTechnologyPictogramme?.[
+              '@type'
+            ] ?? {},
+          '@version':
+            data?.lifeCycleModelInformation?.technology?.referenceToTechnologyPictogramme?.[
+              '@version'
+            ] ?? {},
+          '@refObjectId':
+            data?.lifeCycleModelInformation?.technology?.referenceToTechnologyPictogramme?.[
+              '@refObjectId'
+            ] ?? {},
+          '@uri':
+            data?.lifeCycleModelInformation?.technology?.referenceToTechnologyPictogramme?.[
+              '@uri'
+            ] ?? {},
+          'common:shortDescription': getLangJson(
+            data?.lifeCycleModelInformation?.technology?.referenceToTechnologyPictogramme?.[
+              'common:shortDescription'
+            ],
+          ),
+        },
+        referenceToTechnologyFlowDiagrammOrPicture: {
+          '@type':
+            data?.lifeCycleModelInformation?.technology
+              ?.referenceToTechnologyFlowDiagrammOrPicture?.['@type'] ?? {},
+          '@version':
+            data?.lifeCycleModelInformation?.technology
+              ?.referenceToTechnologyFlowDiagrammOrPicture?.['@version'],
+          '@refObjectId':
+            data?.lifeCycleModelInformation?.technology
+              ?.referenceToTechnologyFlowDiagrammOrPicture?.['@refObjectId'] ?? {},
+          '@uri':
+            data?.lifeCycleModelInformation?.technology
+              ?.referenceToTechnologyFlowDiagrammOrPicture?.['@uri'] ?? {},
+          'common:shortDescription': getLangJson(
+            data?.lifeCycleModelInformation?.technology
+              ?.referenceToTechnologyFlowDiagrammOrPicture?.['common:shortDescription'],
+          ),
+        },
+        groupDeclarations: {},
+        processes: {
+          processInstance: listToJson(processInstance),
+        },
+        referenceToDiagram: {
+          '@refObjectId':
+            data?.lifeCycleModelInformation?.technology?.referenceToDiagram?.['@refObjectId'],
+          '@type': data?.lifeCycleModelInformation?.technology?.referenceToDiagram?.['@type'],
+          '@uri': data?.lifeCycleModelInformation?.technology?.referenceToDiagram?.['@uri'],
+          '@version': data?.lifeCycleModelInformation?.technology?.referenceToDiagram?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.lifeCycleModelInformation?.technology?.referenceToDiagram?.[
+              'common:shortDescription'
+            ],
+          ),
+        },
+      },
+      mathematicalRelations: {
+        modelDescription: getLangJson(
+          data?.lifeCycleModelInformation?.mathematicalRelations?.modelDescription,
+        ),
+        variableParameter: {
+          '@name':
+            data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter?.['@name'],
+          formula:
+            data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter?.formula,
+          meanValue:
+            data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter?.meanValue,
+          minimumValue:
+            data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter?.minimumValue,
+          maximumValue:
+            data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter?.maximumValue,
+          uncertaintyDistributionType:
+            data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter
+              ?.uncertaintyDistributionType,
+          relativeStandardDeviation95In:
+            data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter
+              ?.relativeStandardDeviation95In,
+          comment:
+            data?.lifeCycleModelInformation?.mathematicalRelations?.variableParameter?.comment,
         },
       },
     },
-  });
+    modellingAndValidation: {
+      dataSourcesTreatmentEtc: {
+        useAdviceForDataSet: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentEtc?.useAdviceForDataSet,
+        ),
+      },
+      LCIMethodAndAllocation: {
+        typeOfDataSet: data?.modellingAndValidation?.LCIMethodAndAllocation?.typeOfDataSet ?? {},
+        LCIMethodPrinciple:
+          data?.modellingAndValidation?.LCIMethodAndAllocation?.LCIMethodPrinciple ?? {},
+        deviationsFromLCIMethodPrinciple: getLangJson(
+          data?.modellingAndValidation?.LCIMethodAndAllocation?.deviationsFromLCIMethodPrinciple,
+        ),
+        LCIMethodApproaches:
+          data?.modellingAndValidation?.LCIMethodAndAllocation?.LCIMethodApproaches ?? {},
+        deviationsFromLCIMethodApproaches: getLangJson(
+          data?.modellingAndValidation?.LCIMethodAndAllocation?.deviationsFromLCIMethodApproaches,
+        ),
+        modellingConstants: getLangJson(
+          data?.modellingAndValidation?.LCIMethodAndAllocation?.modellingConstants,
+        ),
+        deviationsFromModellingConstants: getLangJson(
+          data?.modellingAndValidation?.LCIMethodAndAllocation?.deviationsFromModellingConstants,
+        ),
+        referenceToLCAMethodDetails: {
+          '@type':
+            data?.modellingAndValidation?.LCIMethodAndAllocation?.referenceToLCAMethodDetails?.[
+              '@type'
+            ] ?? {},
+          '@refObjectId':
+            data?.modellingAndValidation?.LCIMethodAndAllocation?.referenceToLCAMethodDetails?.[
+              '@refObjectId'
+            ] ?? {},
+          '@uri':
+            data?.modellingAndValidation?.LCIMethodAndAllocation?.referenceToLCAMethodDetails?.[
+              '@uri'
+            ] ?? {},
+          '@version':
+            data?.modellingAndValidation?.LCIMethodAndAllocation?.referenceToLCAMethodDetails?.[
+              '@version'
+            ] ?? {},
+          'common:shortDescription': getLangJson(
+            data?.modellingAndValidation?.LCIMethodAndAllocation?.referenceToLCAMethodDetails?.[
+              'common:shortDescription'
+            ],
+          ),
+        },
+      },
+      dataSourcesTreatmentAndRepresentativeness: {
+        dataCutOffAndCompletenessPrinciples: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.dataCutOffAndCompletenessPrinciples,
+        ),
+        deviationsFromCutOffAndCompletenessPrinciples: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.deviationsFromCutOffAndCompletenessPrinciples,
+        ),
+        dataSelectionAndCombinationPrinciples: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.dataSelectionAndCombinationPrinciples,
+        ),
+        deviationsFromSelectionAndCombinationPrinciples: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.deviationsFromSelectionAndCombinationPrinciples,
+        ),
+        dataTreatmentAndExtrapolationsPrinciples: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.dataTreatmentAndExtrapolationsPrinciples,
+        ),
+        deviationsFromTreatmentAndExtrapolationPrinciples: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.deviationsFromTreatmentAndExtrapolationPrinciples,
+        ),
+        referenceToDataHandlingPrinciples: {
+          '@type':
+            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+              ?.referenceToDataHandlingPrinciples?.['@type'] ?? {},
+          '@refObjectId':
+            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+              ?.referenceToDataHandlingPrinciples?.['@refObjectId'] ?? {},
+          '@uri':
+            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+              ?.referenceToDataHandlingPrinciples?.['@uri'] ?? {},
+          '@version':
+            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+              ?.referenceToDataHandlingPrinciples?.['@version'] ?? {},
+          'common:shortDescription': getLangJson(
+            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+              ?.referenceToDataHandlingPrinciples?.['common:shortDescription'],
+          ),
+        },
+        referenceToDataSource: {
+          '@type':
+            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+              ?.referenceToDataSource?.['@type'] ?? {},
+          '@version':
+            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+              ?.referenceToDataSource?.['@version'] ?? {},
+          '@refObjectId':
+            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+              ?.referenceToDataSource?.['@refObjectId'] ?? {},
+          '@uri':
+            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+              ?.referenceToDataSource?.['@uri'] ?? {},
+          'common:shortDescription': getLangJson(
+            data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+              ?.referenceToDataSource?.['common:shortDescription'],
+          ),
+        },
+        percentageSupplyOrProductionCovered:
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.percentageSupplyOrProductionCovered ?? {},
+        annualSupplyOrProductionVolume: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.annualSupplyOrProductionVolume,
+        ),
+        samplingProcedure: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.samplingProcedure,
+        ),
+        dataCollectionPeriod: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.dataCollectionPeriod,
+        ),
+        uncertaintyAdjustments: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.uncertaintyAdjustments,
+        ),
+        useAdviceForDataSet: getLangJson(
+          data?.modellingAndValidation?.dataSourcesTreatmentAndRepresentativeness
+            ?.useAdviceForDataSet,
+        ),
+      },
+      completeness: {
+        completenessProductModel:
+          data?.modellingAndValidation?.completeness?.completenessProductModel,
+        completenessElementaryFlows: {
+          '@type':
+            data?.modellingAndValidation?.completeness?.completenessElementaryFlows?.['@type'],
+          '@value':
+            data?.modellingAndValidation?.completeness?.completenessElementaryFlows?.['@value'],
+        },
+        completenessOtherProblemField: getLangJson(
+          data?.modellingAndValidation?.completeness?.completenessOtherProblemField,
+        ),
+        // completenessDescription: getLangJson(
+        //   data?.modellingAndValidation?.completeness?.completenessDescription,
+        // ),
+      },
+      validation: {
+        review: listToJson(
+          data?.modellingAndValidation?.validation?.review?.map((review: any) => {
+            return {
+              '@type': review?.['@type'] ?? {},
+              'common:scope': listToJson(
+                review?.['common:scope']?.map((scope: any) => {
+                  return {
+                    '@name': scope?.['@name'] ?? {},
+                    'common:method': {
+                      '@name': scope?.['common:method']?.['@name'] ?? {},
+                    },
+                  };
+                }),
+              ),
+              'common:dataQualityIndicators': {
+                'common:dataQualityIndicator': listToJson(
+                  review?.['common:dataQualityIndicators']?.['common:dataQualityIndicator']?.map(
+                    (dataQualityIndicator: any) => {
+                      return {
+                        '@name': dataQualityIndicator?.['@name'] ?? {},
+                        '@value': dataQualityIndicator?.['@value'] ?? {},
+                      };
+                    },
+                  ),
+                ),
+              },
+              'common:reviewDetails': getLangJson(review?.['common:reviewDetails']),
+              'common:referenceToNameOfReviewerAndInstitution': {
+                '@refObjectId':
+                  review?.['common:referenceToNameOfReviewerAndInstitution']?.['@refObjectId'] ??
+                  {},
+                '@type':
+                  review?.['common:referenceToNameOfReviewerAndInstitution']?.['@type'] ?? {},
+                '@uri': review?.['common:referenceToNameOfReviewerAndInstitution']?.['@uri'] ?? {},
+                '@version':
+                  review?.['common:referenceToNameOfReviewerAndInstitution']?.['@version'] ?? {},
+                'common:shortDescription': getLangJson(
+                  review?.['common:referenceToNameOfReviewerAndInstitution']?.[
+                    'common:shortDescription'
+                  ],
+                ),
+              },
+              'common:otherReviewDetails': getLangJson(review?.['common:otherReviewDetails']),
+              'common:referenceToCompleteReviewReport': {
+                '@refObjectId':
+                  review?.['common:referenceToCompleteReviewReport']?.['@refObjectId'] ?? {},
+                '@type': review?.['common:referenceToCompleteReviewReport']?.['@type'] ?? {},
+                '@uri': review?.['common:referenceToCompleteReviewReport']?.['@uri'] ?? {},
+                '@version': review?.['common:referenceToCompleteReviewReport']?.['@version'] ?? {},
+                'common:shortDescription': getLangJson(
+                  review?.['common:referenceToCompleteReviewReport']?.['common:shortDescription'],
+                ),
+              },
+            };
+          }),
+        ),
+      },
+      complianceDeclarations: {
+        compliance: listToJson(
+          data?.modellingAndValidation?.complianceDeclarations?.compliance?.map(
+            (compliance: any) => {
+              return {
+                'common:referenceToComplianceSystem': {
+                  '@refObjectId':
+                    compliance?.['common:referenceToComplianceSystem']?.['@refObjectId'] ?? {},
+                  '@type': compliance?.['common:referenceToComplianceSystem']?.['@type'] ?? {},
+                  '@uri': compliance?.['common:referenceToComplianceSystem']?.['@uri'] ?? {},
+                  '@version':
+                    compliance?.['common:referenceToComplianceSystem']?.['@version'] ?? {},
+                  'common:shortDescription': getLangJson(
+                    compliance?.['common:referenceToComplianceSystem']?.['common:shortDescription'],
+                  ),
+                },
+                'common:approvalOfOverallCompliance':
+                  compliance?.['common:approvalOfOverallCompliance'] ?? {},
+                'common:nomenclatureCompliance':
+                  compliance?.['common:nomenclatureCompliance'] ?? {},
+                'common:methodologicalCompliance':
+                  compliance?.['common:methodologicalCompliance'] ?? {},
+                'common:reviewCompliance': compliance?.['common:reviewCompliance'] ?? {},
+                'common:documentationCompliance':
+                  compliance?.['common:documentationCompliance'] ?? {},
+                'common:qualityCompliance': compliance?.['common:qualityCompliance'] ?? {},
+              };
+            },
+          ),
+        ),
+      },
+    },
+    administrativeInformation: {
+      'common:commissionerAndGoal': {
+        'common:referenceToCommissioner': {
+          '@refObjectId':
+            data?.administrativeInformation?.['common:commissionerAndGoal']?.[
+              'common:referenceToCommissioner'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.['common:commissionerAndGoal']?.[
+              'common:referenceToCommissioner'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.['common:commissionerAndGoal']?.[
+              'common:referenceToCommissioner'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.['common:commissionerAndGoal']?.[
+              'common:referenceToCommissioner'
+            ]?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.['common:commissionerAndGoal']?.[
+              'common:referenceToCommissioner'
+            ]?.['common:shortDescription'],
+          ),
+        },
+        'common:project': getLangJson(
+          data?.administrativeInformation?.['common:commissionerAndGoal']?.['common:project'],
+        ),
+        'common:intendedApplications': getLangJson(
+          data?.administrativeInformation?.['common:commissionerAndGoal']?.[
+            'common:intendedApplications'
+          ],
+        ),
+      },
+      dataGenerator: {
+        'common:referenceToPersonOrEntityGeneratingTheDataSet': {
+          '@refObjectId':
+            data?.administrativeInformation?.dataGenerator?.[
+              'common:referenceToPersonOrEntityGeneratingTheDataSet'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.dataGenerator?.[
+              'common:referenceToPersonOrEntityGeneratingTheDataSet'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.dataGenerator?.[
+              'common:referenceToPersonOrEntityGeneratingTheDataSet'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.dataGenerator?.[
+              'common:referenceToPersonOrEntityGeneratingTheDataSet'
+            ]?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.dataGenerator?.[
+              'common:referenceToPersonOrEntityGeneratingTheDataSet'
+            ]?.['common:shortDescription'],
+          ),
+        },
+      },
+      dataEntryBy: {
+        'common:timeStamp': data?.administrativeInformation?.dataEntryBy?.['common:timeStamp'],
+        'common:referenceToDataSetFormat': {
+          '@refObjectId':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@refObjectId'
+            ],
+          '@type':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@type'
+            ],
+          '@uri':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@uri'
+            ],
+          '@version':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@version'
+            ],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              'common:shortDescription'
+            ],
+          ),
+        },
+        'common:referenceToConvertedOriginalDataSetFrom': {
+          '@refObjectId':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToConvertedOriginalDataSetFrom'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToConvertedOriginalDataSetFrom'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToConvertedOriginalDataSetFrom'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToConvertedOriginalDataSetFrom'
+            ]?.['@version'] ?? {},
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToConvertedOriginalDataSetFrom'
+            ]?.['common:shortDescription'],
+          ),
+        },
+        'common:referenceToPersonOrEntityEnteringTheData': {
+          '@refObjectId':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToPersonOrEntityEnteringTheData'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToPersonOrEntityEnteringTheData'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToPersonOrEntityEnteringTheData'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToPersonOrEntityEnteringTheData'
+            ]?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToPersonOrEntityEnteringTheData'
+            ]?.['common:shortDescription'],
+          ),
+        },
+        'common:referenceToDataSetUseApproval': {
+          '@refObjectId':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@version'] ?? {},
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['common:shortDescription'],
+          ),
+        },
+      },
+      publicationAndOwnership: {
+        'common:dateOfLastRevision':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:dateOfLastRevision'] ??
+          {},
+        'common:dataSetVersion':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'],
+        'common:permanentDataSetURI':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:permanentDataSetURI'],
+        'common:workflowAndPublicationStatus':
+          data?.administrativeInformation?.publicationAndOwnership?.[
+            'common:workflowAndPublicationStatus'
+          ] ?? {},
+        'common:referenceToUnchangedRepublication': {
+          '@refObjectId':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToUnchangedRepublication'
+            ]?.['@refObjectId'] ?? {},
+          '@type':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToUnchangedRepublication'
+            ]?.['@type'] ?? {},
+          '@uri':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToUnchangedRepublication'
+            ]?.['@uri'] ?? {},
+          '@version':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToUnchangedRepublication'
+            ]?.['@version'] ?? {},
+          'common:shortDescription': getLangList(
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToUnchangedRepublication'
+            ]?.['common:shortDescription'],
+          ),
+        },
+        'common:referenceToRegistrationAuthority': {
+          '@refObjectId':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToRegistrationAuthority'
+            ]?.['@refObjectId'] ?? {},
+          '@type':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToRegistrationAuthority'
+            ]?.['@type'] ?? {},
+          '@uri':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToRegistrationAuthority'
+            ]?.['@uri'] ?? {},
+          '@version':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToRegistrationAuthority'
+            ]?.['@version'] ?? {},
+          'common:shortDescription': getLangList(
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToRegistrationAuthority'
+            ]?.['common:shortDescription'],
+          ),
+        },
+        'common:registrationNumber':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:registrationNumber'] ??
+          {},
+        'common:referenceToOwnershipOfDataSet': {
+          '@refObjectId':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['common:shortDescription'],
+          ),
+        },
+        'common:copyright':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:copyright'],
+        'common:referenceToEntitiesWithExclusiveAccess': {
+          '@refObjectId':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToEntitiesWithExclusiveAccess'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToEntitiesWithExclusiveAccess'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToEntitiesWithExclusiveAccess'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToEntitiesWithExclusiveAccess'
+            ]?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToEntitiesWithExclusiveAccess'
+            ]?.['common:shortDescription'],
+          ),
+        },
+        'common:licenseType':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:licenseType'],
+        'common:accessRestrictions': getLangJson(
+          data?.administrativeInformation?.publicationAndOwnership?.['common:accessRestrictions'],
+        ),
+      },
+    },
+  };
+  return lifeCycleModelTidas.toJSON();
 }
 
 export function genLifeCycleModelInfoFromData(data: any) {
