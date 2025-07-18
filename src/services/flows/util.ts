@@ -1,3 +1,4 @@
+import { createFlow as createFlowTidas } from '@tiangong-lca/tidas-sdk';
 import {
   classificationToJsonList,
   classificationToStringList,
@@ -7,7 +8,6 @@ import {
   jsonToList,
   removeEmptyObjects,
 } from '../general/util';
-
 export function genFlowJsonOrdered(id: string, data: any) {
   let quantitativeReference = {};
   const flowProperty =
@@ -69,231 +69,227 @@ export function genFlowJsonOrdered(id: string, data: any) {
     };
   }
 
-  return removeEmptyObjects({
-    flowDataSet: {
-      // '@xmlns': oldData.flowDataSet?.['@xmlns'],
-      // '@xmlns:common': oldData.flowDataSet?.['@xmlns:common'],
-      // '@xmlns:ecn': oldData.flowDataSet?.['@xmlns:ecn'],
-      // '@xmlns:xsi': oldData.flowDataSet?.['@xmlns:xsi'],
-      // '@version': oldData.flowDataSet?.['@version'],
-      // '@xsi:schemaLocation': oldData.flowDataSet?.['@xsi:schemaLocation'],
+  const flowTidas = createFlowTidas();
+  flowTidas.flowDataSet = {
+    // '@xmlns': oldData.flowDataSet?.['@xmlns'],
+    // '@xmlns:common': oldData.flowDataSet?.['@xmlns:common'],
+    // '@xmlns:ecn': oldData.flowDataSet?.['@xmlns:ecn'],
+    // '@xmlns:xsi': oldData.flowDataSet?.['@xmlns:xsi'],
+    // '@version': oldData.flowDataSet?.['@version'],
+    // '@xsi:schemaLocation': oldData.flowDataSet?.['@xsi:schemaLocation'],
 
-      '@xmlns': 'http://lca.jrc.it/ILCD/Flow',
-      '@xmlns:common': 'http://lca.jrc.it/ILCD/Common',
-      '@xmlns:ecn': 'http://eplca.jrc.ec.europa.eu/ILCD/Extensions/2018/ECNumber',
-      '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-      '@version': '1.1',
-      '@locations': '../ILCDLocations.xml',
-      '@xsi:schemaLocation': 'http://lca.jrc.it/ILCD/Flow ../../schemas/ILCD_FlowDataSet.xsd',
+    '@xmlns': 'http://lca.jrc.it/ILCD/Flow',
+    '@xmlns:common': 'http://lca.jrc.it/ILCD/Common',
+    '@xmlns:ecn': 'http://eplca.jrc.ec.europa.eu/ILCD/Extensions/2018/ECNumber',
+    '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+    '@version': '1.1',
+    '@locations': '../ILCDLocations.xml',
+    '@xsi:schemaLocation': 'http://lca.jrc.it/ILCD/Flow ../../schemas/ILCD_FlowDataSet.xsd',
 
-      flowInformation: {
-        dataSetInformation: {
-          'common:UUID': id,
-          name: {
-            baseName: getLangJson(
-              data?.flowInformation?.dataSetInformation?.['name']?.['baseName'],
-            ),
-            treatmentStandardsRoutes: getLangJson(
-              data?.flowInformation?.dataSetInformation?.name?.treatmentStandardsRoutes,
-            ),
-            mixAndLocationTypes: getLangJson(
-              data?.flowInformation?.dataSetInformation?.name?.mixAndLocationTypes,
-            ),
-            flowProperties: getLangJson(
-              data?.flowInformation?.dataSetInformation?.name?.flowProperties,
-            ),
-          },
-          'common:synonyms': getLangJson(
-            data?.flowInformation?.dataSetInformation?.['common:synonyms'],
+    flowInformation: {
+      dataSetInformation: {
+        'common:UUID': id,
+        name: {
+          baseName: getLangJson(data?.flowInformation?.dataSetInformation?.['name']?.['baseName']),
+          treatmentStandardsRoutes: getLangJson(
+            data?.flowInformation?.dataSetInformation?.name?.treatmentStandardsRoutes,
           ),
-          classificationInformation: classificationInformation,
-          CASNumber: data?.flowInformation?.dataSetInformation?.['CASNumber'],
-          sumFormula: data?.flowInformation?.dataSetInformation?.['sumFormula'],
-          'common:generalComment': getLangJson(
-            data?.flowInformation?.dataSetInformation?.['common:generalComment'],
+          mixAndLocationTypes: getLangJson(
+            data?.flowInformation?.dataSetInformation?.name?.mixAndLocationTypes,
           ),
-          'common:other': {
-            'ecn:ECNumber':
-              data?.flowInformation?.dataSetInformation?.['common:other']?.['ecn:ECNumber'],
-          },
-        },
-        quantitativeReference: quantitativeReference,
-        geography: {
-          locationOfSupply:
-            data?.flowInformation?.geography?.locationOfSupply === 'NULL'
-              ? {}
-              : (data?.flowInformation?.geography?.locationOfSupply ?? {}),
-        },
-        technology: {
-          technologicalApplicability: getLangJson(
-            data?.flowInformation?.technology?.technologicalApplicability,
+          flowProperties: getLangJson(
+            data?.flowInformation?.dataSetInformation?.name?.flowProperties,
           ),
-          referenceToTechnicalSpecification: {
-            '@type':
-              data?.flowInformation?.technology?.referenceToTechnicalSpecification?.['@type'] ?? {},
-            '@refObjectId':
-              data?.flowInformation?.technology?.referenceToTechnicalSpecification?.[
-                '@refObjectId'
-              ] ?? {},
-            '@version':
-              data?.flowInformation?.technology?.referenceToTechnicalSpecification?.['@version'] ??
-              {},
-            '@uri':
-              data?.flowInformation?.technology?.referenceToTechnicalSpecification?.['@uri'] ?? {},
-            'common:shortDescription': getLangJson(
-              data?.flowInformation?.technology?.referenceToTechnicalSpecification?.[
-                'common:shortDescription'
-              ],
-            ),
-          },
         },
+        'common:synonyms': getLangJson(
+          data?.flowInformation?.dataSetInformation?.['common:synonyms'],
+        ),
+        classificationInformation: classificationInformation,
+        CASNumber: data?.flowInformation?.dataSetInformation?.['CASNumber'],
+        sumFormula: data?.flowInformation?.dataSetInformation?.['sumFormula'],
+        'common:generalComment': getLangJson(
+          data?.flowInformation?.dataSetInformation?.['common:generalComment'],
+        ),
+        'common:other': {
+          'ecn:ECNumber':
+            data?.flowInformation?.dataSetInformation?.['common:other']?.['ecn:ECNumber'],
+        } as any,
       },
-      modellingAndValidation: {
-        LCIMethod: {
-          typeOfDataSet: data?.modellingAndValidation?.LCIMethod?.typeOfDataSet,
-        },
-        complianceDeclarations: {
-          compliance: {
-            'common:referenceToComplianceSystem': {
-              '@refObjectId':
-                data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                  'common:referenceToComplianceSystem'
-                ]?.['@refObjectId'],
-              '@version':
-                data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                  'common:referenceToComplianceSystem'
-                ]?.['@version'],
-              '@type':
-                data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                  'common:referenceToComplianceSystem'
-                ]?.['@type'],
-              '@uri':
-                data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                  'common:referenceToComplianceSystem'
-                ]?.['@uri'],
-              'common:shortDescription': getLangJson(
-                data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                  'common:referenceToComplianceSystem'
-                ]?.['common:shortDescription'],
-              ),
-            },
-            'common:approvalOfOverallCompliance':
-              data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
-                'common:approvalOfOverallCompliance'
-              ],
-          },
-        },
+      quantitativeReference: quantitativeReference as any,
+      geography: {
+        locationOfSupply:
+          data?.flowInformation?.geography?.locationOfSupply === 'NULL'
+            ? {}
+            : (data?.flowInformation?.geography?.locationOfSupply ?? {}),
       },
-      administrativeInformation: {
-        dataEntryBy: {
-          'common:timeStamp': data?.administrativeInformation?.dataEntryBy?.['common:timeStamp'],
-          'common:referenceToDataSetFormat': {
-            '@refObjectId':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@refObjectId'
-              ],
-            '@version':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@version'
-              ],
-            '@type':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@type'
-              ],
-            '@uri':
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                '@uri'
-              ],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
-                'common:shortDescription'
-              ],
-            ),
-          },
-          'common:referenceToPersonOrEntityEnteringTheData': {
-            '@refObjectId':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToPersonOrEntityEnteringTheData'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToPersonOrEntityEnteringTheData'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToPersonOrEntityEnteringTheData'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToPersonOrEntityEnteringTheData'
-              ]?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToPersonOrEntityEnteringTheData'
-              ]?.['common:shortDescription'],
-            ),
-          },
-        },
-        publicationAndOwnership: {
-          'common:dataSetVersion':
-            data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'],
-          'common:permanentDataSetURI':
-            data?.administrativeInformation?.publicationAndOwnership?.[
-              'common:permanentDataSetURI'
+      technology: {
+        technologicalApplicability: getLangJson(
+          data?.flowInformation?.technology?.technologicalApplicability,
+        ),
+        referenceToTechnicalSpecification: {
+          '@type':
+            data?.flowInformation?.technology?.referenceToTechnicalSpecification?.['@type'] ?? {},
+          '@refObjectId':
+            data?.flowInformation?.technology?.referenceToTechnicalSpecification?.[
+              '@refObjectId'
+            ] ?? {},
+          '@version':
+            data?.flowInformation?.technology?.referenceToTechnicalSpecification?.['@version'] ??
+            {},
+          '@uri':
+            data?.flowInformation?.technology?.referenceToTechnicalSpecification?.['@uri'] ?? {},
+          'common:shortDescription': getLangJson(
+            data?.flowInformation?.technology?.referenceToTechnicalSpecification?.[
+              'common:shortDescription'
             ],
-          'common:referenceToOwnershipOfDataSet': {
-            '@refObjectId':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToOwnershipOfDataSet'
-              ]?.['common:shortDescription'],
-            ),
-          },
-          'common:referenceToPrecedingDataSetVersion': {
-            '@refObjectId':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
-              ]?.['@refObjectId'],
-            '@type':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
-              ]?.['@type'],
-            '@uri':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
-              ]?.['@uri'],
-            '@version':
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
-              ]?.['@version'],
-            'common:shortDescription': getLangJson(
-              data?.administrativeInformation?.publicationAndOwnership?.[
-                'common:referenceToPrecedingDataSetVersion'
-              ]?.['common:shortDescription'],
-            ),
-          },
+          ),
         },
-      },
-      flowProperties: {
-        flowProperty: flowPropertyJson,
       },
     },
-  });
+    modellingAndValidation: {
+      LCIMethod: {
+        typeOfDataSet: data?.modellingAndValidation?.LCIMethod?.typeOfDataSet,
+      },
+      complianceDeclarations: {
+        compliance: {
+          'common:referenceToComplianceSystem': {
+            '@refObjectId':
+              data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+                'common:referenceToComplianceSystem'
+              ]?.['@refObjectId'],
+            '@version':
+              data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+                'common:referenceToComplianceSystem'
+              ]?.['@version'],
+            '@type':
+              data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+                'common:referenceToComplianceSystem'
+              ]?.['@type'],
+            '@uri':
+              data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+                'common:referenceToComplianceSystem'
+              ]?.['@uri'],
+            'common:shortDescription': getLangJson(
+              data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+                'common:referenceToComplianceSystem'
+              ]?.['common:shortDescription'],
+            ),
+          },
+          'common:approvalOfOverallCompliance':
+            data?.modellingAndValidation?.complianceDeclarations?.compliance?.[
+              'common:approvalOfOverallCompliance'
+            ],
+        },
+      },
+    },
+    administrativeInformation: {
+      dataEntryBy: {
+        'common:timeStamp': data?.administrativeInformation?.dataEntryBy?.['common:timeStamp'],
+        'common:referenceToDataSetFormat': {
+          '@refObjectId':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@refObjectId'
+            ],
+          '@version':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@version'
+            ],
+          '@type':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@type'
+            ],
+          '@uri':
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              '@uri'
+            ],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.dataEntryBy?.['common:referenceToDataSetFormat']?.[
+              'common:shortDescription'
+            ],
+          ),
+        },
+        'common:referenceToPersonOrEntityEnteringTheData': {
+          '@refObjectId':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToPersonOrEntityEnteringTheData'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToPersonOrEntityEnteringTheData'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToPersonOrEntityEnteringTheData'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToPersonOrEntityEnteringTheData'
+            ]?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToPersonOrEntityEnteringTheData'
+            ]?.['common:shortDescription'],
+          ),
+        },
+      },
+      publicationAndOwnership: {
+        'common:dataSetVersion':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'],
+        permanentDataSetURI:
+          data?.administrativeInformation?.publicationAndOwnership?.['permanentDataSetURI'],
+        'common:referenceToOwnershipOfDataSet': {
+          '@refObjectId':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToOwnershipOfDataSet'
+            ]?.['common:shortDescription'],
+          ),
+        },
+        'common:referenceToPrecedingDataSetVersion': {
+          '@refObjectId':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToPrecedingDataSetVersion'
+            ]?.['@refObjectId'],
+          '@type':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToPrecedingDataSetVersion'
+            ]?.['@type'],
+          '@uri':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToPrecedingDataSetVersion'
+            ]?.['@uri'],
+          '@version':
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToPrecedingDataSetVersion'
+            ]?.['@version'],
+          'common:shortDescription': getLangJson(
+            data?.administrativeInformation?.publicationAndOwnership?.[
+              'common:referenceToPrecedingDataSetVersion'
+            ]?.['common:shortDescription'],
+          ),
+        },
+      },
+    },
+    flowProperties: {
+      flowProperty: flowPropertyJson,
+    },
+  };
+  return flowTidas.toJSON();
 }
 
 export function genFlowFromData(data: any) {
@@ -478,8 +474,8 @@ export function genFlowFromData(data: any) {
       publicationAndOwnership: {
         'common:dataSetVersion':
           data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'],
-        'common:permanentDataSetURI':
-          data?.administrativeInformation?.publicationAndOwnership?.['common:permanentDataSetURI'],
+        permanentDataSetURI:
+          data?.administrativeInformation?.publicationAndOwnership?.['permanentDataSetURI'],
         'common:referenceToOwnershipOfDataSet': {
           '@refObjectId':
             data?.administrativeInformation?.publicationAndOwnership?.[

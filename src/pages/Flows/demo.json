@@ -84,7 +84,7 @@
       },
       "publicationAndOwnership": {
         "common:dataSetVersion": "00.00.002",
-        "common:permanentDataSetURI": "http://eplca.jrc.ec.europa.eu/EF-node/resource/flows/0000b186-aea3-4c0a-b0c2-c284de7cdf92.xml"
+        "permanentDataSetURI": "http://eplca.jrc.ec.europa.eu/EF-node/resource/flows/0000b186-aea3-4c0a-b0c2-c284de7cdf92.xml"
       }
     },
     "flowProperties": {
