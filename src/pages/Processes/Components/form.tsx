@@ -508,11 +508,11 @@ export const ProcessForm: FC<Props> = ({
                 defaultMessage='Reference year'
               />
             }
-            name={['processInformation', 'time', 'common:referenceYear']}
+            name={['processInformation', 'time', 'referenceYear']}
             rules={
               showRules
                 ? getRules(
-                    schema['processDataSet']['processInformation']['time']['common:referenceYear'][
+                    schema['processDataSet']['processInformation']['time']['referenceYear'][
                       'rules'
                     ],
                   )
@@ -528,13 +528,13 @@ export const ProcessForm: FC<Props> = ({
                 defaultMessage='Data set valid until:'
               />
             }
-            name={['processInformation', 'time', 'common:dataSetValidUntil']}
+            name={['processInformation', 'time', 'dataSetValidUntil']}
             rules={
               showRules
                 ? getRules(
-                    schema['processDataSet']['processInformation']['time'][
-                      'common:dataSetValidUntil'
-                    ]['rules'],
+                    schema['processDataSet']['processInformation']['time']['dataSetValidUntil'][
+                      'rules'
+                    ],
                   )
                 : []
             }
@@ -548,7 +548,7 @@ export const ProcessForm: FC<Props> = ({
             />
           </Divider>
           <LangTextItemForm
-            name={['processInformation', 'time', 'common:timeRepresentativenessDescription']}
+            name={['processInformation', 'time', 'timeRepresentativenessDescription']}
             label={
               <FormattedMessage
                 id='pages.process.view.processInformation.timeRepresentativenessDescription'
@@ -1633,11 +1633,7 @@ export const ProcessForm: FC<Props> = ({
                 defaultMessage='Official approval of data set by producer/operator:'
               />
             }
-            name={[
-              'administrativeInformation',
-              'dataEntryBy',
-              'common:referenceToDataSetUseApproval',
-            ]}
+            name={['administrativeInformation', 'dataEntryBy', 'referenceToDataSetUseApproval']}
             onData={onData}
           />
         </Card>

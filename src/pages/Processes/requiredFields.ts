@@ -8,7 +8,7 @@ const requiredFields = {
   'processInformation.dataSetInformation.common:generalComment': 'processInformation',
   // 'processInformation.quantitativeReference.@type':'processInformation',
   // 'processInformation.quantitativeReference.referenceToReferenceFlow':'processInformation',
-  'processInformation.time.common:referenceYear': 'processInformation',
+  'processInformation.time.referenceYear': 'processInformation',
   'processInformation.geography.locationOfOperationSupplyOrProduction.@location':
     'processInformation',
   'processInformation.technology.technologyDescriptionAndIncludedProcesses': 'processInformation',

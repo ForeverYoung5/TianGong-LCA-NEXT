@@ -185,7 +185,7 @@
         }
       },
       "time": {
-        "common:referenceYear": {
+        "referenceYear": {
           "value": "str",
           "rules": [
             {
@@ -200,7 +200,7 @@
             }
           ]
         },
-        "common:dataSetValidUntil": {
+        "dataSetValidUntil": {
           "value": "str",
           "rules": [
             {
@@ -210,7 +210,7 @@
             }
           ]
         },
-        "common:timeRepresentativenessDescription": [
+        "timeRepresentativenessDescription": [
           {
             "@xml:lang": "str",
             "#text": "str"
@@ -833,7 +833,7 @@
             }
           ]
         },
-        "common:referenceToDataSetUseApproval": {
+        "referenceToDataSetUseApproval": {
           "@refObjectId": "str",
           "@type": "str",
           "@uri": "str",

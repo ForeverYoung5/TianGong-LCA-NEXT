@@ -351,7 +351,7 @@ const ProcessView: FC<Props> = ({
               }
               labelStyle={{ width: '140px' }}
             >
-              {initData.processInformation?.time?.['common:referenceYear'] ?? '-'}
+              {initData.processInformation?.time?.['referenceYear'] ?? '-'}
             </Descriptions.Item>
           </Descriptions>
           <br />
@@ -366,7 +366,7 @@ const ProcessView: FC<Props> = ({
               }
               labelStyle={{ width: '140px' }}
             >
-              {initData.processInformation?.time?.['common:dataSetValidUntil'] ?? '-'}
+              {initData.processInformation?.time?.['dataSetValidUntil'] ?? '-'}
             </Descriptions.Item>
           </Descriptions>
           <Divider orientationMargin='0' orientation='left' plain>
@@ -376,7 +376,7 @@ const ProcessView: FC<Props> = ({
             />
           </Divider>
           <LangTextItemDescription
-            data={initData.processInformation?.time?.['common:timeRepresentativenessDescription']}
+            data={initData.processInformation?.time?.['timeRepresentativenessDescription']}
           />
         </Card>
         <br />
@@ -1241,9 +1241,7 @@ const ProcessView: FC<Props> = ({
           <br />
           <SourceSelectDescription
             data={
-              initData?.administrativeInformation?.dataEntryBy?.[
-                'common:referenceToDataSetUseApproval'
-              ]
+              initData?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']
             }
             title={
               <FormattedMessage

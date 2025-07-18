@@ -55,8 +55,8 @@
         }
       },
       "time": {
-        "common:referenceYear": "2010",
-        "common:timeRepresentativenessDescription": [
+        "referenceYear": "2010",
+        "timeRepresentativenessDescription": [
           {
             "@xml:lang": "en",
             "#text": "Four million-ton enterprises of Sinopec and PetroChina in 2010"

@@ -129,7 +129,7 @@ const TableList: FC = () => {
                 json->processDataSet->processInformation->dataSetInformation->name,
                 json->processDataSet->processInformation->dataSetInformation->classificationInformation->"common:classification"->"common:class",
                 json->processDataSet->processInformation->dataSetInformation->"common:generalComment",
-                json->processDataSet->processInformation->time->>"common:referenceYear",
+                json->processDataSet->processInformation->time->>"referenceYear",
                 json->processDataSet->modellingAndValidation->LCIMethodAndAllocation->typeOfDataSet,
                 json->processDataSet->processInformation->geography->locationOfOperationSupplyOrProduction->>"@location",
                 version,
