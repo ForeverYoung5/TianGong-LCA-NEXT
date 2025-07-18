@@ -291,10 +291,7 @@ export function classificationToString(classifications: any[]) {
   return classificationStr;
 }
 
-export function classificationToStringList(
-  classifications: any,
-  elementaryFlow: boolean = false,
-): { id: string[]; value: string[] } {
+export function classificationToStringList(classifications: any, elementaryFlow: boolean = false) {
   let idStrList = [];
   let valueStrList = [];
   try {
