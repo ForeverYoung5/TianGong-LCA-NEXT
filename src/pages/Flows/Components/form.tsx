@@ -869,7 +869,11 @@ export const FlowForm: FC<Props> = ({
                 defaultMessage='Permanent data set URI'
               />
             }
-            name={['administrativeInformation', 'publicationAndOwnership', 'permanentDataSetURI']}
+            name={[
+              'administrativeInformation',
+              'publicationAndOwnership',
+              'common:permanentDataSetURI',
+            ]}
           >
             <Input />
           </Form.Item>

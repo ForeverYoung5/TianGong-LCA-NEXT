@@ -350,8 +350,9 @@ const ContactView: FC<Props> = ({ id, version, lang, buttonType }) => {
             }
             labelStyle={{ width: '220px' }}
           >
-            {initData.administrativeInformation?.publicationAndOwnership?.['permanentDataSetURI'] ??
-              '-'}
+            {initData.administrativeInformation?.publicationAndOwnership?.[
+              'common:permanentDataSetURI'
+            ] ?? '-'}
           </Descriptions.Item>
         </Descriptions>
       </>

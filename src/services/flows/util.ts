@@ -235,8 +235,8 @@ export function genFlowJsonOrdered(id: string, data: any) {
       publicationAndOwnership: {
         'common:dataSetVersion':
           data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'],
-        permanentDataSetURI:
-          data?.administrativeInformation?.publicationAndOwnership?.['permanentDataSetURI'],
+        'common:permanentDataSetURI':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:permanentDataSetURI'],
         'common:referenceToOwnershipOfDataSet': {
           '@refObjectId':
             data?.administrativeInformation?.publicationAndOwnership?.[
@@ -474,8 +474,8 @@ export function genFlowFromData(data: any) {
       publicationAndOwnership: {
         'common:dataSetVersion':
           data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'],
-        permanentDataSetURI:
-          data?.administrativeInformation?.publicationAndOwnership?.['permanentDataSetURI'],
+        'common:permanentDataSetURI':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:permanentDataSetURI'],
         'common:referenceToOwnershipOfDataSet': {
           '@refObjectId':
             data?.administrativeInformation?.publicationAndOwnership?.[

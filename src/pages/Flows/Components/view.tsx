@@ -604,7 +604,7 @@ const FlowsView: FC<Props> = ({ id, version, buttonType, lang }) => {
               styles={{ label: { width: '220px' } }}
             >
               {initData?.administrativeInformation?.publicationAndOwnership?.[
-                'permanentDataSetURI'
+                'common:permanentDataSetURI'
               ] ?? '-'}
             </Descriptions.Item>
           </Descriptions>

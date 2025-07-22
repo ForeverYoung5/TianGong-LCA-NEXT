@@ -178,7 +178,7 @@
           },
           "@version": "str"
         },
-        "permanentDataSetURI": "str",
+        "common:permanentDataSetURI": "str",
         "common:referenceToOwnershipOfDataSet": {
           "@refObjectId": {
             "value": "str",

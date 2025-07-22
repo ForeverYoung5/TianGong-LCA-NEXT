@@ -436,7 +436,7 @@ export const ContactForm: FC<Props> = ({
               name={[
                 'administrativeInformation',
                 'publicationAndOwnership',
-                'referenceToPrecedingDataSetVersion',
+                'common:referenceToPrecedingDataSetVersion',
               ]}
               lang={lang}
               formRef={formRef}

@@ -139,10 +139,11 @@ export function genProcessJsonOrdered(id: string, data: any) {
       },
       quantitativeReference: { ...quantitativeReference } as any,
       time: {
-        referenceYear: data?.processInformation?.time?.['referenceYear'] ?? {},
-        dataSetValidUntil: data?.processInformation?.time?.['dataSetValidUntil'] ?? {},
-        timeRepresentativenessDescription: getLangJson(
-          data?.processInformation?.time?.['timeRepresentativenessDescription'],
+        'common:referenceYear': data?.processInformation?.time?.['common:referenceYear'] ?? {},
+        'common:dataSetValidUntil':
+          data?.processInformation?.time?.['common:dataSetValidUntil'] ?? {},
+        'common:timeRepresentativenessDescription': getLangJson(
+          data?.processInformation?.time?.['common:timeRepresentativenessDescription'],
         ),
       },
       geography: {
@@ -602,27 +603,27 @@ export function genProcessJsonOrdered(id: string, data: any) {
             ]?.['common:shortDescription'],
           ),
         },
-        referenceToDataSetUseApproval: {
+        'common:referenceToDataSetUseApproval': {
           '@refObjectId':
-            data?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']?.[
-              '@refObjectId'
-            ],
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@refObjectId'],
           '@type':
-            data?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']?.[
-              '@type'
-            ],
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@type'],
           '@uri':
-            data?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']?.[
-              '@uri'
-            ],
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@uri'],
           '@version':
-            data?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']?.[
-              '@version'
-            ] ?? {},
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@version'] ?? {},
           'common:shortDescription': getLangJson(
-            data?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']?.[
-              'common:shortDescription'
-            ],
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['common:shortDescription'],
           ),
         },
       },
@@ -827,10 +828,11 @@ export function genProcessFromData(data: any) {
         ),
       },
       time: {
-        referenceYear: data?.processInformation?.time?.['referenceYear'] ?? {},
-        dataSetValidUntil: data?.processInformation?.time?.['dataSetValidUntil'] ?? {},
-        timeRepresentativenessDescription: getLangList(
-          data?.processInformation?.time?.['timeRepresentativenessDescription'],
+        'common:referenceYear': data?.processInformation?.time?.['common:referenceYear'] ?? {},
+        'common:dataSetValidUntil':
+          data?.processInformation?.time?.['common:dataSetValidUntil'] ?? {},
+        'common:timeRepresentativenessDescription': getLangList(
+          data?.processInformation?.time?.['common:timeRepresentativenessDescription'],
         ),
       },
       geography: {
@@ -1262,27 +1264,27 @@ export function genProcessFromData(data: any) {
             ]?.['common:shortDescription'],
           ),
         },
-        referenceToDataSetUseApproval: {
+        'common:referenceToDataSetUseApproval': {
           '@refObjectId':
-            data?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']?.[
-              '@refObjectId'
-            ],
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@refObjectId'],
           '@type':
-            data?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']?.[
-              '@type'
-            ],
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@type'],
           '@uri':
-            data?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']?.[
-              '@uri'
-            ],
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@uri'],
           '@version':
-            data?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']?.[
-              '@version'
-            ] ?? {},
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['@version'] ?? {},
           'common:shortDescription': getLangList(
-            data?.administrativeInformation?.dataEntryBy?.['referenceToDataSetUseApproval']?.[
-              'common:shortDescription'
-            ],
+            data?.administrativeInformation?.dataEntryBy?.[
+              'common:referenceToDataSetUseApproval'
+            ]?.['common:shortDescription'],
           ),
         },
       },

@@ -148,8 +148,10 @@ export function genSourceJsonOrdered(id: string, data: any) {
             ]?.['common:shortDescription'],
           ),
         },
-        permanentDataSetURI:
-          data?.administrativeInformation?.publicationAndOwnership?.['permanentDataSetURI'] ?? {},
+        'common:permanentDataSetURI':
+          data?.administrativeInformation?.publicationAndOwnership?.[
+            'common:permanentDataSetURI'
+          ] ?? {},
       },
     },
   };
@@ -283,8 +285,8 @@ export function genSourceFromData(data: any) {
             ]?.['common:shortDescription'],
           ),
         },
-        permanentDataSetURI:
-          data?.administrativeInformation?.publicationAndOwnership?.['permanentDataSetURI'],
+        'common:permanentDataSetURI':
+          data?.administrativeInformation?.publicationAndOwnership?.['common:permanentDataSetURI'],
       },
     },
   });

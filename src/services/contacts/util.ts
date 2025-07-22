@@ -105,26 +105,26 @@ export function genContactJsonOrdered(id: string, data: any) {
       publicationAndOwnership: {
         'common:dataSetVersion':
           data?.administrativeInformation?.publicationAndOwnership?.['common:dataSetVersion'],
-        referenceToPrecedingDataSetVersion: {
+        'common:referenceToPrecedingDataSetVersion': {
           '@refObjectId':
             data?.administrativeInformation?.publicationAndOwnership?.[
-              'referenceToPrecedingDataSetVersion'
+              'common:referenceToPrecedingDataSetVersion'
             ]?.['@refObjectId'],
           '@type':
             data?.administrativeInformation?.publicationAndOwnership?.[
-              'referenceToPrecedingDataSetVersion'
+              'common:referenceToPrecedingDataSetVersion'
             ]?.['@type'],
           '@uri':
             data?.administrativeInformation?.publicationAndOwnership?.[
-              'referenceToPrecedingDataSetVersion'
+              'common:referenceToPrecedingDataSetVersion'
             ]?.['@uri'],
           '@version':
             data?.administrativeInformation?.publicationAndOwnership?.[
-              'referenceToPrecedingDataSetVersion'
+              'common:referenceToPrecedingDataSetVersion'
             ]?.['@version'],
           'common:shortDescription': getLangJson(
             data?.administrativeInformation?.publicationAndOwnership?.[
-              'referenceToPrecedingDataSetVersion'
+              'common:referenceToPrecedingDataSetVersion'
             ]?.['common:shortDescription'],
           ),
         },
@@ -271,26 +271,26 @@ export function genContactFromData(data: any) {
             ]?.['common:shortDescription'],
           ),
         },
-        referenceToPrecedingDataSetVersion: {
+        'common:referenceToPrecedingDataSetVersion': {
           '@refObjectId':
             data?.administrativeInformation?.publicationAndOwnership?.[
-              'referenceToPrecedingDataSetVersion'
+              'common:referenceToPrecedingDataSetVersion'
             ]?.['@refObjectId'],
           '@type':
             data?.administrativeInformation?.publicationAndOwnership?.[
-              'referenceToPrecedingDataSetVersion'
+              'common:referenceToPrecedingDataSetVersion'
             ]?.['@type'],
           '@uri':
             data?.administrativeInformation?.publicationAndOwnership?.[
-              'referenceToPrecedingDataSetVersion'
+              'common:referenceToPrecedingDataSetVersion'
             ]?.['@uri'],
           '@version':
             data?.administrativeInformation?.publicationAndOwnership?.[
-              'referenceToPrecedingDataSetVersion'
+              'common:referenceToPrecedingDataSetVersion'
             ]?.['@version'],
           'common:shortDescription': getLangList(
             data?.administrativeInformation?.publicationAndOwnership?.[
-              'referenceToPrecedingDataSetVersion'
+              'common:referenceToPrecedingDataSetVersion'
             ]?.['common:shortDescription'],
           ),
         },

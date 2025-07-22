@@ -298,7 +298,7 @@ const SourceView: FC<Props> = ({ id, version, buttonType, lang }) => {
               styles={{ label: { width: '210px' } }}
             >
               {initData.administrativeInformation?.publicationAndOwnership?.[
-                'permanentDataSetURI'
+                'common:permanentDataSetURI'
               ] ?? '-'}
             </Descriptions.Item>
           </Descriptions>

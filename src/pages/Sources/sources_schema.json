@@ -172,7 +172,7 @@
             "#text": "str"
           }
         },
-        "permanentDataSetURI": "str",
+        "common:permanentDataSetURI": "str",
         "common:referenceToOwnershipOfDataSet": {
           "@type": "str",
           "@refObjectId": {
@@ -239,7 +239,7 @@
       },
       "source:publicationAndOwnership": {
         "common:dataSetVersion": "str",
-        "permanentDataSetURI": "str"
+        "common:permanentDataSetURI": "str"
       }
     }
   },
