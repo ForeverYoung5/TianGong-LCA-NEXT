@@ -1535,6 +1535,11 @@ export async function genLifeCycleModelProcesses(
       );
 
       if (finalProductGroup?.length > 0) {
+        const refProcesses = finalProductGroup.map((fpg) => ({
+          id: fpg.processId,
+          version: fpg.processVersion,
+        }));
+
         let newSumExchanges: any = [];
 
         const calculatedProcessExchanges = finalProductGroup.map((p) => {
@@ -2306,6 +2311,7 @@ export async function genLifeCycleModelProcesses(
                 },
               },
             },
+            refProcesses,
           });
 
           return newData;
@@ -2314,6 +2320,8 @@ export async function genLifeCycleModelProcesses(
       return null;
     }),
   );
+
+  console.log('sumFinalProductGroups', sumFinalProductGroups);
 
   const primaryProcess = sumFinalProductGroups.find((p) => p?.modelInfo?.type === 'primary');
 
