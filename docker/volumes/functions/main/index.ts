@@ -1,3 +1,4 @@
+import { serve } from 'https://deno.land/std@0.131.0/http/server.ts'
 import * as jose from 'https://deno.land/x/jose@v4.14.4/index.ts'
 
 console.log('main function started')
@@ -29,7 +30,7 @@ async function verifyJWT(jwt: string): Promise<boolean> {
   return true
 }
 
-Deno.serve(async (req: Request) => {
+serve(async (req: Request) => {
   if (req.method !== 'OPTIONS' && VERIFY_JWT) {
     try {
       const token = getAuthToken(req)
