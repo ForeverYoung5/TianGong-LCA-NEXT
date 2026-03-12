@@ -270,6 +270,10 @@ describe('genLifeCycleModelProcesses', () => {
 
   it('generates primary and secondary process payloads and reuses existing secondary id', async () => {
     const data = createLifeCycleModelData();
+    (
+      data.lifeCycleModelDataSet.lifeCycleModelInformation.technology.processes
+        .processInstance as any[]
+    )[0].connections = {};
     mockOr.mockResolvedValue({ data: clone(createSupabaseProcesses()) });
 
     mockLCIAResultCalculation
@@ -365,5 +369,10 @@ describe('genLifeCycleModelProcesses', () => {
         }),
       ]),
     );
+
+    const processInstances = data.lifeCycleModelDataSet.lifeCycleModelInformation.technology
+      .processes.processInstance as any[];
+    const nodeAProcess = processInstances.find((item) => item['@dataSetInternalID'] === 'nodeA');
+    expect(nodeAProcess?.connections).toEqual({});
   });
 });

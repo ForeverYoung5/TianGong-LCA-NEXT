@@ -91,7 +91,7 @@ export function genLifeCycleModelJsonOrdered(id: string, data: any) {
       };
     });
 
-    return removeEmptyObjects({
+    const processInstanceData = removeEmptyObjects({
       '@dataSetInternalID': n?.data?.index ?? {},
       // '@multiplicationFactor': n?.data?.multiplicationFactor ?? {},
       // scalingFactor: n?.data?.scalingFactor,
@@ -108,9 +108,15 @@ export function genLifeCycleModelJsonOrdered(id: string, data: any) {
         outputExchange: listToJson(outputExchange),
       },
     });
+
+    if (!processInstanceData?.connections) {
+      processInstanceData.connections = {};
+    }
+
+    return processInstanceData;
   });
 
-  return removeEmptyObjects({
+  const result = removeEmptyObjects({
     lifeCycleModelDataSet: {
       '@xmlns': 'http://eplca.jrc.ec.europa.eu/ILCD/LifeCycleModel/2017',
       '@xmlns:acme': 'http://acme.com/custom',
@@ -484,6 +490,19 @@ export function genLifeCycleModelJsonOrdered(id: string, data: any) {
       },
     },
   });
+
+  const processInstances = jsonToList(
+    result?.lifeCycleModelDataSet?.lifeCycleModelInformation?.technology?.processes
+      ?.processInstance,
+  ).map((processItem: any) => ({
+    ...processItem,
+    connections: processItem?.connections ?? {},
+  }));
+
+  result.lifeCycleModelDataSet.lifeCycleModelInformation.technology.processes.processInstance =
+    listToJson(processInstances);
+
+  return result;
 }
 
 export function genLifeCycleModelInfoFromData(data: any): FormLifeCycleModel {

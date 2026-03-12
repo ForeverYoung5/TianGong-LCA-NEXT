@@ -2401,9 +2401,13 @@ export async function genLifeCycleModelProcesses(
       connections: mdProcess.connections,
     });
   });
+  const normalizedProcessInstance = newProcessInstance.map((processItem: any) => ({
+    ...processItem,
+    connections: processItem?.connections ?? {},
+  }));
 
   lifeCycleModelJsonOrdered.lifeCycleModelDataSet.lifeCycleModelInformation.technology.processes.processInstance =
-    listToJson(newProcessInstance);
+    listToJson(normalizedProcessInstance);
 
   return {
     lifeCycleModelProcesses: sumFinalProductGroups.filter((item) => item !== null),

@@ -46,6 +46,7 @@ import type {
   LifeCycleModelValidationIssue,
 } from '@/services/lifeCycleModels/data';
 import { genLifeCycleModelJsonOrdered } from '@/services/lifeCycleModels/util';
+import { genLifeCycleModelProcesses } from '@/services/lifeCycleModels/util_calculate';
 import { getProcessDetail } from '@/services/processes/api';
 import { getUserTeamId } from '@/services/roles/api';
 import { createLifeCycleModel as createTidasLifeCycleModel } from '@tiangong-lca/tidas-sdk';
@@ -265,12 +266,25 @@ const ToolbarEditInfo = forwardRef<ToolbarEditInfoHandle, Props>(
         setSpinning(false);
         return { checkResult: false, unReview };
       }
-      const tidasLifeCycleModel = createTidasLifeCycleModel(
-        genLifeCycleModelJsonOrdered(data.id ?? '', {
-          ...modelDetail.json.lifeCycleModelDataSet,
-          model: { ...modelDetail.json_tg?.xflow },
-        }),
-      );
+      const xflow = modelDetail.json_tg?.xflow ?? { nodes: [], edges: [] };
+      const lifeCycleModelJsonOrdered = genLifeCycleModelJsonOrdered(data.id ?? '', {
+        ...modelDetail.json.lifeCycleModelDataSet,
+        model: { ...xflow },
+      });
+
+      const referenceToReferenceProcess =
+        lifeCycleModelJsonOrdered?.lifeCycleModelDataSet?.lifeCycleModelInformation
+          ?.quantitativeReference?.referenceToReferenceProcess;
+      if (referenceToReferenceProcess) {
+        await genLifeCycleModelProcesses(
+          data.id ?? '',
+          xflow.nodes ?? [],
+          lifeCycleModelJsonOrdered,
+          modelDetail.json_tg?.submodels ?? [],
+        );
+      }
+
+      const tidasLifeCycleModel = createTidasLifeCycleModel(lifeCycleModelJsonOrdered);
       const validateResult = tidasLifeCycleModel.validateEnhanced();
       const issues: LifeCycleModelValidationIssue[] = validateResult.success
         ? []

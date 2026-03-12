@@ -287,6 +287,7 @@ describe('genLifeCycleModelJsonOrdered', () => {
     expect(firstOutput['@flowUUID']).toBe('flow-1');
     expect(firstOutput.downstreamProcess['@id']).toBe('1');
     expect(firstOutput.downstreamProcess['@flowUUID']).toBe('flow-2');
+    expect(processes[1].connections).toEqual({});
   });
 });
 
