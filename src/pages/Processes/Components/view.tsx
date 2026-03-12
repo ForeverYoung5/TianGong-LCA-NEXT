@@ -9,7 +9,11 @@ import { getFlowStateCodeByIdsAndVersions } from '@/services/flows/api';
 import { ListPagination } from '@/services/general/data';
 import { getLangJson, getLangText, getUnitData, jsonToList } from '@/services/general/util';
 import { isLcaFunctionInvokeError, queryLcaResults } from '@/services/lca';
-import { LCIAResultTable } from '@/services/lciaMethods/data';
+import {
+  LciaMethodListData,
+  LciaMethodListItem,
+  LCIAResultTable,
+} from '@/services/lciaMethods/data';
 import { getProcessDetail, getProcessExchange } from '@/services/processes/api';
 import {
   FormProcess,
@@ -102,15 +106,6 @@ type SolverLciaValueRow = {
   value: number;
 };
 
-type LciaMethodListEntry = {
-  id?: string;
-  version?: string;
-  description?: unknown;
-  referenceQuantity?: {
-    'common:shortDescription'?: unknown;
-  };
-};
-
 type LciaMethodMeta = {
   description?: unknown;
   version?: string;
@@ -126,17 +121,17 @@ const getLciaMethodMetaMap = async (impactIds: string[]): Promise<Map<string, Lc
     return new Map<string, LciaMethodMeta>();
   }
 
-  let listData = await getDecompressedMethod('list.json');
+  let listData = await getDecompressedMethod<LciaMethodListData>('list.json');
   const needsUpdate = listData && !listData.files?.[0]?.referenceQuantity;
   if (!listData || needsUpdate) {
     const cached = await cacheAndDecompressMethod('list.json');
     if (!cached) {
       return new Map<string, LciaMethodMeta>();
     }
-    listData = await getDecompressedMethod('list.json');
+    listData = await getDecompressedMethod<LciaMethodListData>('list.json');
   }
 
-  const files = Array.isArray(listData?.files) ? (listData.files as LciaMethodListEntry[]) : [];
+  const files = Array.isArray(listData?.files) ? (listData.files as LciaMethodListItem[]) : [];
   const byId = new Map<string, LciaMethodMeta>();
   files.forEach((item) => {
     const methodId = String(item?.id ?? '');
@@ -174,7 +169,7 @@ const buildMergedLciaRows = (
   solverRows.forEach((solverRow) => {
     const methodId = solverRow.impact_id;
     const methodMeta = methodMetaById.get(methodId);
-    const shortDescription =
+    const shortDescription: LciaMethodListItem['description'] =
       methodMeta?.description ??
       toLangFallback(solverRow.impact_name?.trim() || solverRow.impact_id || '-');
     const unitDesc =
@@ -195,8 +190,7 @@ const buildMergedLciaRows = (
           '@version':
             existing.referenceToLCIAMethodDataSet?.['@version'] || methodMeta?.version || '',
           'common:shortDescription':
-            existing.referenceToLCIAMethodDataSet?.['common:shortDescription'] ||
-            (shortDescription as any),
+            existing.referenceToLCIAMethodDataSet?.['common:shortDescription'] || shortDescription,
         },
       };
       return;
@@ -209,7 +203,7 @@ const buildMergedLciaRows = (
         '@type': 'lCIA method data set',
         '@uri': `../lciamethods/${methodId}.xml`,
         '@version': methodMeta?.version || '',
-        'common:shortDescription': shortDescription as any,
+        'common:shortDescription': shortDescription,
       },
       meanAmount: solverRow.value,
       referenceQuantityDesc: unitDesc,

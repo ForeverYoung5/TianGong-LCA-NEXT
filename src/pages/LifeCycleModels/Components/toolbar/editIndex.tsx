@@ -556,6 +556,10 @@ const ToolbarEdit: FC<Props> = ({
     const nodeWidth = ioPortSelectorNode.size.width;
     const nodeHeight = 60 + thisItems.length * 20;
 
+    if (!ioPortSelectorNode.id) {
+      return;
+    }
+
     updateNode(ioPortSelectorNode.id, { ports: thisPorts });
     updateNode(ioPortSelectorNode.id, { width: nodeWidth, height: nodeHeight });
   };
@@ -867,6 +871,9 @@ const ToolbarEdit: FC<Props> = ({
           const savedEdges = (result?.data?.[0]?.json_tg?.xflow?.edges ??
             []) as LifeCycleModelGraphEdge[];
           savedEdges.forEach((edge: LifeCycleModelGraphEdge) => {
+            if (!edge.id) {
+              return;
+            }
             const label = getEdgeLabel(
               token,
               edge?.data?.connection?.unbalancedAmount as number,
@@ -912,6 +919,9 @@ const ToolbarEdit: FC<Props> = ({
           const savedEdges = (result?.data?.[0]?.json_tg?.xflow?.edges ??
             []) as LifeCycleModelGraphEdge[];
           savedEdges.forEach((edge: LifeCycleModelGraphEdge) => {
+            if (!edge.id) {
+              return;
+            }
             const label = getEdgeLabel(
               token,
               edge?.data?.connection?.unbalancedAmount as number,
@@ -1006,9 +1016,11 @@ const ToolbarEdit: FC<Props> = ({
     if (currentEdge) {
       if (currentEdge.id === evt.edge.id) return;
 
-      updateEdge(currentEdge.id, {
-        selected: false,
-      });
+      if (currentEdge.id) {
+        updateEdge(currentEdge.id, {
+          selected: false,
+        });
+      }
     }
 
     updateEdge(evt.edge.id, {
@@ -1020,26 +1032,27 @@ const ToolbarEdit: FC<Props> = ({
     const node = evt.node;
     const nodeWidth = node.getSize().width;
     const label = genProcessName(node?.data?.label, lang);
-    const newItems = node?.getPorts()?.map((item: LifeCycleModelPortItem) => {
-      const itemText = getLangText(item?.data?.textLang, lang);
+    const newItems = node?.getPorts()?.map((item) => {
+      const portItem = item as LifeCycleModelPortItem;
+      const itemText = getLangText(portItem?.data?.textLang, lang);
       const itemTextWithAllocation = getPortLabelWithAllocation(
         itemText ?? '',
-        item?.data?.allocations,
-        item?.group === 'groupOutput' ? 'OUTPUT' : 'INPUT',
+        portItem?.data?.allocations,
+        portItem?.group === 'groupOutput' ? 'OUTPUT' : 'INPUT',
       );
       return {
-        ...item,
+        ...portItem,
         attrs: {
           text: {
-            ...item?.attrs?.text,
+            ...portItem?.attrs?.text,
             text: `${genPortLabel(itemTextWithAllocation ?? '', lang, nodeWidth)}`,
             cursor: 'pointer',
             fill: getPortTextColor(
-              item?.data?.quantitativeReference,
-              item?.data?.allocations,
+              portItem?.data?.quantitativeReference,
+              portItem?.data?.allocations,
               token,
             ),
-            'font-weight': getPortTextStyle(item?.data?.quantitativeReference),
+            'font-weight': getPortTextStyle(portItem?.data?.quantitativeReference),
           },
         },
       };
@@ -1092,7 +1105,7 @@ const ToolbarEdit: FC<Props> = ({
 
           let matchedPort = null;
           if (clickedPortId) {
-            const ports: { id: string; data?: { flowVersion?: string } }[] = node.getPorts();
+            const ports = node.getPorts();
             matchedPort = ports.find((port) => port.id === clickedPortId);
 
             if (matchedPort) {

@@ -1,27 +1,13 @@
 import { Graph } from '@antv/x6';
+import type { EventArgs as GraphEventArgs } from '@antv/x6/lib/graph/events';
 import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
-
-interface GraphContextValue {
-  graph: Graph | null;
-  setGraph: (graph: Graph | null) => void;
-  nodes: any[];
-  edges: any[];
-  setNodes: (nodes: any[]) => void;
-  setEdges: (edges: any[]) => void;
-  addNodes: (nodes: any[]) => void;
-  updateNode: (nodeId: string, data: any) => void;
-  removeNodes: (nodeIds: string[]) => void;
-  updateEdge: (edgeId: string, data: any) => void;
-  removeEdges: (edgeIds: string[]) => void;
-  initData: (data: { nodes: any[]; edges: any[] }) => void;
-  syncGraphData: () => void;
-}
 
 export interface GraphNode {
   id?: string;
   data?: any;
   tools?: any;
   ports?: any;
+  attrs?: any;
   selected?: boolean;
   size?: { width: number; height: number };
   width?: number;
@@ -42,26 +28,42 @@ export interface GraphEdge {
   [key: string]: any;
 }
 
+interface GraphContextValue {
+  graph: Graph | null;
+  setGraph: (graph: Graph | null) => void;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  setNodes: (nodes: GraphNode[]) => void;
+  setEdges: (edges: GraphEdge[]) => void;
+  addNodes: (nodes: GraphNode[]) => void;
+  updateNode: (nodeId: string, data: any) => void;
+  removeNodes: (nodeIds: string[]) => void;
+  updateEdge: (edgeId: string, data: any) => void;
+  removeEdges: (edgeIds: string[]) => void;
+  initData: (data: { nodes: GraphNode[]; edges: GraphEdge[] }) => void;
+  syncGraphData: () => void;
+}
+
 const GraphContext = createContext<GraphContextValue | null>(null);
 
 export const GraphProvider = ({ children }: { children: ReactNode }) => {
   const graphRef = useRef<Graph | null>(null);
-  const [nodes, setNodesState] = useState<any[]>([]);
-  const [edges, setEdgesState] = useState<any[]>([]);
+  const [nodes, setNodesState] = useState<GraphNode[]>([]);
+  const [edges, setEdgesState] = useState<GraphEdge[]>([]);
 
   const setGraph = (graph: Graph | null) => {
     graphRef.current = graph;
   };
 
-  const setNodes = (newNodes: any[]) => {
+  const setNodes = (newNodes: GraphNode[]) => {
     setNodesState(newNodes);
   };
 
-  const setEdges = (newEdges: any[]) => {
+  const setEdges = (newEdges: GraphEdge[]) => {
     setEdgesState(newEdges);
   };
 
-  const addNodes = (nodesToAdd: any[]) => {
+  const addNodes = (nodesToAdd: GraphNode[]) => {
     if (graphRef.current) {
       nodesToAdd.forEach((node) => {
         graphRef.current?.addNode(node);
@@ -140,7 +142,7 @@ export const GraphProvider = ({ children }: { children: ReactNode }) => {
           graphRef.current?.removeNode(cell);
         }
       });
-      setNodesState((prev) => prev.filter((n) => !nodeIds.includes(n.id)));
+      setNodesState((prev) => prev.filter((node) => !node.id || !nodeIds.includes(node.id)));
     }
   };
 
@@ -213,11 +215,11 @@ export const GraphProvider = ({ children }: { children: ReactNode }) => {
           graphRef.current?.removeEdge(cell);
         }
       });
-      setEdgesState((prev) => prev.filter((e) => !edgeIds.includes(e.id)));
+      setEdgesState((prev) => prev.filter((edge) => !edge.id || !edgeIds.includes(edge.id)));
     }
   };
 
-  const initData = (data: { nodes: any[]; edges: any[] }) => {
+  const initData = (data: { nodes: GraphNode[]; edges: GraphEdge[] }) => {
     if (graphRef.current) {
       graphRef.current.clearCells();
       if (data.nodes && data.nodes.length > 0) {
@@ -234,8 +236,8 @@ export const GraphProvider = ({ children }: { children: ReactNode }) => {
   // 同步图中的实际数据到状态
   const syncGraphData = () => {
     if (graphRef.current) {
-      const graphNodes = graphRef.current.getNodes().map((node) => node.toJSON());
-      const graphEdges = graphRef.current.getEdges().map((edge) => edge.toJSON());
+      const graphNodes = graphRef.current.getNodes().map((node) => node.toJSON() as GraphNode);
+      const graphEdges = graphRef.current.getEdges().map((edge) => edge.toJSON() as GraphEdge);
       setNodesState(graphNodes);
       setEdgesState(graphEdges);
     }
@@ -260,7 +262,7 @@ export const GraphProvider = ({ children }: { children: ReactNode }) => {
   return <GraphContext.Provider value={value}>{children}</GraphContext.Provider>;
 };
 
-export const useGraphStore = (selector: (state: GraphContextValue) => any) => {
+export const useGraphStore = <T,>(selector: (state: GraphContextValue) => T): T => {
   const context = useContext(GraphContext);
   if (!context) {
     throw new Error('useGraphStore must be used within GraphProvider');
@@ -276,7 +278,10 @@ export const useGraphInstance = () => {
   return context.graph;
 };
 
-export const useGraphEvent = (eventName: string, handler: (evt: any) => void) => {
+export const useGraphEvent = <K extends keyof GraphEventArgs>(
+  eventName: K,
+  handler: (evt: GraphEventArgs[K]) => void,
+) => {
   const graph = useGraphInstance();
 
   useEffect(() => {

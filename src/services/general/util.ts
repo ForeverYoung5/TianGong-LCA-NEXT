@@ -866,7 +866,7 @@ export function listToJson(list: any) {
   return {};
 }
 
-export function toAmountNumber(amount: string) {
+export function toAmountNumber(amount: string | number | null) {
   let thisAmount = Number(amount);
   if (isNaN(thisAmount)) {
     return 0;

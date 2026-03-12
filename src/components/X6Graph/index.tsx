@@ -5,38 +5,52 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 import { Transform } from '@antv/x6-plugin-transform';
 import { useEffect, useRef } from 'react';
 
+type X6NamedOption = {
+  name: string;
+  args?: Record<string, unknown>;
+};
+
+type X6SelectionOptions = {
+  enabled?: boolean;
+  multiple?: boolean;
+  rubberband?: boolean;
+  movable?: boolean;
+  showNodeSelectionBox?: boolean;
+  showEdgeSelectionBox?: boolean;
+};
+
+type X6ConnectionOptions = {
+  snap?: boolean;
+  allowBlank?: boolean;
+  allowLoop?: boolean;
+  allowMulti?: 'withPort' | boolean;
+  allowNode?: boolean;
+  allowEdge?: boolean;
+  router?: X6NamedOption;
+  connector?: X6NamedOption;
+};
+
+type X6GridOptions = {
+  type?: 'dot' | 'fixedDot' | 'mesh' | 'doubleMesh';
+  size?: number;
+  color?: string;
+  thickness?: number;
+  visible?: boolean;
+};
+
+type X6TransformOptions = {
+  resizing?: boolean;
+  rotating?: boolean;
+};
+
 interface X6GraphProps {
   zoomable?: boolean;
   pannable?: boolean;
   minScale?: number;
-  selectOptions?: any;
-  connectionOptions?: {
-    snap?: boolean;
-    allowBlank?: boolean;
-    allowLoop?: boolean;
-    allowMulti?: string | boolean;
-    allowNode?: boolean;
-    allowEdge?: boolean;
-    router?: {
-      name: string;
-      args?: any;
-    };
-    connector?: {
-      name: string;
-      args?: any;
-    };
-  };
-  gridOptions?: {
-    type?: string;
-    size?: number;
-    color?: string;
-    thickness?: number;
-    visible?: boolean;
-  };
-  transformOptions?: {
-    resizing?: boolean;
-    rotating?: boolean;
-  };
+  selectOptions?: X6SelectionOptions;
+  connectionOptions?: X6ConnectionOptions;
+  gridOptions?: X6GridOptions;
+  transformOptions?: X6TransformOptions;
 }
 
 const X6GraphComponent = ({
@@ -83,7 +97,7 @@ const X6GraphComponent = ({
           ? {
               size: gridOptions?.size ?? 10,
               visible: true,
-              type: (gridOptions?.type as any) ?? 'dot',
+              type: gridOptions?.type ?? 'dot',
               args: {
                 color: gridOptions?.color ?? '#595959',
                 thickness: gridOptions?.thickness ?? 1,
