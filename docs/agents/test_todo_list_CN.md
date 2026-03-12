@@ -10,33 +10,40 @@
 - 运行聚焦 Jest 套件，
 - `npm run lint` 必须通过，
 - 流程预期变化时同步更新文档。
+- 当测试工作流、覆盖率基线或 backlog 状态变化时，必须同步 `docs/agents/ai-testing-guide.md` 和本文件；若长期策略背景也变化，还要在同一 diff 中同步 `docs/agents/test_improvement_plan.md` 及 `_CN` 镜像。
 
-## 基线快照（2026年2月26日）
+## 基线快照（2026年3月12日）
 
-最新全量覆盖率运行（`npm run test:coverage`）：
+最新已验证全量覆盖率运行（`NODE_OPTIONS=--max-old-space-size=8192 npm run test:coverage`）：
 
-- Test suites：156 passed
-- Tests：1469 passed
+- Test suites：196 passed
+- Tests：1718 passed
 - 覆盖率：
-  - Statements: 63.60% (~10850/17059)
-  - Branches: 50.01% (4823/9645)
-  - Functions: 52.63% (1966/3735)
-  - Lines: 63.78% (10367/16253)
+  - Statements: 72.79% (13069/17954)
+  - Branches: 58.11% (6104/10504)
+  - Functions: 63.29% (2457/3882)
+  - Lines: 73.02% (12511/17133)
+- 相比上一版已记录基线的增量：
+  - Test suites：+35
+  - Tests：+202
+  - Statements：+9.91
+  - Branches：+10.32
+  - Functions：+11.00
+  - Lines：+9.97
 - 当前全局 branch 门槛：50%
-- 门禁状态：**已通过**（余量很小，+0.01%）
+- 门禁状态：**已通过**（高于门槛 8.11 个百分点）
 
 ## 缺口评估
 
-1. branch 门禁已恢复，但余量非常小（50.01%），轻微回归就可能导致 CI 失败。
-2. 多个高分支页面文件仍是低覆盖或零分支覆盖。
-3. `src/pages/Review/**` 仍存在大量 zero-line 模块，回归风险依旧较高。
-4. 本轮 service 热点已明显改善： `src/services/processes/api.ts` 87.64%（241/275）、`src/services/unitgroups/api.ts` 82.96%（112/135）、`src/services/auth/api.ts` 96.00%（24/25）。
-5. `src/services/general/api.ts` branch 覆盖率已提升到 72.95%（143/196），不再是门禁阻塞项。
-6. `src/services/lciaMethods/util.ts`（94.91%）与 `src/services/reviews/api.ts`（67.45%）保持稳定。
+1. branch 门禁恢复已经完成；当前主要问题不再是阈值拦截，而是页面层工作流分支缺口集中。
+2. 当前最大的分支缺口主要集中在 `src/pages/LifeCycleModels/Components/toolbar/editIndex.tsx`、`src/pages/Review/Components/reviewProcess/tabsDetail.tsx`、`src/pages/Processes/Components/edit.tsx`、`src/pages/Utils/review.tsx`、`src/pages/Review/Components/ReviewProgress.tsx`。
+3. `src/pages/Review/**`、lifecycle model 编辑流、process 编辑/查看流仍是最高回归风险的 UI 区域。
+4. service 层整体已经比较健康；剩余最值得专门推进的 service 热点是 `src/services/lifeCycleModels/util_calculate.ts`。
+5. Contacts/Sources 引用选择器的 form+drawer 工作流，以及 lifecycle model 的 view toolbar 已具备足够覆盖，可以从“立即阻塞项”列表中移出。
 
 ## 优先级待办
 
-### P0 – 先恢复覆盖率门禁（必须先做）
+### P0 – 恢复 Branch Coverage 门禁（已完成）
 
 - [x] 为 `src/services/reviews/api.ts` 增加分支导向测试（最新 branch 67.45%）。
   - 已完成：在 `tests/unit/services/reviews/api.test.ts` 覆盖 review member/admin 列表分支、reject/process 过滤、notify count 过滤与 lifecycle subtable batch 分支。
@@ -50,45 +57,55 @@
   - 已完成：在 `tests/unit/services/unitgroups/api.test.ts` 覆盖 dataSource 过滤、rpc/edge 错误分支、中英文映射 fallback/catch 分支与 reference 查找 fallback 分支。
 - [x] 为 `src/services/auth/api.ts` 增加分支导向测试（最新 branch 96.00%）。
   - 已完成：在 `tests/unit/services/auth/api.test.ts` 覆盖空凭证 fallback、reauthenticate guest fallback 与 fresh metadata 获取分支。
-- [ ] 为以下高分支但零 branch 的页面模块补聚焦测试（用于扩大 50% 以上安全余量）：
-  - `src/pages/Contacts/Components/select/form.tsx` (BRF 84)
-  - `src/pages/Flows/Components/edit.tsx` (BRF 85)
-  - `src/pages/Flows/Components/select/form.tsx` (BRF 62)
+- [x] 为 `src/pages/Utils/index.tsx` 补聚焦测试（小型 helper 分支文件，低成本提高安全余量）。
+  - 已完成：新增 `tests/unit/pages/Utils/index.test.tsx`；该文件现为 100% statements / 100% branches / 100% functions / 100% lines。
+- [x] 将 `src/pages/Utils/updateReference.tsx` 作为相邻的低风险 utility 分支目标一并补测。
+  - 已完成：新增 `tests/unit/pages/Utils/updateReference.test.ts`；该文件现为 99.18% statements / 83.33% branches / 100% functions / 100% lines。
+- [x] 为 `src/pages/Contacts/Components/select/form.tsx` 补聚焦测试 (BRF 84)。
+  - 已完成：新增 `tests/unit/pages/Contacts/Components/select/form.test.tsx`；已覆盖嵌套 clear/update/ref-check 分支。
+- [x] 为 `src/pages/Flows/Components/edit.tsx` 补聚焦测试 (BRF 85)。
+  - 已完成：新增 `tests/unit/pages/Flows/Components/edit.test.tsx`；已覆盖 edit、refs 与 reject-state 路径。
+- [x] 为 `src/pages/Flows/Components/select/form.tsx` 补聚焦测试 (BRF 62)。
+  - 已完成：新增 `tests/unit/pages/Flows/Components/select/form.test.tsx`；已覆盖 select/reselect/update/clear 分支。
+- [x] 为 `src/pages/Sources/Components/select/form.tsx` 与 `src/pages/Sources/Components/select/drawer.tsx` 补聚焦测试。
+  - 已完成：新增 `tests/unit/pages/Sources/Components/select/form.test.tsx` 与 `tests/unit/pages/Sources/Components/select/drawer.test.tsx`；已覆盖 default source、reviewReport tab 限制、search、nested clear 等流程。
+- [x] 扩展 lifecycle model 只读 toolbar 覆盖（`src/pages/LifeCycleModels/Components/toolbar/viewInfo.tsx`、`src/pages/LifeCycleModels/Components/toolbar/viewIndex.tsx`）。
+  - 已完成：在 `tests/unit/pages/LifeCycleModels/Components/toolbar/viewInfo.test.tsx` 与 `tests/unit/pages/LifeCycleModels/Components/toolbar/viewIndex.test.tsx` 中覆盖 view-state fallback、tab 切换、close 流程与 selection handler。
 
 P0 完成定义：
 
-- global branches >= 50%（当前 50.01%）
+- 已达成：global branches 恢复到 50% 以上，并具备可量化安全余量（当前 58.11%）
 - `npm run lint` 通过
 - 改动模块的聚焦套件通过
 
-### P1 – 高风险工作流加固
+### P1 – 当前页面/工作流热点
 
-- [ ] 优先覆盖 `src/pages/Review/Components/**` 中 zero-line 模块：
-  - `AddMemberModal.tsx`
-  - `Compliance/view.tsx`
-  - `Exchange/view.tsx`
-  - `reviewLifeCycleModels/Components/toolbar/*`
-- [ ] 补 lifecycle model 只读/查看工具条回归测试：
-  - `src/pages/LifeCycleModels/Components/toolbar/viewIndex.tsx`
-  - `src/pages/LifeCycleModels/Components/toolbar/viewInfo.tsx`
-  - `src/pages/LifeCycleModels/Components/toolbar/viewTargetAmount.tsx`
-- [ ] 为当前未覆盖但用户可见页面补最小烟雾测试：
-  - `src/pages/Admin.tsx`
-  - `src/pages/404.tsx`
+- [ ] 为 `src/pages/LifeCycleModels/Components/toolbar/editIndex.tsx` 补聚焦测试（当前仓库中最大的分支缺口；branch 14.36%）。
+- [ ] 为 `src/pages/Review/Components/reviewProcess/tabsDetail.tsx` 补聚焦测试（当前 branch/line 均为 0%）。
+- [ ] 扩展 `src/pages/Processes/Components/edit.tsx` 与 `src/pages/Processes/Components/view.tsx` 的测试。
+- [ ] 扩展 `src/pages/Utils/review.tsx` 的递归/引用相关分支覆盖。
+- [ ] 为 `src/pages/Review/Components/ReviewProgress.tsx` 补聚焦测试。
+- [ ] 为 `src/pages/Unitgroups/Components/select/form.tsx`、`src/pages/Unitgroups/Components/select/formMini.tsx`、`src/pages/Unitgroups/Components/edit.tsx` 补聚焦测试。
+- [ ] 为 `src/pages/Processes/Components/Exchange/view.tsx` 补聚焦测试。
 
 P1 完成定义：
 
-- 上述关键 review/lifecycle UI 模块不再是 zero-line
-- branch 趋势在版本间持续上升
+- 上述高风险工作流页面不再是 zero-line / near-zero-branch
+- 页面层 top 5 branch-miss 文件在版本间持续下降
 
-### P2 – 测试工程质量提升
+### P2 – Service / Utility 热点
+
+- [ ] 扩展 `src/services/lifeCycleModels/util_calculate.ts` 的分支覆盖（当前 branch 64.01%；是剩余最大的 service 热点）。
+- [ ] 在页面热点开始下降后，继续补 lifecycle/reference 递归 helper 的分支缺口。
+
+### P3 – 测试工程质量提升
 
 - [ ] 新增测试统一复用共享 helper（`tests/helpers/mockBuilders.ts`、`testUtils.tsx`、`testData.ts`）。
 - [ ] 将“仅 console 输出验证”的噪音测试，重构为行为断言优先。
 - [ ] 新功能 PR 最低要求：
   - service 分支逻辑对应 unit test，
   - UI 编排变更至少一条 integration workflow。
-- [ ] 每完成一项，及时更新本文件及英文镜像状态。
+- [ ] 每完成一项，及时更新本文件及英文镜像状态；若测试策略背景变化，再同步 `docs/agents/test_improvement_plan.md` 与 `docs/agents/ai-testing-guide.md`。
 
 ## 单项执行流程（每个任务）
 
@@ -105,16 +122,17 @@ npm run test:ci -- <pattern> --runInBand --testTimeout=20000 --no-coverage
 npm run lint
 ```
 
-4. 每完成一批 P0 任务后，运行全量覆盖率：
+4. 每完成一批高优先级任务后，运行全量覆盖率：
 
 ```bash
-npm run test:coverage
+NODE_OPTIONS=--max-old-space-size=8192 npm run test:coverage
 ```
 
 5. 更新复选框状态并记录可量化增量。
+6. 若工作流、基线或 backlog 预期变化，同步更新 `docs/agents/ai-testing-guide.md`；若长期背景变化，再同步 `docs/agents/test_improvement_plan.md`。
 
 ## 备注
 
-- 未清空 P0 之前，不建议提高覆盖率阈值。
+- 刚恢复 50% 门禁后，不建议立刻提高阈值；应先把当前 58% branch 基线在页面热点上稳定下来。
 - 优先做“确定性高”的分支测试，不要先扩展大范围快照。
 - 待办必须可执行，避免“多写点测试”这类泛化项。

@@ -10,33 +10,40 @@ This backlog is aligned to `AGENTS.md` delivery rules:
 - run focused Jest suites,
 - ensure `npm run lint` passes,
 - keep docs in sync when workflow expectations change.
+- when testing workflow/baseline/backlog changes, sync `docs/agents/ai-testing-guide.md` and this file; if strategic context changes too, sync `docs/agents/test_improvement_plan.md` and `_CN` mirrors in the same diff.
 
-## Snapshot Baseline (February 26, 2026)
+## Snapshot Baseline (March 12, 2026)
 
-Latest full run (`npm run test:coverage`):
+Latest verified full run (`NODE_OPTIONS=--max-old-space-size=8192 npm run test:coverage`):
 
-- Test suites: 156 passed
-- Tests: 1469 passed
+- Test suites: 196 passed
+- Tests: 1718 passed
 - Coverage:
-  - Statements: 63.60% (~10850/17059)
-  - Branches: 50.01% (4823/9645)
-  - Functions: 52.63% (1966/3735)
-  - Lines: 63.78% (10367/16253)
+  - Statements: 72.79% (13069/17954)
+  - Branches: 58.11% (6104/10504)
+  - Functions: 63.29% (2457/3882)
+  - Lines: 73.02% (12511/17133)
+- Delta vs previous documented baseline:
+  - Test suites: +35
+  - Tests: +202
+  - Statements: +9.91
+  - Branches: +10.32
+  - Functions: +11.00
+  - Lines: +9.97
 - Enforced global branch threshold: 50%
-- Gate status: **PASS** (buffer is minimal, +0.01%)
+- Gate status: **PASS** (+8.11% buffer above threshold)
 
 ## Gap Assessment
 
-1. Branch gate is recovered but margin is very thin (50.01%), so regressions can quickly fail CI.
-2. Several high-branch page files still have low or zero branch coverage.
-3. `src/pages/Review/**` still has many zero-line files and remains a high regression-risk area.
-4. Service hotspots improved this cycle: `src/services/processes/api.ts` 87.64% (241/275), `src/services/unitgroups/api.ts` 82.96% (112/135), `src/services/auth/api.ts` 96.00% (24/25).
-5. `src/services/general/api.ts` branch coverage is now 72.95% (143/196), no longer a gate blocker.
-6. `src/services/lciaMethods/util.ts` (94.91%) and `src/services/reviews/api.ts` (67.45%) remain stable.
+1. Branch gate recovery is complete; the main problem is no longer threshold failure but concentrated page-level workflow debt.
+2. The biggest remaining branch gaps are now led by `src/pages/LifeCycleModels/Components/toolbar/editIndex.tsx`, `src/pages/Review/Components/reviewProcess/tabsDetail.tsx`, `src/pages/Processes/Components/edit.tsx`, `src/pages/Utils/review.tsx`, and `src/pages/Review/Components/ReviewProgress.tsx`.
+3. `src/pages/Review/**`, lifecycle-model editing, and process editing/view flows still represent the highest regression-risk UI area.
+4. Service-layer branch coverage is now broadly healthy; the main service hotspot that still deserves dedicated work is `src/services/lifeCycleModels/util_calculate.ts`.
+5. Contact/source reference selector form+drawer flows and lifecycle-model view toolbars are now covered enough to move out of the immediate blocker list.
 
 ## Priority Backlog
 
-### P0 – Recover Coverage Gate (must-do first)
+### P0 – Recover Branch Coverage Gate (completed)
 
 - [x] Add branch-focused tests for `src/services/reviews/api.ts` (latest branch 67.45%).
   - Completed: covered review member/admin table branches, rejected/process filters, notify count filters, and lifecycle subtable batch branches in `tests/unit/services/reviews/api.test.ts`.
@@ -50,45 +57,55 @@ Latest full run (`npm run test:coverage`):
   - Completed: covered datasource filters, rpc/edge error branches, zh/en mapping fallback and catch branches, and reference lookup fallbacks in `tests/unit/services/unitgroups/api.test.ts`.
 - [x] Add branch-focused tests for `src/services/auth/api.ts` (latest branch 96.00%).
   - Completed: covered empty credential fallbacks, reauthenticate guest fallback, and fresh metadata retrieval branches in `tests/unit/services/auth/api.test.ts`.
-- [ ] Add focused tests for zero-branch page modules with high branch count (to build safety buffer above 50%):
-  - `src/pages/Contacts/Components/select/form.tsx` (BRF 84)
-  - `src/pages/Flows/Components/edit.tsx` (BRF 85)
-  - `src/pages/Flows/Components/select/form.tsx` (BRF 62)
+- [x] Add focused tests for `src/pages/Utils/index.tsx` (small helper-branch file, low-cost buffer gain).
+  - Completed in `tests/unit/pages/Utils/index.test.tsx`; file coverage is now 100% statements / 100% branches / 100% functions / 100% lines.
+- [x] Add focused tests for `src/pages/Utils/updateReference.tsx` as an adjacent low-risk utility branch target.
+  - Completed in `tests/unit/pages/Utils/updateReference.test.ts`; file coverage is now 99.18% statements / 83.33% branches / 100% functions / 100% lines.
+- [x] Add focused tests for `src/pages/Contacts/Components/select/form.tsx` (BRF 84).
+  - Completed in `tests/unit/pages/Contacts/Components/select/form.test.tsx`; nested clear/update/ref-check branches are now covered.
+- [x] Add focused tests for `src/pages/Flows/Components/edit.tsx` (BRF 85).
+  - Completed in `tests/unit/pages/Flows/Components/edit.test.tsx`; edit, refs, and rejection-state paths are now covered.
+- [x] Add focused tests for `src/pages/Flows/Components/select/form.tsx` (BRF 62).
+  - Completed in `tests/unit/pages/Flows/Components/select/form.test.tsx`; select/reselect/update/clear branches are covered.
+- [x] Add focused tests for `src/pages/Sources/Components/select/form.tsx` and `src/pages/Sources/Components/select/drawer.tsx`.
+  - Completed in `tests/unit/pages/Sources/Components/select/form.test.tsx` and `tests/unit/pages/Sources/Components/select/drawer.test.tsx`; default-source, review-report tab restrictions, search, and nested clear flows are covered.
+- [x] Expand lifecycle-model view toolbar coverage (`src/pages/LifeCycleModels/Components/toolbar/viewInfo.tsx`, `src/pages/LifeCycleModels/Components/toolbar/viewIndex.tsx`).
+  - Completed in `tests/unit/pages/LifeCycleModels/Components/toolbar/viewInfo.test.tsx` and `tests/unit/pages/LifeCycleModels/Components/toolbar/viewIndex.test.tsx`; view-state fallback, tab switching, close flows, and selection handlers are covered.
 
 Definition of done for P0:
 
-- global branches >= 50% (currently 50.01%)
+- achieved: global branches are back above 50% with measurable safety buffer (current 58.11%)
 - `npm run lint` passes
 - focused suites for touched modules pass
 
-### P1 – High-Risk Workflow Hardening
+### P1 – Current Page/Workflow Hotspots
 
-- [ ] Cover zero-line review modules in `src/pages/Review/Components/**` first:
-  - `AddMemberModal.tsx`
-  - `Compliance/view.tsx`
-  - `Exchange/view.tsx`
-  - `reviewLifeCycleModels/Components/toolbar/*`
-- [ ] Add regression tests around lifecycle model view toolbars:
-  - `src/pages/LifeCycleModels/Components/toolbar/viewIndex.tsx`
-  - `src/pages/LifeCycleModels/Components/toolbar/viewInfo.tsx`
-  - `src/pages/LifeCycleModels/Components/toolbar/viewTargetAmount.tsx`
-- [ ] Add minimal smoke tests for currently uncovered but user-facing pages:
-  - `src/pages/Admin.tsx`
-  - `src/pages/404.tsx`
+- [ ] Add focused tests for `src/pages/LifeCycleModels/Components/toolbar/editIndex.tsx` (largest branch gap in the repo; current branch 14.36%).
+- [ ] Add focused tests for `src/pages/Review/Components/reviewProcess/tabsDetail.tsx` (current branch/line coverage 0%).
+- [ ] Expand tests for `src/pages/Processes/Components/edit.tsx` and `src/pages/Processes/Components/view.tsx`.
+- [ ] Expand tests for `src/pages/Utils/review.tsx` recursive/reference-heavy branch logic.
+- [ ] Add focused tests for `src/pages/Review/Components/ReviewProgress.tsx`.
+- [ ] Add focused tests for `src/pages/Unitgroups/Components/select/form.tsx`, `src/pages/Unitgroups/Components/select/formMini.tsx`, and `src/pages/Unitgroups/Components/edit.tsx`.
+- [ ] Add focused tests for `src/pages/Processes/Components/Exchange/view.tsx`.
 
 Definition of done for P1:
 
-- no zero-line coverage for critical review/lifecycle UI modules above
-- branch trend is increasing release-over-release
+- the highest-risk workflow pages above are no longer zero-line / near-zero-branch
+- the top five page-level branch-miss files trend down release-over-release
 
-### P2 – Test Engineering Quality Upgrades
+### P2 – Service/Utility Hotspots
+
+- [ ] Expand branch coverage for `src/services/lifeCycleModels/util_calculate.ts` (current branch 64.01%; largest remaining service hotspot).
+- [ ] Continue targeted branch closure in recursive lifecycle/reference helpers after page-level workflow hotspots start to shrink.
+
+### P3 – Test Engineering Quality Upgrades
 
 - [ ] Standardize new tests on shared helpers (`tests/helpers/mockBuilders.ts`, `testUtils.tsx`, `testData.ts`).
 - [ ] Remove or refactor noisy console-only assertions into behavior assertions where possible.
 - [ ] Ensure every new feature PR includes:
   - service-level unit tests for branch logic,
   - at least one integration workflow test when UI orchestration changes.
-- [ ] Keep this file and `_CN` mirror updated after each completed item.
+- [ ] Keep this file and `_CN` mirror updated after each completed item; when strategic testing context changes, sync `docs/agents/test_improvement_plan.md` and `docs/agents/ai-testing-guide.md` too.
 
 ## Execution Protocol (per task)
 
@@ -105,16 +122,17 @@ npm run test:ci -- <pattern> --runInBand --testTimeout=20000 --no-coverage
 npm run lint
 ```
 
-4. After each P0 batch, run full coverage:
+4. After each high-priority batch, run full coverage:
 
 ```bash
-npm run test:coverage
+NODE_OPTIONS=--max-old-space-size=8192 npm run test:coverage
 ```
 
 5. Update status checkboxes and note measurable deltas.
+6. If workflow/baseline/backlog expectations changed, sync `docs/agents/ai-testing-guide.md`; if strategic context changed, sync `docs/agents/test_improvement_plan.md` too.
 
 ## Notes
 
-- Do not raise coverage thresholds before clearing P0.
+- Do not raise coverage thresholds immediately after crossing 50%; first stabilize the current 58% branch baseline by reducing the biggest page-level hotspots.
 - Prefer deterministic tests over broad snapshot expansion.
 - Keep backlog actionable; avoid generic "add more tests" tasks.
