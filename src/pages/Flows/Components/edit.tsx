@@ -17,13 +17,12 @@ import {
   FlowPropertyData,
   FormFlowWithId,
 } from '@/services/flows/data';
-import { genFlowFromData, genFlowJsonOrdered } from '@/services/flows/util';
+import { genFlowFromData, genFlowJsonOrdered, validateFlowJson } from '@/services/flows/util';
 import { jsonToList } from '@/services/general/util';
 import type { SupabaseMutationResult } from '@/services/supabase/data';
 import styles from '@/style/custom.less';
 import { CloseOutlined, FormOutlined } from '@ant-design/icons';
 import { ActionType, ProForm, ProFormInstance } from '@ant-design/pro-components';
-import { createFlow as createTidasFlow } from '@tiangong-lca/tidas-sdk';
 import { Button, Drawer, Space, Spin, Tooltip, message } from 'antd';
 import type { FC } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -344,7 +343,13 @@ const FlowsEdit: FC<Props> = ({
       };
     });
 
-    const flowPropertiesList = jsonToList(fromData?.flowProperties?.flowProperty);
+    const flowPropertiesList = jsonToList(
+      fromData?.flowProperties?.flowProperty as unknown as
+        | FlowPropertyData
+        | FlowPropertyData[]
+        | null
+        | undefined,
+    );
     if (!flowPropertiesList || flowPropertiesList?.length === 0) {
       message.error(
         intl.formatMessage({
@@ -383,8 +388,7 @@ const FlowsEdit: FC<Props> = ({
       ...fieldsValue,
       flowProperties: fromData?.flowProperties,
     };
-    const tidasFlow = createTidasFlow(genFlowJsonOrdered(id, jsonData));
-    const validateResult = tidasFlow.validateEnhanced();
+    const validateResult = validateFlowJson(genFlowJsonOrdered(id, jsonData));
     const issues = validateResult.success ? [] : validateResult.error.issues;
     if (issues.length) {
       issues.forEach((err) => {

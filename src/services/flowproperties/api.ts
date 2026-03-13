@@ -7,11 +7,10 @@ import {
 } from '../general/util';
 
 import { supabase } from '@/services/supabase';
-import { createFlowProperty as createTidasFlowProperty } from '@tiangong-lca/tidas-sdk';
 import { SortOrder } from 'antd/lib/table/interface';
 import { getDataDetail, getTeamIdByUserId, normalizeLangPayloadForSave } from '../general/api';
 import { getCachedClassificationData } from '../ilcd/cache';
-import { genFlowpropertyJsonOrdered } from './util';
+import { genFlowpropertyJsonOrdered, validateFlowPropertyJson } from './util';
 export async function createFlowproperties(id: string, data: any) {
   const rawData = genFlowpropertyJsonOrdered(id, data);
   const normalizedResult = normalizeLangPayloadForSave
@@ -34,7 +33,7 @@ export async function createFlowproperties(id: string, data: any) {
       count: null,
     };
   }
-  const rule_verification = createTidasFlowProperty(newData).validateEnhanced().success;
+  const rule_verification = validateFlowPropertyJson(newData).success;
   // const teamId = await getTeamIdByUserId();
   const result = await supabase
     .from('flowproperties')
@@ -65,7 +64,7 @@ export async function updateFlowproperties(id: string, version: string, data: an
       count: null,
     };
   }
-  const rule_verification = createTidasFlowProperty(newData).validateEnhanced().success;
+  const rule_verification = validateFlowPropertyJson(newData).success;
 
   let result: any = {};
   const session = await supabase.auth.getSession();

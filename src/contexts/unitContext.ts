@@ -1,13 +1,30 @@
 import { createContext, useContext } from 'react';
 
-const UnitsContext: any = createContext(null);
+export type UnitContextUnit = {
+  id?: string;
+  [key: string]: unknown;
+};
 
-const useUnitsContext = () => {
+export type UnitsContextValue = {
+  units: unknown[];
+  setUnits: (...args: unknown[]) => void;
+  setTargetUnit: (...args: unknown[]) => void;
+};
+
+const defaultUnitsContextValue: UnitsContextValue = {
+  units: [],
+  setUnits: () => {},
+  setTargetUnit: () => {},
+};
+
+const UnitsContext = createContext<unknown>(null);
+
+const useUnitsContext = (): UnitsContextValue => {
   const context = useContext(UnitsContext);
   if (!context) {
-    return { units: [], setUnits: () => {}, setTargetUnit: () => {} };
+    return defaultUnitsContextValue;
   }
-  return context;
+  return context as UnitsContextValue;
 };
 
 export { UnitsContext, useUnitsContext };

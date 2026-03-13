@@ -556,6 +556,10 @@ const ToolbarEdit: FC<Props> = ({
     const nodeWidth = ioPortSelectorNode.size.width;
     const nodeHeight = 60 + thisItems.length * 20;
 
+    if (!ioPortSelectorNode.id) {
+      return;
+    }
+
     updateNode(ioPortSelectorNode.id, { ports: thisPorts });
     updateNode(ioPortSelectorNode.id, { width: nodeWidth, height: nodeHeight });
   };
@@ -797,7 +801,7 @@ const ToolbarEdit: FC<Props> = ({
         await removeNodes([node.id ?? '']);
         setNodeCount(nodeCount - 1);
         edges.forEach((e) => {
-          if (e?.labels?.length > 0) {
+          if ((e.labels?.length ?? 0) > 0) {
             updateEdge(e.id ?? '', { labels: [] });
           }
         });
@@ -807,7 +811,7 @@ const ToolbarEdit: FC<Props> = ({
       if (selectedEdges.length > 0) {
         await removeEdges(selectedEdges.map((e) => e.id ?? ''));
         edges.forEach((e) => {
-          if (e?.labels?.length > 0) {
+          if ((e.labels?.length ?? 0) > 0) {
             updateEdge(e.id ?? '', { labels: [] });
           }
         });
@@ -867,6 +871,9 @@ const ToolbarEdit: FC<Props> = ({
           const savedEdges = (result?.data?.[0]?.json_tg?.xflow?.edges ??
             []) as LifeCycleModelGraphEdge[];
           savedEdges.forEach((edge: LifeCycleModelGraphEdge) => {
+            if (!edge.id) {
+              return;
+            }
             const label = getEdgeLabel(
               token,
               edge?.data?.connection?.unbalancedAmount as number,
@@ -912,6 +919,9 @@ const ToolbarEdit: FC<Props> = ({
           const savedEdges = (result?.data?.[0]?.json_tg?.xflow?.edges ??
             []) as LifeCycleModelGraphEdge[];
           savedEdges.forEach((edge: LifeCycleModelGraphEdge) => {
+            if (!edge.id) {
+              return;
+            }
             const label = getEdgeLabel(
               token,
               edge?.data?.connection?.unbalancedAmount as number,
@@ -942,7 +952,7 @@ const ToolbarEdit: FC<Props> = ({
     const edge = evt.edge;
     updateEdge(edge.id, edgeTemplate);
     edges.forEach((e) => {
-      if (e?.labels?.length > 0) {
+      if ((e.labels?.length ?? 0) > 0) {
         updateEdge(e.id ?? '', { labels: [] });
       }
     });
@@ -1006,9 +1016,11 @@ const ToolbarEdit: FC<Props> = ({
     if (currentEdge) {
       if (currentEdge.id === evt.edge.id) return;
 
-      updateEdge(currentEdge.id, {
-        selected: false,
-      });
+      if (currentEdge.id) {
+        updateEdge(currentEdge.id, {
+          selected: false,
+        });
+      }
     }
 
     updateEdge(evt.edge.id, {
@@ -1020,26 +1032,27 @@ const ToolbarEdit: FC<Props> = ({
     const node = evt.node;
     const nodeWidth = node.getSize().width;
     const label = genProcessName(node?.data?.label, lang);
-    const newItems = node?.getPorts()?.map((item: LifeCycleModelPortItem) => {
-      const itemText = getLangText(item?.data?.textLang, lang);
+    const newItems = node?.getPorts()?.map((item) => {
+      const portItem = item as LifeCycleModelPortItem;
+      const itemText = getLangText(portItem?.data?.textLang, lang);
       const itemTextWithAllocation = getPortLabelWithAllocation(
         itemText ?? '',
-        item?.data?.allocations,
-        item?.group === 'groupOutput' ? 'OUTPUT' : 'INPUT',
+        portItem?.data?.allocations,
+        portItem?.group === 'groupOutput' ? 'OUTPUT' : 'INPUT',
       );
       return {
-        ...item,
+        ...portItem,
         attrs: {
           text: {
-            ...item?.attrs?.text,
+            ...portItem?.attrs?.text,
             text: `${genPortLabel(itemTextWithAllocation ?? '', lang, nodeWidth)}`,
             cursor: 'pointer',
             fill: getPortTextColor(
-              item?.data?.quantitativeReference,
-              item?.data?.allocations,
+              portItem?.data?.quantitativeReference,
+              portItem?.data?.allocations,
               token,
             ),
-            'font-weight': getPortTextStyle(item?.data?.quantitativeReference),
+            'font-weight': getPortTextStyle(portItem?.data?.quantitativeReference),
           },
         },
       };
@@ -1092,7 +1105,7 @@ const ToolbarEdit: FC<Props> = ({
 
           let matchedPort = null;
           if (clickedPortId) {
-            const ports: { id: string; data?: { flowVersion?: string } }[] = node.getPorts();
+            const ports = node.getPorts();
             matchedPort = ports.find((port) => port.id === clickedPortId);
 
             if (matchedPort) {
@@ -1433,9 +1446,13 @@ const ToolbarEdit: FC<Props> = ({
 
   useEffect(() => {
     nodes.forEach((node) => {
+      const nodeData = node.data;
+      if (!nodeData?.id || !nodeData?.version) {
+        return;
+      }
       const isErrNode = problemNodes.find(
         (item: refDataType) =>
-          item['@refObjectId'] === node.data.id && item['@version'] === node.data.version,
+          item['@refObjectId'] === nodeData.id && item['@version'] === nodeData.version,
       );
       if (isErrNode) {
         updateNode(node.id ?? '', {
@@ -1464,7 +1481,8 @@ const ToolbarEdit: FC<Props> = ({
   const handleUpdateNode = async (ref: refDataType) => {
     setSpinning(true);
     const selectedNode = nodes.find((node) => node.selected);
-    if (selectedNode) {
+    const selectedNodeData = selectedNode?.data;
+    if (selectedNodeData?.id && selectedNodeData?.version) {
       const { data: procressDetail } = await getRefData(
         ref['@refObjectId'],
         ref['@version'],
@@ -1483,8 +1501,8 @@ const ToolbarEdit: FC<Props> = ({
         [],
         new ReffPath(
           {
-            '@refObjectId': selectedNode.data.id,
-            '@version': selectedNode.data.version,
+            '@refObjectId': selectedNodeData.id,
+            '@version': selectedNodeData.version,
             '@type': 'process data set',
           },
           procressDetail?.ruleVerification,
@@ -1496,8 +1514,8 @@ const ToolbarEdit: FC<Props> = ({
         setProblemNodes(
           problemNodes.filter(
             (item: refDataType) =>
-              item['@refObjectId'] !== selectedNode.data.id ||
-              item['@version'] !== selectedNode.data.version,
+              item['@refObjectId'] !== selectedNodeData.id ||
+              item['@version'] !== selectedNodeData.version,
           ),
         );
       }

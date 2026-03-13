@@ -3,7 +3,6 @@ import { getCurrentUser } from '@/services/auth';
 import { contributeSource, getRefData, normalizeLangPayloadForSave } from '@/services/general/api';
 import { supabase } from '@/services/supabase';
 import { FunctionRegion } from '@supabase/supabase-js';
-import { createLifeCycleModel as createTidasLifeCycleModel } from '@tiangong-lca/tidas-sdk';
 import { SortOrder } from 'antd/lib/table/interface';
 import { getTeamIdByUserId } from '../general/api';
 import type { LangTextValue, ReferenceItem } from '../general/data';
@@ -22,7 +21,11 @@ import {
   validateProcessesByIdAndVersion,
 } from '../processes/api';
 import { genProcessName } from '../processes/util';
-import { genLifeCycleModelJsonOrdered, genReferenceToResultingProcess } from './util';
+import {
+  genLifeCycleModelJsonOrdered,
+  genReferenceToResultingProcess,
+  validateLifeCycleModelJson,
+} from './util';
 import { genLifeCycleModelProcesses } from './util_calculate';
 
 type RefProcess = {
@@ -192,7 +195,7 @@ export async function createLifeCycleModel(data: any) {
     };
   });
 
-  const validateResult = createTidasLifeCycleModel(newLifeCycleModelJsonOrdered).validateEnhanced();
+  const validateResult = validateLifeCycleModelJson(newLifeCycleModelJsonOrdered);
   let issues = [];
   if (!validateResult.success) {
     issues = validateResult.error.issues.filter(
@@ -499,9 +502,7 @@ export async function updateLifeCycleModel(data: any) {
       };
     });
 
-    const validateResult = createTidasLifeCycleModel(
-      newLifeCycleModelJsonOrdered,
-    ).validateEnhanced();
+    const validateResult = validateLifeCycleModelJson(newLifeCycleModelJsonOrdered);
     let issues = [];
     if (!validateResult.success) {
       issues = validateResult.error.issues.filter(

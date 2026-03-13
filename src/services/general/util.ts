@@ -127,6 +127,11 @@ export function removeEmptyObjects(obj: any) {
 
 export async function getUnitData(idType: string, data: any) {
   return new Promise((resolve) => {
+    if (!Array.isArray(data) || data.length === 0) {
+      resolve([]);
+      return;
+    }
+
     if (idType === 'flow') {
       const flowPropertiesParams = data?.map((item: any) => {
         return {
@@ -191,9 +196,8 @@ export async function getUnitData(idType: string, data: any) {
           });
         });
       });
-    }
-
-    if (idType === 'unitgroup') {
+      return;
+    } else if (idType === 'unitgroup') {
       const unitParams = data?.map((item: any) => {
         return {
           id: item?.refUnitGroupId,
@@ -214,8 +218,8 @@ export async function getUnitData(idType: string, data: any) {
         });
         resolve(data);
       });
-    }
-    if (idType === 'flowproperty') {
+      return;
+    } else if (idType === 'flowproperty') {
       const params = data?.map((item: any) => {
         return {
           id: item?.referenceToFlowPropertyDataSetId,
@@ -257,7 +261,10 @@ export async function getUnitData(idType: string, data: any) {
           resolve(data);
         });
       });
+      return;
     }
+
+    resolve(data);
   });
 }
 
@@ -866,7 +873,7 @@ export function listToJson(list: any) {
   return {};
 }
 
-export function toAmountNumber(amount: string) {
+export function toAmountNumber(amount: string | number | null) {
   let thisAmount = Number(amount);
   if (isNaN(thisAmount)) {
     return 0;

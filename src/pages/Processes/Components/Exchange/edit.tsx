@@ -295,7 +295,9 @@ const ProcessExchangeEdit: FC<Props> = ({
                   : []
               }
             >
-              <Input
+              <InputNumber
+                stringMode
+                style={{ width: '100%' }}
                 onClick={() => {
                   setUnitConvertVisible(true);
                   setUnitConvertName('meanAmount');
@@ -320,7 +322,9 @@ const ProcessExchangeEdit: FC<Props> = ({
                   : []
               }
             >
-              <Input
+              <InputNumber
+                stringMode
+                style={{ width: '100%' }}
                 onClick={() => {
                   setUnitConvertVisible(true);
                   setUnitConvertName('resultingAmount');

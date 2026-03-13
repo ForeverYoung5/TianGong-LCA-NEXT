@@ -7,11 +7,10 @@ import {
 } from '../general/util';
 
 import { supabase } from '@/services/supabase';
-import { createUnitGroup as createTidasUnitGroup } from '@tiangong-lca/tidas-sdk';
 import { SortOrder } from 'antd/lib/table/interface';
 import { getDataDetail, getTeamIdByUserId, normalizeLangPayloadForSave } from '../general/api';
 import { getCachedClassificationData } from '../ilcd/cache';
-import { genUnitGroupJsonOrdered } from './util';
+import { genUnitGroupJsonOrdered, validateUnitGroupJson } from './util';
 
 export async function createUnitGroup(id: string, data: any) {
   const rawData = genUnitGroupJsonOrdered(id, data);
@@ -35,7 +34,7 @@ export async function createUnitGroup(id: string, data: any) {
       count: null,
     };
   }
-  const rule_verification = createTidasUnitGroup(newData).validateEnhanced().success;
+  const rule_verification = validateUnitGroupJson(newData).success;
   // const teamId = await getTeamIdByUserId();
   const result = await supabase
     .from('unitgroups')
@@ -66,7 +65,7 @@ export async function updateUnitGroup(id: string, version: string, data: any) {
       count: null,
     };
   }
-  const rule_verification = createTidasUnitGroup(newData).validateEnhanced().success;
+  const rule_verification = validateUnitGroupJson(newData).success;
 
   let result: any = {};
   const session = await supabase.auth.getSession();

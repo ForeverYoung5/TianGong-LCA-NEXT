@@ -4,7 +4,6 @@ import { contributeSource, getRefData, normalizeLangPayloadForSave } from '@/ser
 import { getLifeCyclesByIdAndVersion } from '@/services/lifeCycleModels/api';
 import { supabase } from '@/services/supabase';
 import { FunctionRegion } from '@supabase/supabase-js';
-import { createProcess as createTidasProcess } from '@tiangong-lca/tidas-sdk';
 import { SortOrder } from 'antd/es/table/interface';
 import { getTeamIdByUserId } from '../general/api';
 import {
@@ -15,7 +14,7 @@ import {
 } from '../general/util';
 import { getCachedClassificationData, getCachedLocationData } from '../ilcd/cache';
 import type { ProcessDetailByVersionResponse } from './data';
-import { genProcessJsonOrdered, genProcessName } from './util';
+import { genProcessJsonOrdered, genProcessName, validateProcessJson } from './util';
 
 const selectStr4Table = `
     id,
@@ -108,7 +107,7 @@ export async function createProcess(id: string, data: any, modelId?: string) {
       count: null,
     };
   }
-  const validateResult = createTidasProcess(newData).validateEnhanced();
+  const validateResult = validateProcessJson(newData);
   let issues = [];
   if (!validateResult.success) {
     issues = validateResult.error.issues.filter(
@@ -146,7 +145,7 @@ export async function updateProcess(id: string, version: string, data: any, mode
       count: null,
     };
   }
-  const validateResult = createTidasProcess(newData).validateEnhanced();
+  const validateResult = validateProcessJson(newData);
   let issues = [];
   if (!validateResult.success) {
     issues = validateResult.error.issues.filter(
@@ -274,7 +273,7 @@ export async function getProcessTableAll(
   ]);
   const locationDataArr = locationRes || [];
   const locationMap = new Map(locationDataArr.map((l: any) => [l['@value'], l['#text']]));
-  const classificationData = classificationRes;
+  const classificationData = classificationRes ?? [];
 
   let data: any[] = result.data.map((i: any) => {
     try {
@@ -430,7 +429,7 @@ export async function getConnectableProcessesTable(
   ]);
   const locationDataArr = locationRes || [];
   const locationMap = new Map(locationDataArr.map((l: any) => [l['@value'], l['#text']]));
-  const classificationData = classificationRes;
+  const classificationData = classificationRes ?? [];
 
   let data: any[] = result.data.map((i: any) => {
     try {

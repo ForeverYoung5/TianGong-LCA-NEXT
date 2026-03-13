@@ -1,5 +1,9 @@
-import { FormFlow } from '@/services/flows/data';
-import { createFlow as createTidasFlow, Flow } from '@tiangong-lca/tidas-sdk';
+import { FlowPropertyData, FormFlow } from '@/services/flows/data';
+import {
+  createFlow as createTidasFlow,
+  createFlowFromJSON as createTidasFlowFromJSON,
+  Flow,
+} from '@tiangong-lca/tidas-sdk';
 import {
   classificationToJsonList,
   classificationToStringList,
@@ -19,7 +23,9 @@ type FlowPropertyItem = Flow['flowDataSet']['flowProperties']['flowProperty'] ex
   : never;
 
 export function genFlowJsonOrdered(id: string, data: any) {
-  let quantitativeReference = {};
+  let quantitativeReference: {
+    referenceToReferenceFlowProperty?: string;
+  } = {};
   const flowPropertySource = data?.flowProperties?.flowProperty;
   const flowPropertyList = Array.isArray(flowPropertySource)
     ? flowPropertySource
@@ -27,7 +33,7 @@ export function genFlowJsonOrdered(id: string, data: any) {
       ? [flowPropertySource]
       : [];
   const flowProperty =
-    flowPropertyList.map((item: any) => {
+    flowPropertyList.map((item: FlowPropertyData) => {
       if (item?.quantitativeReference) {
         quantitativeReference = {
           referenceToReferenceFlowProperty: item?.['@dataSetInternalID'],
@@ -309,6 +315,10 @@ export function genFlowJsonOrdered(id: string, data: any) {
       },
     },
   });
+}
+
+export function validateFlowJson(data: object) {
+  return createTidasFlowFromJSON(data).validateEnhanced();
 }
 
 export function genFlowFromData(data: any): FormFlow {

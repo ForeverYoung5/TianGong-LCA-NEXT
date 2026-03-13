@@ -96,11 +96,12 @@ jest.mock('antd', () => {
     <input data-testid={dataTestId} readOnly onClick={onClick} />
   );
 
-  const InputNumber = ({ onChange, value, 'data-testid': dataTestId }: any) => (
+  const InputNumber = ({ onChange, onClick, value, 'data-testid': dataTestId }: any) => (
     <input
       data-testid={dataTestId}
       type='number'
       value={value ?? ''}
+      onClick={onClick}
       onChange={(event) => onChange?.(Number(event.target.value))}
     />
   );

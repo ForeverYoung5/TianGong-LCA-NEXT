@@ -45,10 +45,13 @@ import type {
   LifeCycleModelToolbarEditInfoHandle,
   LifeCycleModelValidationIssue,
 } from '@/services/lifeCycleModels/data';
-import { genLifeCycleModelJsonOrdered } from '@/services/lifeCycleModels/util';
+import {
+  genLifeCycleModelJsonOrdered,
+  validateLifeCycleModelJson,
+} from '@/services/lifeCycleModels/util';
+import { genLifeCycleModelProcesses } from '@/services/lifeCycleModels/util_calculate';
 import { getProcessDetail } from '@/services/processes/api';
 import { getUserTeamId } from '@/services/roles/api';
-import { createLifeCycleModel as createTidasLifeCycleModel } from '@tiangong-lca/tidas-sdk';
 import { v4 } from 'uuid';
 
 export type ToolbarEditInfoHandle = LifeCycleModelToolbarEditInfoHandle<refDataType>;
@@ -266,13 +269,25 @@ const ToolbarEditInfo = forwardRef<ToolbarEditInfoHandle, Props>(
         setSpinning(false);
         return { checkResult: false, unReview };
       }
-      const tidasLifeCycleModel = createTidasLifeCycleModel(
-        genLifeCycleModelJsonOrdered(data.id ?? '', {
-          ...currentModelDetail.json.lifeCycleModelDataSet,
-          model: { ...currentModelDetail.json_tg?.xflow },
-        }),
-      );
-      const validateResult = tidasLifeCycleModel.validateEnhanced();
+      const xflow = currentModelDetail.json_tg?.xflow ?? { nodes: [], edges: [] };
+      const lifeCycleModelJsonOrdered = genLifeCycleModelJsonOrdered(data.id ?? '', {
+        ...currentModelDetail.json.lifeCycleModelDataSet,
+        model: { ...xflow },
+      });
+
+      const referenceToReferenceProcess =
+        lifeCycleModelJsonOrdered?.lifeCycleModelDataSet?.lifeCycleModelInformation
+          ?.quantitativeReference?.referenceToReferenceProcess;
+      if (referenceToReferenceProcess) {
+        await genLifeCycleModelProcesses(
+          data.id ?? '',
+          xflow.nodes ?? [],
+          lifeCycleModelJsonOrdered,
+          currentModelDetail.json_tg?.submodels ?? [],
+        );
+      }
+
+      const validateResult = validateLifeCycleModelJson(lifeCycleModelJsonOrdered);
       const issues: LifeCycleModelValidationIssue[] = validateResult.success
         ? []
         : validateResult.error.issues.filter(

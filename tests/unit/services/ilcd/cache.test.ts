@@ -138,7 +138,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
         get_values: ['all'],
       });
       expect(supabase.rpc).toHaveBeenCalledTimes(1);
-      expect(genClassZH).toHaveBeenCalledWith(mockData, undefined);
+      expect(genClassZH).toHaveBeenCalledWith(mockData, null);
       expect(result).toEqual(mockGenerated);
     });
 

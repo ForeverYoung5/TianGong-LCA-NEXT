@@ -24,7 +24,9 @@ describe('Contacts API Service', () => {
   const { getCachedClassificationData } = jest.requireMock('@/services/ilcd/cache');
   const { getLangText, jsonToList, genClassificationZH, classificationToString } =
     jest.requireMock('@/services/general/util');
-  const { genContactJsonOrdered } = jest.requireMock('@/services/contacts/util');
+  const { genContactJsonOrdered, validateContactJson } = jest.requireMock(
+    '@/services/contacts/util',
+  );
 
   let mockFrom: jest.Mock;
   let mockAuth: jest.Mock;
@@ -58,6 +60,7 @@ describe('Contacts API Service', () => {
         },
       },
     }));
+    validateContactJson.mockReturnValue({ success: true });
 
     getLangText.mockImplementation((value: any) => value?.[0]?.['#text'] || '');
     jsonToList.mockImplementation((value: any) => (Array.isArray(value) ? value : [value]));
@@ -119,6 +122,8 @@ describe('Contacts API Service', () => {
       mockInsert.mockReturnValue({
         select: mockSelect,
       });
+
+      validateContactJson.mockReturnValueOnce({ success: false });
 
       const result = await createContact('contact-123', {});
 

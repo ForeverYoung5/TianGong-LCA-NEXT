@@ -306,9 +306,19 @@ jest.mock('@/services/general/util', () => ({
 }));
 
 const mockGenLifeCycleModelJsonOrdered = jest.fn().mockReturnValue({});
+const mockValidateLifeCycleModelJson = jest
+  .fn()
+  .mockReturnValue({ success: true, error: { issues: [] } });
 jest.mock('@/services/lifeCycleModels/util', () => ({
   __esModule: true,
   genLifeCycleModelJsonOrdered: (...args: any[]) => mockGenLifeCycleModelJsonOrdered(...args),
+  validateLifeCycleModelJson: (...args: any[]) => mockValidateLifeCycleModelJson(...args),
+}));
+
+const mockGenLifeCycleModelProcesses = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/services/lifeCycleModels/util_calculate', () => ({
+  __esModule: true,
+  genLifeCycleModelProcesses: (...args: any[]) => mockGenLifeCycleModelProcesses(...args),
 }));
 
 jest.mock('uuid', () => ({
@@ -341,6 +351,11 @@ beforeEach(() => {
   mockGetProcessDetail.mockReset();
   mockGetUserTeamId.mockReset().mockResolvedValue('team-1');
   mockGenLifeCycleModelJsonOrdered.mockReset().mockReturnValue({});
+  mockValidateLifeCycleModelJson.mockReset().mockReturnValue({
+    success: true,
+    error: { issues: [] },
+  });
+  mockGenLifeCycleModelProcesses.mockReset().mockResolvedValue(undefined);
   mockUpdateReviewsAfterCheckData.mockReset().mockResolvedValue({});
   mockUpdateUnReviewToUnderReview.mockReset().mockResolvedValue({});
 });
@@ -479,6 +494,59 @@ describe('ToolbarEditInfo', () => {
 
     expect(mockAntdMessage.error).toHaveBeenCalledWith('Data check failed!');
     expect(result).toEqual({ checkResult: false, unReview: [] });
+  });
+
+  it('generates lifecycle model processes before validation when a reference process exists', async () => {
+    const ref = React.createRef<any>();
+    const orderedJson = {
+      lifeCycleModelDataSet: {
+        lifeCycleModelInformation: {
+          quantitativeReference: {
+            referenceToReferenceProcess: {
+              '@refObjectId': 'proc-1',
+            },
+          },
+        },
+      },
+    };
+
+    mockGetLifeCycleModelDetail.mockResolvedValue({
+      success: true,
+      data: {
+        id: 'model-1',
+        version: '1.0',
+        stateCode: 10,
+        teamId: 'team-1',
+        json_tg: {
+          xflow: { nodes: [{ id: 'node-1' }], edges: [] },
+          submodels: [{ id: 'submodel-1', type: 'secondary' }],
+        },
+        json: {
+          lifeCycleModelDataSet: {
+            lifeCycleModelInformation: { dataSetInformation: { name: {} } },
+          },
+        },
+        ruleVerification: [],
+      },
+    });
+    mockGenLifeCycleModelJsonOrdered.mockReturnValue(orderedJson);
+    mockGetProcessDetail.mockResolvedValue({ data: {} });
+    mockCheckReferences.mockResolvedValue({ findProblemNodes: () => [] });
+
+    render(<ToolbarEditInfo ref={ref} {...baseProps} />);
+
+    const nodes = [{ data: { quantitativeReference: '1', id: 'proc-1', version: '1.0' } }];
+    await act(async () => {
+      await ref.current?.handleCheckData('checkData', nodes, [{}]);
+    });
+
+    expect(mockGenLifeCycleModelProcesses).toHaveBeenCalledWith(
+      'model-1',
+      [{ id: 'node-1' }],
+      orderedJson,
+      [{ id: 'submodel-1', type: 'secondary' }],
+    );
+    expect(mockValidateLifeCycleModelJson).toHaveBeenCalledWith(orderedJson);
   });
 
   it('blocks data check when the lifecycle model itself is already under review', async () => {

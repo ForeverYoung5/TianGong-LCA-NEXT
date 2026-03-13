@@ -174,7 +174,7 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
       const result = await getILCDClassification('Source', 'en', ['all']);
 
       expect(result).toEqual({
-        data: null,
+        data: [],
         success: false,
       });
       expect(consoleErrorSpy).toHaveBeenCalled();
@@ -248,7 +248,7 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
       const result = await getILCDFlowCategorization('en', ['all']);
 
       expect(result).toEqual({
-        data: null,
+        data: [],
         success: false,
       });
       expect(consoleErrorSpy).toHaveBeenCalled();

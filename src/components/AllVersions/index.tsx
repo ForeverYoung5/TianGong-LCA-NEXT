@@ -14,11 +14,18 @@ import { Button, Card, Drawer, Tooltip } from 'antd';
 import type { FC, ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { FormattedMessage, useLocation } from 'umi';
+
+type VersionTableRow = {
+  id: string;
+  version: string;
+  [key: string]: unknown;
+};
+
 interface AllVersionsListProps {
   searchTableName: string;
   searchColume: string;
   id: string;
-  columns: ProColumns<any>[];
+  columns: ProColumns<VersionTableRow>[];
   lang: string;
   disabled?: boolean;
   addVersionComponent: ({ newVersion }: { newVersion: string }) => ReactElement;
@@ -37,7 +44,7 @@ const AllVersionsList: FC<AllVersionsListProps> = ({
   const [showAllVersionsModal, setShowAllVersionsModal] = useState(false);
   const location = useLocation();
   const dataSource = getDataSource(location.pathname);
-  const tableDataRef = useRef<any[]>([]);
+  const tableDataRef = useRef<VersionTableRow[]>([]);
 
   useEffect(() => {
     actionRef.current?.reload();
@@ -52,7 +59,7 @@ const AllVersionsList: FC<AllVersionsListProps> = ({
       ),
       dataIndex: 'option',
       search: false,
-      render: (_: any, row: any) => {
+      render: (_: unknown, row: VersionTableRow) => {
         switch (searchTableName) {
           case 'lifecyclemodels':
             return (
@@ -97,7 +104,7 @@ const AllVersionsList: FC<AllVersionsListProps> = ({
   ];
 
   const getNewVersion = (): string => {
-    const versions = tableDataRef.current.map((i: any) => i.version);
+    const versions = tableDataRef.current.map((item) => item.version);
     if (!versions || versions.length === 0) {
       return '00.00.000';
     }
@@ -168,7 +175,7 @@ const AllVersionsList: FC<AllVersionsListProps> = ({
         maskClosable={false}
       >
         <Card>
-          <ProTable<any, ListPagination>
+          <ProTable<VersionTableRow, ListPagination>
             rowKey='version'
             actionRef={actionRef}
             search={false}

@@ -346,11 +346,14 @@ describe('Process Utility Functions', () => {
       };
 
       const result = genProcessExchangeTableData(data, 'en');
+      const dataSourceReference = result[0]?.referencesToDataSource?.referenceToDataSource;
 
       expect(result[0].referencesToDataSource).toBeDefined();
-      expect(result[0].referencesToDataSource.referenceToDataSource['@refObjectId']).toBe(
-        'source-id-1',
-      );
+      expect(
+        Array.isArray(dataSourceReference)
+          ? dataSourceReference[0]?.['@refObjectId']
+          : dataSourceReference?.['@refObjectId'],
+      ).toBe('source-id-1');
     });
 
     it('should handle allocations', () => {
@@ -371,7 +374,7 @@ describe('Process Utility Functions', () => {
       const result = genProcessExchangeTableData(data, 'en');
 
       expect(result[0].allocations).toBeDefined();
-      expect(result[0].allocations.allocation?.['@allocatedFraction']).toBe('0.5');
+      expect(result[0]?.allocations?.allocation?.['@allocatedFraction']).toBe('0.5');
     });
   });
 

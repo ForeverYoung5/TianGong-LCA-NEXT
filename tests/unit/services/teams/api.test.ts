@@ -304,7 +304,7 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
   describe('editTeamMessage', () => {
     it('should update team with rank and is_public', async () => {
       const teamId = 'team-123';
-      const data = { title: 'Updated Team' };
+      const data = { title: [{ '@xml:lang': 'en', '#text': 'Updated Team' }] };
       const rank = 5;
       const isPublic = true;
       const mockFunctionResult = createMockEdgeFunctionResponse({ success: true });
@@ -329,7 +329,7 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
 
     it('should update team without rank', async () => {
       const teamId = 'team-123';
-      const data = { title: 'Updated Team' };
+      const data = { title: [{ '@xml:lang': 'en', '#text': 'Updated Team' }] };
       const isPublic = false;
       const mockFunctionResult = createMockEdgeFunctionResponse({ success: true });
 
@@ -350,13 +350,13 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
       expect(result).toEqual({ success: true });
     });
 
-    it('should return undefined when no session', async () => {
+    it('should return empty payload when no session', async () => {
       supabase.auth.getSession.mockResolvedValue({ data: { session: null } });
 
       const result = await editTeamMessage('team-123', {}, 1, true);
 
       expect(supabase.functions.invoke).not.toHaveBeenCalled();
-      expect(result).toBeUndefined();
+      expect(result).toEqual({});
     });
   });
 
@@ -378,13 +378,13 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
       expect(result).toEqual({ success: true });
     });
 
-    it('should return undefined when no session exists', async () => {
+    it('should return empty payload when no session exists', async () => {
       supabase.auth.getSession.mockResolvedValue({ data: { session: null } });
 
       const result = await updateTeamRank('team-123', 8);
 
       expect(supabase.functions.invoke).not.toHaveBeenCalled();
-      expect(result).toBeUndefined();
+      expect(result).toEqual({});
     });
   });
 
@@ -563,7 +563,7 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
   describe('addTeam', () => {
     it('should create new team', async () => {
       const teamId = 'team-123';
-      const data = { title: 'New Team' };
+      const data = { title: [{ '@xml:lang': 'en', '#text': 'New Team' }] };
       const rank = 1;
       const isPublic = true;
 
@@ -584,7 +584,7 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
 
     it('should return error on insert failure', async () => {
       const teamId = 'team-123';
-      const data = { title: 'New Team' };
+      const data = { title: [{ '@xml:lang': 'en', '#text': 'New Team' }] };
       const mockError = { message: 'Insert failed' };
 
       const builder = createQueryBuilder({ error: mockError });

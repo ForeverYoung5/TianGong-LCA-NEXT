@@ -15,11 +15,14 @@ import {
   UnitGroupFormState,
   UnitItem,
 } from '@/services/unitgroups/data';
-import { genUnitGroupFromData, genUnitGroupJsonOrdered } from '@/services/unitgroups/util';
+import {
+  genUnitGroupFromData,
+  genUnitGroupJsonOrdered,
+  validateUnitGroupJson,
+} from '@/services/unitgroups/util';
 import styles from '@/style/custom.less';
 import { CloseOutlined, FormOutlined } from '@ant-design/icons';
 import { ActionType, ProForm, ProFormInstance } from '@ant-design/pro-components';
-import { createUnitGroup as createTidasUnitGroup } from '@tiangong-lca/tidas-sdk';
 import { Button, Drawer, Space, Spin, Tooltip, message } from 'antd';
 import type { FC } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -326,8 +329,7 @@ const UnitGroupEdit: FC<Props> = ({
       const tabName = getErrRefTab(item, initData);
       if (tabName && !errTabNames.includes(tabName)) errTabNames.push(tabName);
     });
-    const tidasUnitGroup = createTidasUnitGroup(genUnitGroupJsonOrdered(id, fromData));
-    const validateResult = tidasUnitGroup.validateEnhanced();
+    const validateResult = validateUnitGroupJson(genUnitGroupJsonOrdered(id, fromData));
     const issues = validateResult.success ? [] : validateResult.error.issues;
     if (issues.length) {
       issues.forEach((err) => {

@@ -7,11 +7,10 @@ import {
 } from '../general/util';
 
 import { supabase } from '@/services/supabase';
-import { createContact as createTidasContact } from '@tiangong-lca/tidas-sdk';
 import { SortOrder } from 'antd/lib/table/interface';
 import { getDataDetail, getTeamIdByUserId, normalizeLangPayloadForSave } from '../general/api';
 import { getCachedClassificationData } from '../ilcd/cache';
-import { genContactJsonOrdered } from './util';
+import { genContactJsonOrdered, validateContactJson } from './util';
 
 export async function createContact(id: string, data: any) {
   const rawData = genContactJsonOrdered(id, data);
@@ -35,7 +34,7 @@ export async function createContact(id: string, data: any) {
       count: null,
     };
   }
-  const rule_verification = createTidasContact(newData).validateEnhanced().success;
+  const rule_verification = validateContactJson(newData).success;
   // const teamId = await getTeamIdByUserId();
   const result = await supabase
     .from('contacts')
@@ -66,7 +65,7 @@ export async function updateContact(id: string, version: string, data: any) {
       count: null,
     };
   }
-  const rule_verification = createTidasContact(newData).validateEnhanced().success;
+  const rule_verification = validateContactJson(newData).success;
   let result: any = {};
   const session = await supabase.auth.getSession();
   if (session.data.session) {

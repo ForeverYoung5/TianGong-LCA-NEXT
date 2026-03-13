@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabase';
 import { getCPCClassification, getCPCClassificationZH } from '../flows/classification/api';
+import type { Classification } from '../general/data';
 import { getISICClassification, getISICClassificationZH } from '../processes/classification/api';
 import { categoryTypeOptions } from './data';
 import { genClass, genClassZH } from './util';
@@ -8,7 +9,7 @@ export async function getILCDClassification(
   categoryType: string,
   lang: string,
   getValues: string[],
-) {
+): Promise<{ data: Classification[]; success: boolean }> {
   try {
     const thisCategoryType = categoryTypeOptions.find((i) => i.en === categoryType);
 
@@ -26,7 +27,7 @@ export async function getILCDClassification(
       });
     }
 
-    let newDatas = null;
+    let newDatas: Classification[] = [];
     let resultZH = null;
     if (lang === 'zh') {
       let getIds = [];
@@ -58,13 +59,16 @@ export async function getILCDClassification(
   } catch (e) {
     console.error(e);
     return Promise.resolve({
-      data: null,
+      data: [],
       success: false,
     });
   }
 }
 
-export async function getILCDFlowCategorization(lang: string, getValues: string[]) {
+export async function getILCDFlowCategorization(
+  lang: string,
+  getValues: string[],
+): Promise<{ data: Classification[]; success: boolean }> {
   try {
     const result = await supabase.rpc('ilcd_flow_categorization_get', {
       this_file_name: 'ILCDFlowCategorization',
@@ -88,7 +92,7 @@ export async function getILCDFlowCategorization(lang: string, getValues: string[
   } catch (e) {
     console.error(e);
     return Promise.resolve({
-      data: null,
+      data: [],
       success: false,
     });
   }

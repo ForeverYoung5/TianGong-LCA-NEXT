@@ -108,11 +108,13 @@ jest.mock('@/services/processes/api', () => ({
 
 const mockGenProcessFromData = jest.fn();
 const mockGenProcessJsonOrdered = jest.fn();
+const mockValidateProcessJson = jest.fn();
 
 jest.mock('@/services/processes/util', () => ({
   __esModule: true,
   genProcessFromData: (...args: any[]) => mockGenProcessFromData(...args),
   genProcessJsonOrdered: (...args: any[]) => mockGenProcessJsonOrdered(...args),
+  validateProcessJson: (...args: any[]) => mockValidateProcessJson(...args),
 }));
 
 jest.mock('@/services/roles/api', () => ({
@@ -386,6 +388,7 @@ describe('ProcessEdit component', () => {
     mockGetRefsOfCurrentVersion.mockResolvedValue({ oldRefs: [] });
     mockGetRefsOfNewVersion.mockResolvedValue({ newRefs: [], oldRefs: [] });
     mockUpdateRefsData.mockImplementation((data: any) => data);
+    mockValidateProcessJson.mockReturnValue({ success: true });
     mockValidateEnhanced.mockReturnValue({ success: true });
   });
 

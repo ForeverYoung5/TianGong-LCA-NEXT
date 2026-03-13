@@ -4,6 +4,48 @@ import { getUserId, getUserIdByEmail, getUsersByIds } from '@/services/users/api
 import { FunctionRegion } from '@supabase/supabase-js';
 import { SortOrder } from 'antd/lib/table/interface';
 import { getUserManageComments } from '../comments/api';
+import type { FunctionInvokeResult, PaginationParams } from '../general/data';
+import type { TeamJson } from '../teams/data';
+
+const SYSTEM_TEAM_ID = '00000000-0000-0000-0000-000000000000';
+
+export type RoleType =
+  | 'admin'
+  | 'owner'
+  | 'member'
+  | 'is_invited'
+  | 'rejected'
+  | 'review-admin'
+  | 'review-member';
+
+export type RoleRecord = {
+  user_id: string;
+  team_id: string;
+  role: RoleType;
+  modified_at?: string;
+};
+
+export type RoleUserTable = {
+  user_id: string;
+  role: RoleType;
+  email: string;
+  display_name?: string;
+  team_id: string;
+  pendingCount?: number;
+  reviewedCount?: number;
+};
+
+type RoleTableSort = Record<string, SortOrder | null | undefined>;
+type ReviewRole = Extract<RoleType, 'review-admin' | 'review-member'>;
+type UserManageCommentSummary = {
+  reviewer_id?: string;
+  state_code?: number;
+};
+type RoleMutationResult = {
+  data?: unknown;
+  error?: unknown;
+  success?: boolean;
+};
 
 export async function getUserTeamId() {
   const session = await supabase.auth.getSession();
@@ -17,16 +59,12 @@ export async function getUserTeamId() {
       `,
     )
     .eq('user_id', session?.data?.session?.user?.id)
-    .neq('team_id', '00000000-0000-0000-0000-000000000000');
+    .neq('team_id', SYSTEM_TEAM_ID);
 
   return data?.[0]?.team_id;
 }
 
-export async function getTeamRoles(
-  params: { pageSize: number; current: number },
-  sort: Record<string, SortOrder>,
-  teamId: string,
-) {
+export async function getTeamRoles(params: PaginationParams, sort: RoleTableSort, teamId: string) {
   const sortBy = Object.keys(sort)[0] ?? 'created_at';
   const orderBy = sort[sortBy] ?? 'descend';
 
@@ -40,14 +78,14 @@ export async function getTeamRoles(
   `,
     )
     .eq('team_id', teamId)
-    .neq('team_id', '00000000-0000-0000-0000-000000000000')
+    .neq('team_id', SYSTEM_TEAM_ID)
     .order(sortBy, { ascending: orderBy === 'ascend' })
     .range(
       ((params.current ?? 1) - 1) * (params.pageSize ?? 10),
       (params.current ?? 1) * (params.pageSize ?? 10) - 1,
     );
 }
-export async function addRoleApi(userId: string, teamId: string, role: string) {
+export async function addRoleApi(userId: string, teamId: string, role: RoleType) {
   const { error } = await supabase.from('roles').insert({
     user_id: userId,
     role,
@@ -61,7 +99,7 @@ export async function getRoleByuserId(userId: string) {
     .from('roles')
     .select('*')
     .eq('user_id', userId)
-    .neq('team_id', '00000000-0000-0000-0000-000000000000');
+    .neq('team_id', SYSTEM_TEAM_ID);
 }
 
 export async function getUserRoles() {
@@ -76,7 +114,7 @@ export async function getUserRoles() {
       `,
     )
     .eq('user_id', session?.data?.session?.user?.id)
-    .neq('team_id', '00000000-0000-0000-0000-000000000000');
+    .neq('team_id', SYSTEM_TEAM_ID);
 
   return Promise.resolve({
     data: result.data ?? [],
@@ -86,7 +124,7 @@ export async function getUserRoles() {
 
 export const getUserIdsByTeamIds = async (teamIds: string[]) => {
   const result = await supabase.from('roles').select('user_id,team_id,role').in('team_id', teamIds);
-  return result.data ?? [];
+  return (result.data ?? []) as RoleRecord[];
 };
 
 export async function getTeamInvitationStatusApi(timeFilter: number = 3) {
@@ -101,7 +139,7 @@ export async function getTeamInvitationStatusApi(timeFilter: number = 3) {
       .from('roles')
       .select('*')
       .eq('user_id', userId)
-      .neq('team_id', '00000000-0000-0000-0000-000000000000')
+      .neq('team_id', SYSTEM_TEAM_ID)
       .order('modified_at', { ascending: false });
 
     if (timeFilter > 0) {
@@ -140,7 +178,7 @@ export async function getTeamInvitationCountApi(timeFilter: number = 3, lastView
     .select('*', { count: 'exact' })
     .eq('user_id', userId)
     .in('role', ['is_invited'])
-    .neq('team_id', '00000000-0000-0000-0000-000000000000')
+    .neq('team_id', SYSTEM_TEAM_ID)
     .order('modified_at', { ascending: false });
 
   if (lastViewTime && lastViewTime > 0) {
@@ -167,14 +205,19 @@ export async function getTeamInvitationCountApi(timeFilter: number = 3, lastView
   };
 }
 
-export async function createTeamMessage(id: string, data: any, rank: number, is_public: boolean) {
+export async function createTeamMessage(
+  id: string,
+  data: TeamJson,
+  rank: number,
+  is_public: boolean,
+) {
   const session = await supabase.auth.getSession();
   await supabase
     .from('roles')
     .delete()
     .eq('user_id', session?.data?.session?.user?.id)
     .eq('role', 'rejected')
-    .neq('team_id', '00000000-0000-0000-0000-000000000000');
+    .neq('team_id', SYSTEM_TEAM_ID);
 
   const error = await addTeam(id, data, rank, is_public);
   if (!error) {
@@ -187,9 +230,9 @@ export async function createTeamMessage(id: string, data: any, rank: number, is_
 export async function updateRoleApi(
   teamId: string,
   userId: string,
-  role: 'admin' | 'member' | 'review-admin' | 'review-member',
-) {
-  let result: any = {};
+  role: Extract<RoleType, 'admin' | 'member' | 'review-admin' | 'review-member'>,
+): Promise<RoleMutationResult> {
+  let result: FunctionInvokeResult<RoleMutationResult> = {};
   const session = await supabase.auth.getSession();
   if (session.data.session) {
     result = await supabase.functions.invoke('update_role', {
@@ -203,7 +246,7 @@ export async function updateRoleApi(
   if (result.error) {
     console.log('error', result.error);
   }
-  return result?.data;
+  return result.data ?? {};
 }
 
 export async function delRoleApi(teamId: string, userId: string) {
@@ -211,8 +254,8 @@ export async function delRoleApi(teamId: string, userId: string) {
   return result;
 }
 
-export async function reInvitedApi(userId: string, teamId: string) {
-  let result: any = {};
+export async function reInvitedApi(userId: string, teamId: string): Promise<unknown> {
+  let result: FunctionInvokeResult<RoleMutationResult> = {};
   const session = await supabase.auth.getSession();
   if (session.data.session) {
     result = await supabase.functions.invoke('update_role', {
@@ -226,11 +269,11 @@ export async function reInvitedApi(userId: string, teamId: string) {
   if (result.error) {
     console.log('error', result.error);
   }
-  return result?.data?.error;
+  return result.data?.error;
 }
 
 export async function rejectTeamInvitationApi(teamId: string, userId: string) {
-  let result: any = {};
+  let result: FunctionInvokeResult<RoleMutationResult> = {};
   const session = await supabase.auth.getSession();
   if (session.data.session) {
     result = await supabase.functions.invoke('update_role', {
@@ -246,12 +289,12 @@ export async function rejectTeamInvitationApi(teamId: string, userId: string) {
   }
   return {
     success: !result.error,
-    error: result?.data?.error,
+    error: result.data?.error,
   };
 }
 
 export async function acceptTeamInvitationApi(teamId: string, userId: string) {
-  let result: any = {};
+  let result: FunctionInvokeResult<RoleMutationResult> = {};
   const session = await supabase.auth.getSession();
   if (session.data.session) {
     result = await supabase.functions.invoke('update_role', {
@@ -265,9 +308,11 @@ export async function acceptTeamInvitationApi(teamId: string, userId: string) {
   if (result.error) {
     console.log('error', result.error);
   }
+  const payload =
+    result.data && typeof result.data === 'object' ? result.data : ({} as RoleMutationResult);
   return {
     success: !result.error,
-    ...result?.data,
+    ...payload,
   };
 }
 
@@ -279,7 +324,7 @@ export async function getSystemUserRoleApi() {
       .from('roles')
       .select('user_id,role')
       .eq('user_id', session?.data?.session?.user?.id)
-      .eq('team_id', '00000000-0000-0000-0000-000000000000')
+      .eq('team_id', SYSTEM_TEAM_ID)
       .maybeSingle();
 
     if (error) {
@@ -292,17 +337,17 @@ export async function getSystemUserRoleApi() {
   }
 }
 
-export async function getSystemMembersApi(params: any, sort: any) {
+export async function getSystemMembersApi(params: PaginationParams, sort: RoleTableSort) {
   try {
     const sortBy = Object.keys(sort)[0] ?? 'created_at';
     const orderBy = sort[sortBy] ?? 'descend';
 
-    let res: any[] = [];
+    let res: RoleUserTable[] = [];
 
     const { data, error, count } = await supabase
       .from('roles')
       .select('user_id,role', { count: 'exact' })
-      .eq('team_id', '00000000-0000-0000-0000-000000000000')
+      .eq('team_id', SYSTEM_TEAM_ID)
       .in('role', ['admin', 'owner', 'member'])
       .order(sortBy, { ascending: orderBy === 'ascend' })
       .range(
@@ -311,16 +356,17 @@ export async function getSystemMembersApi(params: any, sort: any) {
       );
 
     if (!error) {
-      const users = await getUsersByIds(data.map((item) => item.user_id));
+      const roleData = (data ?? []) as RoleRecord[];
+      const users = await getUsersByIds(roleData.map((item) => item.user_id));
       if (users) {
-        res = data.map((roleItem: any) => {
+        res = roleData.map((roleItem) => {
           const user = users.find((user) => user.id === roleItem.user_id);
           return {
             user_id: roleItem.user_id,
             role: roleItem.role,
-            email: user?.email,
+            email: user?.email ?? '',
             display_name: user?.display_name,
-            team_id: '00000000-0000-0000-0000-000000000000',
+            team_id: SYSTEM_TEAM_ID,
           };
         });
       }
@@ -345,11 +391,7 @@ export async function addSystemMemberApi(email: string) {
   try {
     const userId = await getUserIdByEmail(email);
     if (userId) {
-      const addRoleError = await addRoleApi(
-        userId,
-        '00000000-0000-0000-0000-000000000000',
-        'member',
-      );
+      const addRoleError = await addRoleApi(userId, SYSTEM_TEAM_ID, 'member');
       if (addRoleError) {
         throw addRoleError;
       }
@@ -378,7 +420,7 @@ export async function getReviewUserRoleApi() {
       .from('roles')
       .select('user_id,role')
       .eq('user_id', session?.data?.session?.user?.id)
-      .eq('team_id', '00000000-0000-0000-0000-000000000000')
+      .eq('team_id', SYSTEM_TEAM_ID)
       .in('role', ['review-admin', 'review-member'])
       .maybeSingle();
 
@@ -392,17 +434,21 @@ export async function getReviewUserRoleApi() {
   }
 }
 
-export async function getUserManageTableData(params: any, sort: any, role?: string) {
+export async function getUserManageTableData(
+  params: PaginationParams,
+  sort: RoleTableSort,
+  role?: ReviewRole,
+) {
   try {
     const sortBy = Object.keys(sort)[0] ?? 'created_at';
     const orderBy = sort[sortBy] ?? 'descend';
 
-    let res: any[] = [];
+    let res: RoleUserTable[] = [];
 
     let query = supabase
       .from('roles')
       .select('user_id,role', { count: 'exact' })
-      .eq('team_id', '00000000-0000-0000-0000-000000000000')
+      .eq('team_id', SYSTEM_TEAM_ID)
       .in('role', ['review-admin', 'review-member'])
       .order(sortBy, { ascending: orderBy === 'ascend' })
       .range(
@@ -417,16 +463,17 @@ export async function getUserManageTableData(params: any, sort: any, role?: stri
     const { data, error, count } = await query;
 
     if (!error) {
-      const users = await getUsersByIds(data.map((item) => item.user_id));
+      const roleData = (data ?? []) as RoleRecord[];
+      const users = await getUsersByIds(roleData.map((item) => item.user_id));
       if (users) {
-        res = data.map((roleItem: any) => {
+        res = roleData.map((roleItem) => {
           const user = users.find((user) => user.id === roleItem.user_id);
           return {
             user_id: roleItem.user_id,
             role: roleItem.role,
-            email: user?.email,
+            email: user?.email ?? '',
             display_name: user?.display_name,
-            team_id: '00000000-0000-0000-0000-000000000000',
+            team_id: SYSTEM_TEAM_ID,
             pendingCount: 0,
             reviewedCount: 0,
           };
@@ -434,14 +481,16 @@ export async function getUserManageTableData(params: any, sort: any, role?: stri
       }
       const { data: comments } = await getUserManageComments();
       if (comments && comments.length) {
-        comments.forEach((item) => {
+        (comments as UserManageCommentSummary[]).forEach((item) => {
           const userIndex = res.findIndex((user) => user.user_id === item.reviewer_id);
           if (userIndex !== -1) {
             res[userIndex].pendingCount =
-              item.state_code === 0 ? res[userIndex].pendingCount + 1 : res[userIndex].pendingCount;
+              item.state_code === 0
+                ? (res[userIndex].pendingCount ?? 0) + 1
+                : res[userIndex].pendingCount;
             res[userIndex].reviewedCount =
               item.state_code === 1 || item.state_code === 2
-                ? res[userIndex].reviewedCount + 1
+                ? (res[userIndex].reviewedCount ?? 0) + 1
                 : res[userIndex].reviewedCount;
           }
         });
@@ -461,17 +510,21 @@ export async function getUserManageTableData(params: any, sort: any, role?: stri
     };
   }
 }
-export async function getReviewMembersApi(params: any, sort: any, role?: string) {
+export async function getReviewMembersApi(
+  params: PaginationParams,
+  sort: RoleTableSort,
+  role?: ReviewRole,
+) {
   try {
     const sortBy = Object.keys(sort)[0] ?? 'created_at';
     const orderBy = sort[sortBy] ?? 'descend';
 
-    let res: any[] = [];
+    let res: RoleUserTable[] = [];
 
     let query = supabase
       .from('roles')
       .select('user_id,role', { count: 'exact' })
-      .eq('team_id', '00000000-0000-0000-0000-000000000000')
+      .eq('team_id', SYSTEM_TEAM_ID)
       .in('role', ['review-admin', 'review-member'])
       .order(sortBy, { ascending: orderBy === 'ascend' })
       .range(
@@ -486,16 +539,17 @@ export async function getReviewMembersApi(params: any, sort: any, role?: string)
     const { data, error, count } = await query;
 
     if (!error) {
-      const users = await getUsersByIds(data.map((item) => item.user_id));
+      const roleData = (data ?? []) as RoleRecord[];
+      const users = await getUsersByIds(roleData.map((item) => item.user_id));
       if (users) {
-        res = data.map((roleItem: any) => {
+        res = roleData.map((roleItem) => {
           const user = users.find((user) => user.id === roleItem.user_id);
           return {
             user_id: roleItem.user_id,
             role: roleItem.role,
-            email: user?.email,
+            email: user?.email ?? '',
             display_name: user?.display_name,
-            team_id: '00000000-0000-0000-0000-000000000000',
+            team_id: SYSTEM_TEAM_ID,
           };
         });
       }
@@ -518,11 +572,7 @@ export async function getReviewMembersApi(params: any, sort: any, role?: string)
 export async function addReviewMemberApi(userId: string) {
   try {
     if (userId) {
-      const addRoleError = await addRoleApi(
-        userId,
-        '00000000-0000-0000-0000-000000000000',
-        'review-member',
-      );
+      const addRoleError = await addRoleApi(userId, SYSTEM_TEAM_ID, 'review-member');
       return {
         success: !addRoleError,
         error: addRoleError,
@@ -558,5 +608,5 @@ export async function getLatestRolesOfMine() {
 export async function getRoleByUserId() {
   const userId = await getUserId();
   const { data } = await supabase.from('roles').select('team_id,role').eq('user_id', userId);
-  return data;
+  return (data ?? []) as Array<Pick<RoleRecord, 'team_id' | 'role'>>;
 }

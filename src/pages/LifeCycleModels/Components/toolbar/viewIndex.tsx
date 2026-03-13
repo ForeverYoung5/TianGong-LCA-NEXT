@@ -337,9 +337,11 @@ const ToolbarView: FC<Props> = ({ id, version, lang, drawerVisible }) => {
     if (currentEdge) {
       if (currentEdge.id === evt.edge.id) return;
 
-      updateEdge(currentEdge.id, {
-        selected: false,
-      });
+      if (currentEdge.id) {
+        updateEdge(currentEdge.id, {
+          selected: false,
+        });
+      }
     }
     updateEdge(evt.edge.id, {
       selected: true,

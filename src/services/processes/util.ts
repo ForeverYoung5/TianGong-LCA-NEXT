@@ -1,5 +1,8 @@
 import { FormProcess } from '@/services/processes/data';
-import { createProcess as createTidasProcess } from '@tiangong-lca/tidas-sdk';
+import {
+  createProcess as createTidasProcess,
+  createProcessFromJSON as createTidasProcessFromJSON,
+} from '@tiangong-lca/tidas-sdk';
 import {
   capitalize,
   classificationToJsonList,
@@ -787,6 +790,10 @@ export function genProcessJsonOrdered(id: string, data: any) {
       },
     },
   });
+}
+
+export function validateProcessJson(data: object) {
+  return createTidasProcessFromJSON(data).validateEnhanced();
 }
 
 export function genProcessFromData(data: any): FormProcess {

@@ -3,6 +3,7 @@ import { getContactDetail } from '@/services/contacts/api';
 import { genContactFromData } from '@/services/contacts/util';
 import { getLang, getLangText, jsonToList } from '@/services/general/util';
 import { addReviewMemberApi } from '@/services/roles/api';
+import type { UserContactInfo, UserDetailRecord } from '@/services/users/api';
 import { getUserInfoByEmail, updateUserContact } from '@/services/users/api';
 import { SearchOutlined } from '@ant-design/icons';
 import { FormattedMessage, useIntl } from '@umijs/max';
@@ -26,34 +27,23 @@ interface AddMemberModalProps {
   onSuccess: () => void;
 }
 
-interface UserInfo {
-  id: string;
-  raw_user_meta_data: {
-    sub: string;
-    email: string;
-    email_verified: boolean;
-    phone_verified: boolean;
-    display_name?: string;
-  };
-}
-
-interface ContactInfo {
-  '@refObjectId': string;
-  '@type': string;
-  '@uri': string;
-  '@version': string;
-  'common:shortDescription': Array<{
+type ContactInfo = UserContactInfo & {
+  '@refObjectId'?: string;
+  '@type'?: string;
+  '@uri'?: string;
+  '@version'?: string;
+  'common:shortDescription'?: Array<{
     '#text': string;
     '@xml:lang': string;
   }>;
-}
+};
 
 const AddMemberModal: React.FC<AddMemberModalProps> = ({ open, onCancel, onSuccess }) => {
   const formRef = useRef<FormInstance>(null);
   const [loading, setLoading] = useState(false);
   const [queryLoading, setQueryLoading] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [userInfo, setUserInfo] = useState<UserDetailRecord | null>(null);
   const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
   const intl = useIntl();
   const lang = getLang(intl.locale);
@@ -84,7 +74,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ open, onCancel, onSucce
 
       if (result.success) {
         setUserInfo(result.user);
-        setContactInfo(result.contact);
+        setContactInfo(result.contact as ContactInfo | null);
         message.success(
           intl.formatMessage({
             id: 'pages.review.members.querySuccess',
@@ -128,7 +118,10 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ open, onCancel, onSucce
         setLoading(false);
         return;
       }
-      const associatedContactResult = await updateUserContact(userInfo?.id ?? '', contactInfo);
+      const associatedContactResult = await updateUserContact(
+        userInfo?.id ?? '',
+        (contactInfo ?? {}) as UserContactInfo,
+      );
 
       if (!result?.success || associatedContactResult.error) {
         message.error(
@@ -249,7 +242,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ open, onCancel, onSucce
             <Descriptions.Item
               label={<FormattedMessage id='pages.review.members.email' defaultMessage='Email' />}
             >
-              {userInfo.raw_user_meta_data.email}
+              {userInfo.raw_user_meta_data?.email ?? '-'}
             </Descriptions.Item>
             <Descriptions.Item
               label={
@@ -259,7 +252,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ open, onCancel, onSucce
                 />
               }
             >
-              {userInfo.raw_user_meta_data.display_name || '-'}
+              {userInfo.raw_user_meta_data?.display_name || '-'}
             </Descriptions.Item>
           </Descriptions>
         </Card>

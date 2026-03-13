@@ -27,10 +27,14 @@ jest.mock('@tiangong-lca/tidas-sdk', () => ({
 jest.mock('@/services/flows/util', () => ({
   genFlowJsonOrdered: jest.fn(),
   genFlowName: jest.fn(),
+  validateFlowJson: jest.fn(),
 }));
 
-const { genFlowJsonOrdered: mockGenFlowJsonOrdered, genFlowName: mockGenFlowName } =
-  jest.requireMock('@/services/flows/util');
+const {
+  genFlowJsonOrdered: mockGenFlowJsonOrdered,
+  genFlowName: mockGenFlowName,
+  validateFlowJson: mockValidateFlowJson,
+} = jest.requireMock('@/services/flows/util');
 
 jest.mock('@/services/general/util', () => ({
   classificationToString: jest.fn(),
@@ -192,6 +196,7 @@ beforeEach(() => {
     const preferred = baseNames.find((item: any) => item?.['@xml:lang'] === lang) ?? baseNames[0];
     return preferred?.['#text'] ?? '-';
   });
+  mockValidateFlowJson.mockReturnValue({ success: true });
   mockClassificationToString.mockImplementation((list: any[]) =>
     (list || [])
       .map((item: any) => item?.label ?? item?.['#text'] ?? item)

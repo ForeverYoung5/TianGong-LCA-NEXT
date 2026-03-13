@@ -19,14 +19,17 @@ import {
   ContactDetailResponse,
   FormContact,
 } from '@/services/contacts/data';
-import { genContactFromData, genContactJsonOrdered } from '@/services/contacts/util';
+import {
+  genContactFromData,
+  genContactJsonOrdered,
+  validateContactJson,
+} from '@/services/contacts/util';
 import { getRefData, updateStateCodeApi } from '@/services/general/api';
 import { getReviewUserRoleApi, getUserTeamId } from '@/services/roles/api';
 import type { SupabaseMutationResult } from '@/services/supabase/data';
 import styles from '@/style/custom.less';
 import { CloseOutlined, FormOutlined } from '@ant-design/icons';
 import { ActionType, ProForm, ProFormInstance } from '@ant-design/pro-components';
-import { createContact as createTidasContact } from '@tiangong-lca/tidas-sdk';
 import { Button, Drawer, Space, Spin, Tooltip, message } from 'antd';
 import type { FC } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -457,8 +460,7 @@ const ContactEdit: FC<Props> = ({
       if (tabName && !errTabNames.includes(tabName)) errTabNames.push(tabName);
     });
 
-    const tidasContact = createTidasContact(genContactJsonOrdered(id, fromData));
-    const validateResult = tidasContact.validateEnhanced();
+    const validateResult = validateContactJson(genContactJsonOrdered(id, fromData));
     const issues = validateResult.success ? [] : validateResult.error.issues;
     if (issues.length) {
       issues.forEach((err) => {
