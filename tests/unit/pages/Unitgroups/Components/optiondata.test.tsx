@@ -1,4 +1,4 @@
-import { complianceOptions } from '@/pages/Flowproperties/Components/optiondata';
+import { complianceOptions } from '@/pages/Unitgroups/Components/optiondata';
 
 jest.mock('umi', () => ({
   __esModule: true,
@@ -7,7 +7,7 @@ jest.mock('umi', () => ({
   }),
 }));
 
-describe('Flowproperties optiondata', () => {
+describe('Unitgroups optiondata', () => {
   it('exposes the expected compliance choices', () => {
     expect(complianceOptions.map((option) => option.value)).toEqual([
       'Fully compliant',
@@ -16,13 +16,13 @@ describe('Flowproperties optiondata', () => {
     ]);
   });
 
-  it('keeps the formatted message payload on each compliance option label', () => {
+  it('keeps the compliance labels mapped to the intended translation ids', () => {
     expect((complianceOptions[0].label as any).props.defaultMessage).toBe('Fully compliant');
     expect((complianceOptions[1].label as any).props.id).toBe(
-      'pages.FlowProperties.view.modellingAndValidation.approvalOfOverallCompliance.notCompliant',
+      'pages.unitgroup.view.modellingAndValidation.approvalOfOverallCompliance.notCompliant',
     );
     expect((complianceOptions[2].label as any).props.id).toBe(
-      'pages.FlowProperties.view.modellingAndValidation.approvalOfOverallCompliance.notDefined',
+      'pages.unitgroup.view.modellingAndValidation.approvalOfOverallCompliance.notDefined',
     );
   });
 });
