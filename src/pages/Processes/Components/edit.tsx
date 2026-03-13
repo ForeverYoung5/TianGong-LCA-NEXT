@@ -31,12 +31,15 @@ import {
   ProcessDetailResponse,
   ProcessExchangeData,
 } from '@/services/processes/data';
-import { genProcessFromData, genProcessJsonOrdered } from '@/services/processes/util';
+import {
+  genProcessFromData,
+  genProcessJsonOrdered,
+  validateProcessJson,
+} from '@/services/processes/util';
 import { getUserTeamId } from '@/services/roles/api';
 import styles from '@/style/custom.less';
 import { CloseOutlined, FormOutlined, ProductOutlined } from '@ant-design/icons';
 import { ActionType, ProForm, ProFormInstance } from '@ant-design/pro-components';
-import { createProcess as createTidasProcess } from '@tiangong-lca/tidas-sdk';
 import { Button, Drawer, Form, Input, Space, Spin, Tooltip, message } from 'antd';
 import type { FC } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -381,12 +384,11 @@ const ProcessEdit: FC<Props> = ({
       setSpinning(false);
       return { checkResult: false, unReview: [] };
     }
-    const tidasProcess = createTidasProcess(genProcessJsonOrdered(id, processDetail));
-    const validateResult = tidasProcess.validateEnhanced();
+    const validateResult = validateProcessJson(genProcessJsonOrdered(id, processDetail));
     const issues = validateResult.success
       ? []
       : validateResult.error.issues.filter(
-          (item) =>
+          (item: any) =>
             !item.path.includes('validation') &&
             !item.path.includes('complianceDeclarations') &&
             !item.path.includes('quantitativeReference'),
@@ -560,7 +562,7 @@ const ProcessEdit: FC<Props> = ({
       setSpinning(false);
     } else {
       const errTabNames: string[] = [];
-      issues.forEach((err) => {
+      issues.forEach((err: any) => {
         const tabName = err.path[1];
         if (tabName && !errTabNames.includes(tabName as string))
           errTabNames.push(tabName as string);

@@ -1,4 +1,7 @@
-import { createLifeCycleModel as createTidasLifeCycleModel } from '@tiangong-lca/tidas-sdk';
+import {
+  createLifeCycleModel as createTidasLifeCycleModel,
+  createLifeCycleModelFromJSON as createTidasLifeCycleModelFromJSON,
+} from '@tiangong-lca/tidas-sdk';
 import { v4 } from 'uuid';
 import {
   classificationToJsonList,
@@ -107,7 +110,12 @@ export function genLifeCycleModelJsonOrdered(id: string, data: any) {
       connections: {
         outputExchange: listToJson(outputExchange),
       },
-    });
+    }) as {
+      connections?: {
+        outputExchange?: unknown;
+      };
+      [key: string]: unknown;
+    };
 
     if (!processInstanceData?.connections) {
       processInstanceData.connections = {};
@@ -503,6 +511,10 @@ export function genLifeCycleModelJsonOrdered(id: string, data: any) {
     listToJson(processInstances);
 
   return result;
+}
+
+export function validateLifeCycleModelJson(data: object) {
+  return createTidasLifeCycleModelFromJSON(data).validateEnhanced();
 }
 
 export function genLifeCycleModelInfoFromData(data: any): FormLifeCycleModel {

@@ -306,9 +306,13 @@ jest.mock('@/services/general/util', () => ({
 }));
 
 const mockGenLifeCycleModelJsonOrdered = jest.fn().mockReturnValue({});
+const mockValidateLifeCycleModelJson = jest
+  .fn()
+  .mockReturnValue({ success: true, error: { issues: [] } });
 jest.mock('@/services/lifeCycleModels/util', () => ({
   __esModule: true,
   genLifeCycleModelJsonOrdered: (...args: any[]) => mockGenLifeCycleModelJsonOrdered(...args),
+  validateLifeCycleModelJson: (...args: any[]) => mockValidateLifeCycleModelJson(...args),
 }));
 
 jest.mock('uuid', () => ({
@@ -341,6 +345,10 @@ beforeEach(() => {
   mockGetProcessDetail.mockReset();
   mockGetUserTeamId.mockReset().mockResolvedValue('team-1');
   mockGenLifeCycleModelJsonOrdered.mockReset().mockReturnValue({});
+  mockValidateLifeCycleModelJson.mockReset().mockReturnValue({
+    success: true,
+    error: { issues: [] },
+  });
   mockUpdateReviewsAfterCheckData.mockReset().mockResolvedValue({});
   mockUpdateUnReviewToUnderReview.mockReset().mockResolvedValue({});
 });

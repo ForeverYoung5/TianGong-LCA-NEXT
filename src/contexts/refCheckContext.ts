@@ -1,15 +1,10 @@
 import { createContext, useContext } from 'react';
 
-const RefCheckContext: any = createContext<RefCheckContextType>({
-  refCheckData: [],
-  // updateRefCheckStatus: () => {},
-});
-
 export type RefCheckType = {
   id: string;
   version: string;
-  ruleVerification: boolean;
-  nonExistent: boolean;
+  ruleVerification?: boolean;
+  nonExistent?: boolean;
   stateCode?: number;
   versionUnderReview?: boolean;
   underReviewVersion?: string;
@@ -21,10 +16,16 @@ type RefCheckContextType = {
   // updateRefCheckStatus: (onlyCheck: boolean) => void;
 };
 
-const useRefCheckContext = () => {
-  const context: RefCheckContextType = useContext(RefCheckContext);
+const defaultRefCheckContextValue: RefCheckContextType = {
+  refCheckData: [],
+};
+
+const RefCheckContext = createContext<RefCheckContextType | null>(defaultRefCheckContextValue);
+
+const useRefCheckContext = (): RefCheckContextType => {
+  const context = useContext(RefCheckContext);
   if (!context) {
-    return { refCheckData: [] };
+    return defaultRefCheckContextValue;
   }
   return context;
 };

@@ -1,5 +1,8 @@
 import { FormContact } from '@/services/contacts/data';
-import { createContact as createTidasContact } from '@tiangong-lca/tidas-sdk';
+import {
+  createContact as createTidasContact,
+  createContactFromJSON as createTidasContactFromJSON,
+} from '@tiangong-lca/tidas-sdk';
 import {
   classificationToJsonList,
   classificationToStringList,
@@ -158,6 +161,10 @@ export function genContactJsonOrdered(id: string, data: any) {
       },
     },
   });
+}
+
+export function validateContactJson(data: object) {
+  return createTidasContactFromJSON(data).validateEnhanced();
 }
 
 export function genContactFromData(data: any): FormContact | undefined {

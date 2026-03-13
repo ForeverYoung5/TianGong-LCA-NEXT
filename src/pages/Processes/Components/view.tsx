@@ -107,9 +107,9 @@ type SolverLciaValueRow = {
 };
 
 type LciaMethodMeta = {
-  description?: unknown;
+  description?: LciaMethodListItem['description'];
   version?: string;
-  referenceQuantityDesc?: unknown;
+  referenceQuantityDesc?: string;
 };
 
 const LCA_SCOPE = 'dev-v1';

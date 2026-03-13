@@ -7,12 +7,11 @@ import {
 
 import { supabase } from '@/services/supabase';
 import { FunctionRegion } from '@supabase/supabase-js';
-import { createFlow as createTidasFlow } from '@tiangong-lca/tidas-sdk';
 import { SortOrder } from 'antd/lib/table/interface';
 import { getDataDetail, getTeamIdByUserId, normalizeLangPayloadForSave } from '../general/api';
 import { getILCDLocationByValues } from '../ilcd/api';
 import { getCachedFlowCategorizationAll, getCachedLocationData } from '../ilcd/cache';
-import { genFlowJsonOrdered, genFlowName } from './util';
+import { genFlowJsonOrdered, genFlowName, validateFlowJson } from './util';
 function normalizeLocationData(response: any): any[] {
   if (Array.isArray(response)) {
     return response;
@@ -91,7 +90,7 @@ export async function createFlows(id: string, data: any) {
       count: null,
     };
   }
-  const rule_verification = createTidasFlow(newData).validateEnhanced().success;
+  const rule_verification = validateFlowJson(newData).success;
   // const teamId = await getTeamIdByUserId();
   const result = await supabase
     .from('flows')
@@ -122,7 +121,7 @@ export async function updateFlows(id: string, version: string, data: any) {
       count: null,
     };
   }
-  const rule_verification = createTidasFlow(newData).validateEnhanced().success;
+  const rule_verification = validateFlowJson(newData).success;
   let result: any = {};
   const session = await supabase.auth.getSession();
   if (session.data.session) {

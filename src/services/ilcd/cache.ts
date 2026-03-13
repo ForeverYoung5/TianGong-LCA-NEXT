@@ -7,7 +7,9 @@
 
 import { supabase } from '@/services/supabase';
 import { getCPCClassification, getCPCClassificationZH } from '../flows/classification/api';
+import type { Classification } from '../general/data';
 import { getISICClassification, getISICClassificationZH } from '../processes/classification/api';
+import type { ILCDCategoryNode } from './util';
 import { genClass, genClassZH } from './util';
 
 // In-memory cache
@@ -18,14 +20,17 @@ interface CacheEntry<T> {
 }
 
 class ILCDCache {
-  private cache: Map<string, CacheEntry<any>> = new Map();
+  private cache: Map<string, CacheEntry<unknown>> = new Map();
   private defaultTTL = 5 * 60 * 1000; // 5 minutes default TTL
 
-  private getCacheKey(prefix: string, ...args: any[]): string {
+  private getCacheKey(
+    prefix: string,
+    ...args: Array<string | number | boolean | null | undefined>
+  ): string {
     return `${prefix}:${args.join(':')}`;
   }
 
-  private isExpired(entry: CacheEntry<any>): boolean {
+  private isExpired(entry: CacheEntry<unknown>): boolean {
     return Date.now() > entry.expiresAt;
   }
 
@@ -64,9 +69,9 @@ class ILCDCache {
   }
 
   // Cache method for ILCD Flow Categorization
-  async getILCDFlowCategorizationAll(lang: string) {
+  async getILCDFlowCategorizationAll(lang: string): Promise<Classification[]> {
     const cacheKey = this.getCacheKey('ilcd_flow_cat_all', lang);
-    const cached = this.get(cacheKey);
+    const cached = this.get<Classification[] | undefined>(cacheKey);
 
     if (cached) {
       console.log('[Cache Hit] ILCD Flow Categorization All:', lang);
@@ -81,16 +86,17 @@ class ILCDCache {
       get_values: ['all'],
     });
 
-    let resultZH = null;
+    const resultData = (result.data ?? []) as ILCDCategoryNode[];
+    let resultZH: { data: ILCDCategoryNode[] | null } | null = null;
     if (lang === 'zh') {
-      const getIds = result?.data?.map((i: any) => i['@id']);
+      const getIds = resultData.map((item: ILCDCategoryNode) => item['@id']);
       resultZH = await supabase.rpc('ilcd_flow_categorization_get', {
         this_file_name: 'ILCDFlowCategorization_zh',
         get_values: getIds,
       });
     }
 
-    const data = genClassZH(result?.data, resultZH?.data);
+    const data = genClassZH(resultData, resultZH?.data ?? null);
 
     // Cache with default TTL (5 minutes)
     this.set(cacheKey, data, this.defaultTTL);
@@ -99,14 +105,18 @@ class ILCDCache {
   }
 
   // Cache method for ILCD Classification
-  async getILCDClassification(categoryType: string, lang: string, getValues: string[]) {
+  async getILCDClassification(
+    categoryType: string,
+    lang: string,
+    getValues: string[],
+  ): Promise<Classification[]> {
     const cacheKey = this.getCacheKey(
       'ilcd_classification',
       categoryType,
       lang,
       getValues.join(','),
     );
-    const cached = this.get(cacheKey);
+    const cached = this.get<Classification[]>(cacheKey);
 
     if (cached) {
       console.log('[Cache Hit] ILCD Classification:', categoryType, lang);
@@ -115,7 +125,7 @@ class ILCDCache {
 
     console.log('[Cache Miss] ILCD Classification:', categoryType, lang);
 
-    let result = null;
+    let result: { data: ILCDCategoryNode[] | null } | null = null;
 
     if (categoryType === 'Process' || categoryType === 'LifeCycleModel') {
       result = getISICClassification(getValues);
@@ -129,15 +139,16 @@ class ILCDCache {
       });
     }
 
-    let newDatas = null;
-    let resultZH = null;
+    const resultData = result?.data ?? [];
+    let newDatas: Classification[];
+    let resultZH: { data: ILCDCategoryNode[] | null } | null = null;
 
     if (lang === 'zh') {
-      let getIds = [];
+      let getIds: string[] = [];
       if (getValues.includes('all')) {
         getIds = ['all'];
       } else {
-        getIds = result?.data?.map((i: any) => i['@id']);
+        getIds = resultData.map((item: ILCDCategoryNode) => item['@id']);
       }
 
       if (categoryType === 'Process' || categoryType === 'LifeCycleModel') {
@@ -145,7 +156,7 @@ class ILCDCache {
       } else if (categoryType === 'Flow') {
         resultZH = getCPCClassificationZH(getIds);
       } else {
-        const categoryTypeZHMap: any = {
+        const categoryTypeZHMap: Record<string, string> = {
           Flow: '流',
           Process: '过程',
           LifeCycleModel: '生命周期模型',
@@ -160,9 +171,9 @@ class ILCDCache {
           get_values: getIds,
         });
       }
-      newDatas = genClassZH(result?.data, resultZH?.data);
+      newDatas = genClassZH(resultData, resultZH?.data ?? null);
     } else {
-      newDatas = genClass(result?.data);
+      newDatas = genClass(resultData);
     }
 
     // Cache with default TTL (5 minutes)
@@ -172,7 +183,10 @@ class ILCDCache {
   }
 
   // Cache method for ILCD Location
-  async getILCDLocationByValues(lang: string, get_values: string[]) {
+  async getILCDLocationByValues(
+    lang: string,
+    get_values: string[],
+  ): Promise<Array<Record<string, unknown>>> {
     // Return empty array if input is empty
     if (!get_values || get_values.length === 0) {
       return [];
@@ -185,7 +199,7 @@ class ILCDCache {
     }
 
     const cacheKey = this.getCacheKey('ilcd_location', lang, validValues.sort().join(','));
-    const cached = this.get(cacheKey);
+    const cached = this.get<Array<Record<string, unknown>>>(cacheKey);
 
     if (cached) {
       console.log('[Cache Hit] ILCD Location:', validValues.length, 'values');
@@ -204,7 +218,7 @@ class ILCDCache {
       get_values: validValues,
     });
 
-    const data = result.data || [];
+    const data = (result.data ?? []) as Array<Record<string, unknown>>;
 
     // Cache with default TTL (5 minutes)
     this.set(cacheKey, data, this.defaultTTL);
@@ -214,11 +228,14 @@ class ILCDCache {
 
   // Combined query method: fetch all Flow reference data at once
   async getFlowReferenceDataAll(lang: string): Promise<{
-    category: any;
-    categoryElementaryFlow: any;
+    category: Classification[];
+    categoryElementaryFlow: Classification[];
   }> {
     const cacheKey = this.getCacheKey('flow_ref_all', lang);
-    const cached = this.get<{ category: any; categoryElementaryFlow: any }>(cacheKey);
+    const cached = this.get<{
+      category: Classification[];
+      categoryElementaryFlow: Classification[];
+    }>(cacheKey);
 
     if (cached) {
       console.log('[Cache Hit] Flow Reference Data All');

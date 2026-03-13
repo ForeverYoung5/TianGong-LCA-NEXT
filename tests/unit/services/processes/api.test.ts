@@ -6,14 +6,6 @@
 import * as processesApi from '@/services/processes/api';
 import { FunctionRegion } from '@supabase/supabase-js';
 
-jest.mock('@tiangong-lca/tidas-sdk', () => ({
-  __esModule: true,
-  createProcess: jest.fn().mockReturnValue({
-    validateEnhanced: jest.fn().mockReturnValue({ success: true }),
-  }),
-}));
-const { createProcess: mockCreateTidasProcess } = jest.requireMock('@tiangong-lca/tidas-sdk');
-
 const mockFrom = jest.fn();
 const mockAuthGetSession = jest.fn();
 const mockFunctionsInvoke = jest.fn();
@@ -69,11 +61,13 @@ jest.mock('@/services/lifeCycleModels/api', () => ({
 
 const mockGenProcessJsonOrdered = jest.fn();
 const mockGenProcessName = jest.fn();
+const mockValidateProcessJson = jest.fn();
 
 jest.mock('@/services/processes/util', () => ({
   __esModule: true,
   genProcessJsonOrdered: (...args: any[]) => mockGenProcessJsonOrdered.apply(null, args),
   genProcessName: (...args: any[]) => mockGenProcessName.apply(null, args),
+  validateProcessJson: (...args: any[]) => mockValidateProcessJson.apply(null, args),
 }));
 
 const mockClassificationToString = jest.fn();
@@ -135,6 +129,7 @@ beforeEach(() => {
   mockGetLifeCyclesByIdAndVersion.mockReset();
   mockGenProcessJsonOrdered.mockReset();
   mockGenProcessName.mockReset();
+  mockValidateProcessJson.mockReset();
   mockClassificationToString.mockReset();
   mockGenClassificationZH.mockReset();
   mockGetLangText.mockReset();
@@ -142,6 +137,7 @@ beforeEach(() => {
 
   mockGenProcessJsonOrdered.mockReturnValue({ ordered: true });
   mockGenProcessName.mockReturnValue('Process Name');
+  mockValidateProcessJson.mockReturnValue({ success: true });
   mockClassificationToString.mockReturnValue('classification-string');
   mockGenClassificationZH.mockReturnValue(['classification-zh']);
   mockGetLangText.mockReturnValue('General comment');
@@ -151,9 +147,6 @@ beforeEach(() => {
   mockGetCachedLocationData.mockResolvedValue([]);
   mockGetCachedClassificationData.mockResolvedValue({});
   mockGetLifeCyclesByIdAndVersion.mockResolvedValue({ data: [] });
-  (mockCreateTidasProcess as jest.Mock).mockReturnValue({
-    validateEnhanced: jest.fn().mockReturnValue({ success: true }),
-  });
 });
 
 describe('createProcess', () => {
@@ -179,17 +172,15 @@ describe('createProcess', () => {
   });
 
   it('sets rule verification to false when non-validation issues exist', async () => {
-    (mockCreateTidasProcess as jest.Mock).mockReturnValueOnce({
-      validateEnhanced: jest.fn().mockReturnValue({
-        success: false,
-        error: {
-          issues: [
-            { path: ['validation'] },
-            { path: ['compliance'] },
-            { path: ['processDataSet', 'name'] },
-          ],
-        },
-      }),
+    mockValidateProcessJson.mockReturnValueOnce({
+      success: false,
+      error: {
+        issues: [
+          { path: ['validation'] },
+          { path: ['compliance'] },
+          { path: ['processDataSet', 'name'] },
+        ],
+      },
     });
     const insertResult = { data: [{ id: sampleId, version: sampleVersion }], error: null };
     const selectMock = jest.fn().mockResolvedValue(insertResult);
@@ -267,13 +258,11 @@ describe('updateProcess', () => {
   });
 
   it('uses fallback bearer token and keeps rule verification false when validation fails', async () => {
-    (mockCreateTidasProcess as jest.Mock).mockReturnValueOnce({
-      validateEnhanced: jest.fn().mockReturnValue({
-        success: false,
-        error: {
-          issues: [{ path: ['processDataSet', 'exchanges'] }],
-        },
-      }),
+    mockValidateProcessJson.mockReturnValueOnce({
+      success: false,
+      error: {
+        issues: [{ path: ['processDataSet', 'exchanges'] }],
+      },
     });
     mockAuthGetSession.mockResolvedValueOnce({
       data: {

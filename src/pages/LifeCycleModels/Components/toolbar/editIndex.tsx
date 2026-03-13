@@ -801,7 +801,7 @@ const ToolbarEdit: FC<Props> = ({
         await removeNodes([node.id ?? '']);
         setNodeCount(nodeCount - 1);
         edges.forEach((e) => {
-          if (e?.labels?.length > 0) {
+          if ((e.labels?.length ?? 0) > 0) {
             updateEdge(e.id ?? '', { labels: [] });
           }
         });
@@ -811,7 +811,7 @@ const ToolbarEdit: FC<Props> = ({
       if (selectedEdges.length > 0) {
         await removeEdges(selectedEdges.map((e) => e.id ?? ''));
         edges.forEach((e) => {
-          if (e?.labels?.length > 0) {
+          if ((e.labels?.length ?? 0) > 0) {
             updateEdge(e.id ?? '', { labels: [] });
           }
         });
@@ -952,7 +952,7 @@ const ToolbarEdit: FC<Props> = ({
     const edge = evt.edge;
     updateEdge(edge.id, edgeTemplate);
     edges.forEach((e) => {
-      if (e?.labels?.length > 0) {
+      if ((e.labels?.length ?? 0) > 0) {
         updateEdge(e.id ?? '', { labels: [] });
       }
     });
@@ -1446,9 +1446,13 @@ const ToolbarEdit: FC<Props> = ({
 
   useEffect(() => {
     nodes.forEach((node) => {
+      const nodeData = node.data;
+      if (!nodeData?.id || !nodeData?.version) {
+        return;
+      }
       const isErrNode = problemNodes.find(
         (item: refDataType) =>
-          item['@refObjectId'] === node.data.id && item['@version'] === node.data.version,
+          item['@refObjectId'] === nodeData.id && item['@version'] === nodeData.version,
       );
       if (isErrNode) {
         updateNode(node.id ?? '', {
@@ -1477,7 +1481,8 @@ const ToolbarEdit: FC<Props> = ({
   const handleUpdateNode = async (ref: refDataType) => {
     setSpinning(true);
     const selectedNode = nodes.find((node) => node.selected);
-    if (selectedNode) {
+    const selectedNodeData = selectedNode?.data;
+    if (selectedNodeData?.id && selectedNodeData?.version) {
       const { data: procressDetail } = await getRefData(
         ref['@refObjectId'],
         ref['@version'],
@@ -1496,8 +1501,8 @@ const ToolbarEdit: FC<Props> = ({
         [],
         new ReffPath(
           {
-            '@refObjectId': selectedNode.data.id,
-            '@version': selectedNode.data.version,
+            '@refObjectId': selectedNodeData.id,
+            '@version': selectedNodeData.version,
             '@type': 'process data set',
           },
           procressDetail?.ruleVerification,
@@ -1509,8 +1514,8 @@ const ToolbarEdit: FC<Props> = ({
         setProblemNodes(
           problemNodes.filter(
             (item: refDataType) =>
-              item['@refObjectId'] !== selectedNode.data.id ||
-              item['@version'] !== selectedNode.data.version,
+              item['@refObjectId'] !== selectedNodeData.id ||
+              item['@version'] !== selectedNodeData.version,
           ),
         );
       }

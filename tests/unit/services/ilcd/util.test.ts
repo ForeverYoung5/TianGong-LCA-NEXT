@@ -12,8 +12,8 @@ import { genClass, genClassZH } from '@/services/ilcd/util';
 describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
   describe('genClass', () => {
     it('should handle null or undefined data', () => {
-      expect(genClass(null)).toBeUndefined();
-      expect(genClass(undefined)).toBeUndefined();
+      expect(genClass(null)).toEqual([]);
+      expect(genClass(undefined)).toEqual([]);
     });
 
     it('should transform single level classification data', () => {
@@ -29,13 +29,13 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
         id: 'cat1',
         value: 'Category 1',
         label: 'Category 1',
-        children: undefined,
+        children: [],
       });
       expect(result[1]).toEqual({
         id: 'cat2',
         value: 'Category 2',
         label: 'Category 2',
-        children: undefined,
+        children: [],
       });
     });
 
@@ -61,7 +61,7 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
         id: 'child1',
         value: 'Child Category 1',
         label: 'Child Category 1',
-        children: undefined,
+        children: [],
       });
     });
 
@@ -107,15 +107,15 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
         id: 'simple',
         value: 'Simple Category',
         label: 'Simple Category',
-        children: undefined,
+        children: [],
       });
     });
   });
 
   describe('genClassZH', () => {
     it('should handle null or undefined data', () => {
-      expect(genClassZH(null, null)).toBeUndefined();
-      expect(genClassZH(undefined, undefined)).toBeUndefined();
+      expect(genClassZH(null, null)).toEqual([]);
+      expect(genClassZH(undefined, undefined)).toEqual([]);
     });
 
     it('should use Chinese names when dataZH is provided', () => {
@@ -136,13 +136,13 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
         id: 'cat1',
         value: 'Category 1',
         label: '分类 1',
-        children: undefined,
+        children: [],
       });
       expect(result[1]).toEqual({
         id: 'cat2',
         value: 'Category 2',
         label: '分类 2',
-        children: undefined,
+        children: [],
       });
     });
 
@@ -199,7 +199,7 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
         id: 'cat1',
         value: 'Category 1',
         label: 'Category 1',
-        children: undefined,
+        children: [],
       });
     });
 

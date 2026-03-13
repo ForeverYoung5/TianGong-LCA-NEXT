@@ -1,32 +1,21 @@
+import type {
+  LifeCycleModelGraphEdge,
+  LifeCycleModelGraphNode,
+} from '@/services/lifeCycleModels/data';
 import { Graph } from '@antv/x6';
 import type { EventArgs as GraphEventArgs } from '@antv/x6/lib/graph/events';
 import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 
-export interface GraphNode {
-  id?: string;
-  data?: any;
-  tools?: any;
-  ports?: any;
-  attrs?: any;
-  selected?: boolean;
-  size?: { width: number; height: number };
-  width?: number;
-  height?: number;
-  isMyProcess?: boolean;
-  modelData?: any;
-  [key: string]: any;
-}
+export type GraphNode = LifeCycleModelGraphNode;
+export type GraphEdge = LifeCycleModelGraphEdge;
 
-export interface GraphEdge {
-  id?: string;
-  source?: any;
-  target?: any;
-  data?: any;
-  attrs?: any;
-  labels?: any;
-  selected?: boolean;
-  [key: string]: any;
-}
+type GraphNodeUpdate = Partial<Omit<GraphNode, 'id'>> & {
+  data?: Record<string, unknown>;
+};
+
+type GraphEdgeUpdate = Partial<Omit<GraphEdge, 'id'>> & {
+  data?: Record<string, unknown>;
+};
 
 interface GraphContextValue {
   graph: Graph | null;
@@ -36,9 +25,9 @@ interface GraphContextValue {
   setNodes: (nodes: GraphNode[]) => void;
   setEdges: (edges: GraphEdge[]) => void;
   addNodes: (nodes: GraphNode[]) => void;
-  updateNode: (nodeId: string, data: any) => void;
+  updateNode: (nodeId: string, data: GraphNodeUpdate) => void;
   removeNodes: (nodeIds: string[]) => void;
-  updateEdge: (edgeId: string, data: any) => void;
+  updateEdge: (edgeId: string, data: GraphEdgeUpdate) => void;
   removeEdges: (edgeIds: string[]) => void;
   initData: (data: { nodes: GraphNode[]; edges: GraphEdge[] }) => void;
   syncGraphData: () => void;
@@ -66,27 +55,27 @@ export const GraphProvider = ({ children }: { children: ReactNode }) => {
   const addNodes = (nodesToAdd: GraphNode[]) => {
     if (graphRef.current) {
       nodesToAdd.forEach((node) => {
-        graphRef.current?.addNode(node);
+        graphRef.current?.addNode(node as unknown as Parameters<Graph['addNode']>[0]);
       });
       setNodesState((prev) => [...prev, ...nodesToAdd]);
     }
   };
 
-  const updateNode = (nodeId: string, data: any) => {
+  const updateNode = (nodeId: string, data: GraphNodeUpdate) => {
     if (graphRef.current) {
       const cell = graphRef.current.getCellById(nodeId);
       if (cell && cell.isNode()) {
         const node = cell;
         // 更新节点数据
         if (data.data) {
-          const currentData = node.getData() || {};
+          const currentData = (node.getData() as Record<string, unknown> | null) || {};
           node.setData({ ...currentData, ...data.data });
         }
 
         // 更新工具
         if (data.tools) {
           node.removeTools();
-          node.addTools(data.tools);
+          node.addTools(data.tools as Parameters<typeof node.addTools>[0]);
         }
 
         // 更新端口
@@ -97,19 +86,19 @@ export const GraphProvider = ({ children }: { children: ReactNode }) => {
         // 更新尺寸
         if (data.width !== undefined || data.height !== undefined) {
           node.resize(
-            data.width !== undefined ? data.width : node.getSize().width,
-            data.height !== undefined ? data.height : node.getSize().height,
+            Number(data.width ?? node.getSize().width),
+            Number(data.height ?? node.getSize().height),
           );
         }
 
         // 更新标签
         if (data.label !== undefined) {
-          node.setAttrByPath('label/text', data.label);
+          node.setAttrByPath('label/text', data.label as Parameters<typeof node.setAttrByPath>[1]);
         }
 
         // 更新属性
         if (data.attrs) {
-          node.setAttrs(data.attrs);
+          node.setAttrs(data.attrs as Parameters<typeof node.setAttrs>[0]);
         }
 
         // 更新选中状态
@@ -146,14 +135,14 @@ export const GraphProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updateEdge = (edgeId: string, data: any) => {
+  const updateEdge = (edgeId: string, data: GraphEdgeUpdate) => {
     if (graphRef.current) {
       const edge = graphRef.current.getCellById(edgeId);
       let isConnect = false;
       if (edge && edge.isEdge()) {
         // 更新边数据
         if (data.data) {
-          const currentData = edge.getData() || {};
+          const currentData = (edge.getData() as Record<string, unknown> | null) || {};
           edge.setData({ ...currentData, ...data.data });
           if (data?.data?.connection) {
             isConnect = true;
@@ -162,22 +151,22 @@ export const GraphProvider = ({ children }: { children: ReactNode }) => {
 
         // 更新属性
         if (data.attrs) {
-          edge.setAttrs(data.attrs);
+          edge.setAttrs(data.attrs as Parameters<typeof edge.setAttrs>[0]);
         }
 
         // 更新标签
         if (data.labels) {
-          edge.setLabels(data.labels);
+          edge.setLabels(data.labels as Parameters<typeof edge.setLabels>[0]);
         }
 
         // 更新目标
         if (data.target) {
-          edge.setTarget(data.target);
+          edge.setTarget(data.target as Parameters<typeof edge.setTarget>[0]);
         }
 
         // 更新源
         if (data.source) {
-          edge.setSource(data.source);
+          edge.setSource(data.source as Parameters<typeof edge.setSource>[0]);
         }
 
         // 更新选中状态
@@ -223,10 +212,10 @@ export const GraphProvider = ({ children }: { children: ReactNode }) => {
     if (graphRef.current) {
       graphRef.current.clearCells();
       if (data.nodes && data.nodes.length > 0) {
-        graphRef.current.addNodes(data.nodes);
+        graphRef.current.addNodes(data.nodes as unknown as Parameters<Graph['addNodes']>[0]);
       }
       if (data.edges && data.edges.length > 0) {
-        graphRef.current.addEdges(data.edges);
+        graphRef.current.addEdges(data.edges as unknown as Parameters<Graph['addEdges']>[0]);
       }
       setNodesState(data.nodes || []);
       setEdgesState(data.edges || []);

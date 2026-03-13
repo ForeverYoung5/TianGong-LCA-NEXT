@@ -1,5 +1,8 @@
 import { FormSource } from '@/services/sources/data';
-import { createSource as createTidasSource } from '@tiangong-lca/tidas-sdk';
+import {
+  createSource as createTidasSource,
+  createSourceFromJSON as createTidasSourceFromJSON,
+} from '@tiangong-lca/tidas-sdk';
 import {
   classificationToJsonList,
   classificationToStringList,
@@ -157,6 +160,10 @@ export function genSourceJsonOrdered(id: string, data: any) {
       },
     },
   });
+}
+
+export function validateSourceJson(data: object) {
+  return createTidasSourceFromJSON(data).validateEnhanced();
 }
 
 export function genSourceFromData(data: any): FormSource {

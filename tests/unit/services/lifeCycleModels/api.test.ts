@@ -17,9 +17,6 @@ jest.mock('@tiangong-lca/tidas-sdk', () => ({
   }),
 }));
 
-const { createLifeCycleModel: mockCreateTidasLifeCycleModel } =
-  jest.requireMock('@tiangong-lca/tidas-sdk');
-
 const mockFrom = jest.fn();
 const mockAuthGetSession = jest.fn();
 const mockFunctionsInvoke = jest.fn();
@@ -111,6 +108,7 @@ jest.mock('@/services/auth', () => ({
 }));
 
 const mockGenLifeCycleModelJsonOrdered = jest.fn();
+const mockValidateLifeCycleModelJson = jest.fn();
 
 const mockGenReferenceToResultingProcess = jest
   .fn()
@@ -145,6 +143,7 @@ jest.mock('@/services/lifeCycleModels/util', () => ({
     mockGenLifeCycleModelJsonOrdered.apply(null, args),
   genReferenceToResultingProcess: (...args: any[]) =>
     mockGenReferenceToResultingProcess.apply(null, args),
+  validateLifeCycleModelJson: (...args: any[]) => mockValidateLifeCycleModelJson.apply(null, args),
 }));
 
 const mockGenLifeCycleModelProcesses = jest.fn();
@@ -241,11 +240,9 @@ beforeEach(() => {
   mockGetUserId.mockResolvedValue(sampleUserId);
   mockGetCurrentUser.mockResolvedValue({ userid: sampleUserId });
   mockGenLifeCycleModelJsonOrdered.mockReturnValue({ lifeCycleModelDataSet: {} });
+  mockValidateLifeCycleModelJson.mockReturnValue({ success: true });
   mockGenLifeCycleModelProcesses.mockResolvedValue({ lifeCycleModelProcesses: [] });
   mockControllerWaitForAll.mockResolvedValue(undefined);
-  mockCreateTidasLifeCycleModel.mockReturnValue({
-    validateEnhanced: jest.fn().mockReturnValue({ success: true }),
-  });
   mockGetAllRefObj.mockReturnValue([]);
   mockGetRefTableName.mockImplementation((type: string) => {
     if (type === 'process data set') return 'processes';
@@ -1170,13 +1167,11 @@ describe('createLifeCycleModel', () => {
   });
 
   it('marks rule verification false and enriches primary processes with included refs', async () => {
-    mockCreateTidasLifeCycleModel.mockReturnValueOnce({
-      validateEnhanced: jest.fn().mockReturnValue({
-        success: false,
-        error: {
-          issues: [{ path: 'lifeCycleModelDataSet.someField' }, { path: 'validation.review' }],
-        },
-      }),
+    mockValidateLifeCycleModelJson.mockReturnValueOnce({
+      success: false,
+      error: {
+        issues: [{ path: 'lifeCycleModelDataSet.someField' }, { path: 'validation.review' }],
+      },
     });
     mockGenLifeCycleModelJsonOrdered.mockReturnValueOnce({
       lifeCycleModelDataSet: {

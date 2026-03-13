@@ -1,5 +1,4 @@
 import { FunctionRegion } from '@supabase/supabase-js';
-import { createSource as createTidasSource } from '@tiangong-lca/tidas-sdk';
 import {
   classificationToString,
   genClassificationZH,
@@ -11,7 +10,7 @@ import { supabase } from '@/services/supabase';
 import { SortOrder } from 'antd/lib/table/interface';
 import { getDataDetail, getTeamIdByUserId, normalizeLangPayloadForSave } from '../general/api';
 import { getCachedClassificationData } from '../ilcd/cache';
-import { genSourceJsonOrdered } from './util';
+import { genSourceJsonOrdered, validateSourceJson } from './util';
 export async function createSource(id: string, data: any) {
   const rawData = genSourceJsonOrdered(id, data);
   const normalizedResult = normalizeLangPayloadForSave
@@ -34,7 +33,7 @@ export async function createSource(id: string, data: any) {
       count: null,
     };
   }
-  const rule_verification = createTidasSource(newData).validateEnhanced().success;
+  const rule_verification = validateSourceJson(newData).success;
   // const teamId = await getTeamIdByUserId();
   const result = await supabase
     .from('sources')
@@ -65,7 +64,7 @@ export async function updateSource(id: string, version: string, data: any) {
       count: null,
     };
   }
-  const rule_verification = createTidasSource(newData).validateEnhanced().success;
+  const rule_verification = validateSourceJson(newData).success;
   let result: any = {};
   const session = await supabase.auth.getSession();
   if (session.data.session) {

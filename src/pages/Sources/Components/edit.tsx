@@ -9,14 +9,17 @@ import {
 } from '@/pages/Utils/updateReference';
 import { getSourceDetail, updateSource } from '@/services/sources/api';
 import { FormSource, SourceDataSetObjectKeys, SourceDetailResponse } from '@/services/sources/data';
-import { genSourceFromData, genSourceJsonOrdered } from '@/services/sources/util';
+import {
+  genSourceFromData,
+  genSourceJsonOrdered,
+  validateSourceJson,
+} from '@/services/sources/util';
 import type { SupabaseMutationResult } from '@/services/supabase/data';
 import { supabaseStorageBucket } from '@/services/supabase/key';
 import { getThumbFileUrls, removeFile, uploadFile } from '@/services/supabase/storage';
 import styles from '@/style/custom.less';
 import { CloseOutlined, FormOutlined } from '@ant-design/icons';
 import { ActionType, ProForm, ProFormInstance } from '@ant-design/pro-components';
-import { createSource as createTidasSource } from '@tiangong-lca/tidas-sdk';
 import { Button, Drawer, Space, Spin, Tooltip, message } from 'antd';
 import type { RcFile, UploadFile } from 'antd/es/upload';
 import path from 'path';
@@ -338,8 +341,7 @@ const SourceEdit: FC<Props> = ({
       if (tabName && !errTabNames.includes(tabName)) errTabNames.push(tabName);
     });
 
-    const tidasSource = createTidasSource(genSourceJsonOrdered(id, fromData));
-    const validateResult = tidasSource.validateEnhanced();
+    const validateResult = validateSourceJson(genSourceJsonOrdered(id, fromData));
     const issues = validateResult.success ? [] : validateResult.error.issues;
     if (issues.length) {
       issues.forEach((err) => {

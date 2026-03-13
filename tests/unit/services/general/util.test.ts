@@ -273,7 +273,7 @@ describe('General Utility Functions', () => {
       const result = await getUnitData('flow', []);
 
       expect(result).toEqual([]);
-      expect(getFlowProperties).toHaveBeenCalledWith([]);
+      expect(getFlowProperties).not.toHaveBeenCalled();
     });
 
     it('should handle missing refUnitRes when unit not found', async () => {
@@ -727,6 +727,10 @@ describe('General Utility Functions', () => {
         value: ['Class 1', 'Class 2'],
       };
       const result = classificationToJsonList(input, false);
+      expect(Array.isArray(result)).toBe(true);
+      if (!Array.isArray(result)) {
+        throw new Error('Expected classificationToJsonList to return an array');
+      }
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
         '@level': '0',
@@ -1030,10 +1034,12 @@ describe('General Utility Functions', () => {
       ];
       const categoryData = [
         {
+          id: 'category-a',
           value: 'Category A',
           label: '分类 A',
           children: [
             {
+              id: 'subcategory-b',
               value: 'Subcategory B',
               label: '子分类 B',
               children: [],
@@ -1077,10 +1083,12 @@ describe('General Utility Functions', () => {
       ];
       const categoryData = [
         {
+          id: 'category-a',
           value: 'Category A',
           label: '分类 A',
           children: [
             {
+              id: 'subcategory-b',
               value: 'Subcategory B',
               label: '子分类 B',
               children: [],

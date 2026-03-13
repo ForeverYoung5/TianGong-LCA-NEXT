@@ -16,12 +16,12 @@ import {
 import {
   genFlowpropertyFromData,
   genFlowpropertyJsonOrdered,
+  validateFlowPropertyJson,
 } from '@/services/flowproperties/util';
 import type { SupabaseMutationResult } from '@/services/supabase/data';
 import styles from '@/style/custom.less';
 import { CloseOutlined, FormOutlined } from '@ant-design/icons';
 import { ActionType, ProForm, ProFormInstance } from '@ant-design/pro-components';
-import { createFlowProperty as createTidasFlowProperty } from '@tiangong-lca/tidas-sdk';
 import {
   Button,
   Drawer,
@@ -315,8 +315,7 @@ const FlowpropertiesEdit: FC<Props> = ({
       if (tabName && !errTabNames.includes(tabName)) errTabNames.push(tabName);
     });
 
-    const tidasFlowProperty = createTidasFlowProperty(genFlowpropertyJsonOrdered(id, fromData));
-    const validateResult = tidasFlowProperty.validateEnhanced();
+    const validateResult = validateFlowPropertyJson(genFlowpropertyJsonOrdered(id, fromData));
     const issues = validateResult.success ? [] : validateResult.error.issues;
     if (issues.length) {
       issues.forEach((err) => {

@@ -45,11 +45,13 @@ import type {
   LifeCycleModelToolbarEditInfoHandle,
   LifeCycleModelValidationIssue,
 } from '@/services/lifeCycleModels/data';
-import { genLifeCycleModelJsonOrdered } from '@/services/lifeCycleModels/util';
+import {
+  genLifeCycleModelJsonOrdered,
+  validateLifeCycleModelJson,
+} from '@/services/lifeCycleModels/util';
 import { genLifeCycleModelProcesses } from '@/services/lifeCycleModels/util_calculate';
 import { getProcessDetail } from '@/services/processes/api';
 import { getUserTeamId } from '@/services/roles/api';
-import { createLifeCycleModel as createTidasLifeCycleModel } from '@tiangong-lca/tidas-sdk';
 import { v4 } from 'uuid';
 
 export type ToolbarEditInfoHandle = LifeCycleModelToolbarEditInfoHandle<refDataType>;
@@ -284,8 +286,7 @@ const ToolbarEditInfo = forwardRef<ToolbarEditInfoHandle, Props>(
         );
       }
 
-      const tidasLifeCycleModel = createTidasLifeCycleModel(lifeCycleModelJsonOrdered);
-      const validateResult = tidasLifeCycleModel.validateEnhanced();
+      const validateResult = validateLifeCycleModelJson(lifeCycleModelJsonOrdered);
       const issues: LifeCycleModelValidationIssue[] = validateResult.success
         ? []
         : validateResult.error.issues.filter(

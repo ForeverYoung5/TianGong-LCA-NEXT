@@ -25,11 +25,13 @@ jest.mock('@tiangong-lca/tidas-sdk', () => ({
 
 jest.mock('@/services/unitgroups/util', () => ({
   genUnitGroupJsonOrdered: jest.fn(),
+  validateUnitGroupJson: jest.fn(),
 }));
 
-const { genUnitGroupJsonOrdered: mockGenUnitGroupJsonOrdered } = jest.requireMock(
-  '@/services/unitgroups/util',
-);
+const {
+  genUnitGroupJsonOrdered: mockGenUnitGroupJsonOrdered,
+  validateUnitGroupJson: mockValidateUnitGroupJson,
+} = jest.requireMock('@/services/unitgroups/util');
 
 jest.mock('@/services/general/util', () => ({
   classificationToString: jest.fn(),
@@ -166,6 +168,7 @@ beforeEach(() => {
     id,
     ...data,
   }));
+  mockValidateUnitGroupJson.mockReturnValue({ success: true });
   mockClassificationToString.mockImplementation((items: any[]) =>
     (items || [])
       .map((item: any) => item?.label ?? item?.['#text'] ?? item)

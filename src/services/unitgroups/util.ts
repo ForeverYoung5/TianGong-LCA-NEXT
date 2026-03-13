@@ -1,5 +1,8 @@
 import { FormUnitGroup } from '@/services/unitgroups/data';
-import { createUnitGroup as createTidasUnitGroup } from '@tiangong-lca/tidas-sdk';
+import {
+  createUnitGroup as createTidasUnitGroup,
+  createUnitGroupFromJSON as createTidasUnitGroupFromJSON,
+} from '@tiangong-lca/tidas-sdk';
 import {
   classificationToJsonList,
   classificationToStringList,
@@ -12,7 +15,9 @@ import {
 } from '../general/util';
 
 export function genUnitGroupJsonOrdered(id: string, data: any) {
-  let quantitativeReference = {};
+  let quantitativeReference: {
+    referenceToReferenceUnit?: string;
+  } = {};
   const unit =
     data?.units?.unit?.map((item: any) => {
       if (item.quantitativeReference) {
@@ -184,6 +189,10 @@ export function genUnitGroupJsonOrdered(id: string, data: any) {
       },
     },
   });
+}
+
+export function validateUnitGroupJson(data: object) {
+  return createTidasUnitGroupFromJSON(data).validateEnhanced();
 }
 
 export function genUnitGroupFromData(data: any): FormUnitGroup {

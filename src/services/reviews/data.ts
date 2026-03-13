@@ -1,3 +1,5 @@
+import type { JsonObject, LangTextValue } from '../general/data';
+
 export type ReviewsTable = {
   key: string;
   id: string;
@@ -13,7 +15,7 @@ export type ReviewsTable = {
     data: {
       id: string;
       version: string;
-      name: any;
+      name: LangTextValue;
     };
     team: {
       name: string;
@@ -28,7 +30,7 @@ export type ReviewsTable = {
   modelData?: {
     id: string;
     version: string;
-    json: any;
-    json_tg: any;
+    json: JsonObject;
+    json_tg: JsonObject;
   } | null;
 };

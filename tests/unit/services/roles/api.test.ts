@@ -642,7 +642,10 @@ describe('Roles API Service (src/services/roles/api.ts)', () => {
 
   describe('createTeamMessage', () => {
     it('should create team and assign owner role', async () => {
-      const teamData = { name: 'New Team', description: 'Test team' };
+      const teamData = {
+        title: [{ '@xml:lang': 'en', '#text': 'New Team' }],
+        description: [{ '@xml:lang': 'en', '#text': 'Test team' }],
+      };
       addTeam.mockResolvedValue(null);
 
       // Create delete chain mock
@@ -770,13 +773,13 @@ describe('Roles API Service (src/services/roles/api.ts)', () => {
       }
     });
 
-    it('should return undefined when no session exists', async () => {
+    it('should return empty payload when no session exists', async () => {
       supabase.auth.getSession.mockResolvedValue({ data: { session: null } });
 
       const result = await updateRoleApi(mockTeamId, mockUserId, 'admin');
 
       expect(supabase.functions.invoke).not.toHaveBeenCalled();
-      expect(result).toBeUndefined();
+      expect(result).toEqual({});
     });
   });
 

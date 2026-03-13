@@ -31,11 +31,12 @@ export type ProcessRefUnitDisplay = {
 };
 
 export type ProcessExchangeData = {
-  '@dataSetInternalID'?: string;
-  referenceToFlowDataSet?: ReferenceItem | ReferenceItem[];
+  '@dataSetInternalID'?: string | null;
+  referenceToFlowDataSet?: ReferenceItem | ReferenceItem[] | null;
   location?: string;
   functionType?: string;
-  exchangeDirection?: string;
+  exchangeDirection?: string | null;
+  classification?: string;
   referenceToVariable?: string;
   meanAmount?: string | number;
   resultingAmount?: string | number;
@@ -58,6 +59,9 @@ export type ProcessExchangeData = {
   generalComment?: LangTextValue;
   quantitativeReference?: boolean;
   functionalUnitOrOther?: LangTextValue;
+  refUnitRes?: ProcessRefUnitDisplay;
+  stateCode?: number;
+  typeOfDataSet?: string;
   [key: string]: unknown;
 };
 
@@ -76,6 +80,9 @@ export type ProcessExchangeTable = {
   generalComment: string;
   quantitativeReference: boolean;
   functionalUnitOrOther?: string;
+  allocations?: ProcessExchangeData['allocations'];
+  referenceToVariable?: string;
+  referencesToDataSource?: ProcessExchangeData['referencesToDataSource'];
   refUnitRes?: ProcessRefUnitDisplay;
   stateCode?: number;
   typeOfDataSet?: string;

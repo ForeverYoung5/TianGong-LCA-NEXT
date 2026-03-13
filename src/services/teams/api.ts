@@ -1,16 +1,20 @@
 import { supabase } from '@/services/supabase';
 import { FunctionRegion } from '@supabase/supabase-js';
 import { SortOrder } from 'antd/lib/table/interface';
+import type { FunctionInvokeResult, PaginationParams } from '../general/data';
 import { addRoleApi, getRoleByuserId, getTeamRoles, getUserIdsByTeamIds } from '../roles/api';
 import { getUserEmailByUserIds, getUserIdByEmail, getUsersByIds } from '../users/api';
+import type { TeamJson, TeamMemberTable, TeamTable } from './data';
 
-interface TeamMember {
-  user_id: string;
-  team_id: string;
-  email: any;
+type TeamMutationResult = {
+  data?: unknown;
+  error?: unknown;
+};
+
+type TeamMember = TeamMemberTable & {
   role: 'admin' | 'member' | 'is_invited';
   team_title?: string;
-}
+};
 
 export async function getTeams() {
   const result = await supabase
@@ -50,7 +54,7 @@ export async function getTeamsByKeyword(keyword: string) {
 }
 
 export async function getAllTableTeams(
-  params: { pageSize: number; current: number },
+  params: PaginationParams,
   tableType: 'joinTeam' | 'manageSystem',
   // sort: Record<string, SortOrder>,
 ) {
@@ -68,7 +72,8 @@ export async function getAllTableTeams(
     } else {
       query.gt('rank', 0);
     }
-    const { data: teams, count } = await query;
+    const { data, count } = await query;
+    const teams = (data ?? []) as TeamTable[];
 
     if (teams && teams.length > 0) {
       const teamIds = teams.map((item) => item.id);
@@ -100,8 +105,8 @@ export async function getAllTableTeams(
     });
   }
 }
-export async function updateTeamRank(id: string, rank: number) {
-  let result: any = {};
+export async function updateTeamRank(id: string, rank: number): Promise<TeamMutationResult> {
+  let result: FunctionInvokeResult<TeamMutationResult> = {};
   const session = await supabase.auth.getSession();
   if (session.data.session) {
     result = await supabase.functions.invoke('update_team', {
@@ -112,7 +117,7 @@ export async function updateTeamRank(id: string, rank: number) {
       region: FunctionRegion.UsEast1,
     });
   }
-  return result?.data;
+  return result.data ?? {};
 }
 
 export async function updateSort(params: { id: string; rank: number }[]) {
@@ -145,9 +150,14 @@ export async function getTeamById(id: string) {
   });
 }
 
-export async function editTeamMessage(id: string, data: any, rank?: number, is_public?: boolean) {
+export async function editTeamMessage(
+  id: string,
+  data: TeamJson,
+  rank?: number,
+  is_public?: boolean,
+): Promise<TeamMutationResult> {
   if (typeof rank !== 'undefined') {
-    let result: any = {};
+    let result: FunctionInvokeResult<TeamMutationResult> = {};
     const session = await supabase.auth.getSession();
     if (session.data.session) {
       result = await supabase.functions.invoke('update_team', {
@@ -158,9 +168,9 @@ export async function editTeamMessage(id: string, data: any, rank?: number, is_p
         region: FunctionRegion.UsEast1,
       });
     }
-    return result?.data;
+    return result.data ?? {};
   } else {
-    let result: any = {};
+    let result: FunctionInvokeResult<TeamMutationResult> = {};
     const session = await supabase.auth.getSession();
     if (session.data.session) {
       result = await supabase.functions.invoke('update_team', {
@@ -171,7 +181,7 @@ export async function editTeamMessage(id: string, data: any, rank?: number, is_p
         region: FunctionRegion.UsEast1,
       });
     }
-    return result?.data;
+    return result.data ?? {};
   }
 }
 
@@ -193,7 +203,7 @@ export async function getTeamMessageApi(id: string) {
 // };
 
 export async function getTeamMembersApi(
-  params: { pageSize: number; current: number },
+  params: PaginationParams,
   sort: Record<string, SortOrder>,
   teamId: string,
 ) {
@@ -276,14 +286,14 @@ export async function addTeamMemberApi(teamId: string, email: string) {
   }
 }
 
-export async function addTeam(id: string, data: any, rank: number, is_public: boolean) {
+export async function addTeam(id: string, data: TeamJson, rank: number, is_public: boolean) {
   const { error } = await supabase.from('teams').insert({ id, json: data, rank, is_public });
   return error;
 }
 
-export async function getUnrankedTeams(params: { pageSize?: number; current?: number }) {
+export async function getUnrankedTeams(params: PaginationParams) {
   try {
-    const { data: teams, count } = await supabase
+    const { data, count } = await supabase
       .from('teams')
       .select('*', { count: 'exact' })
       .eq('rank', 0)
@@ -293,7 +303,9 @@ export async function getUnrankedTeams(params: { pageSize?: number; current?: nu
         (params.current ?? 1) * (params.pageSize ?? 10) - 1,
       );
 
-    if (teams && teams.length > 0) {
+    const teams = (data ?? []) as TeamTable[];
+
+    if (teams.length > 0) {
       const teamIds = teams.map((item) => item.id);
       const users = await getUserIdsByTeamIds(teamIds);
       users.forEach((user) => {

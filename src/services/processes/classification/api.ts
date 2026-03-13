@@ -7,7 +7,7 @@ export function getISICClassification(getValues: string[]) {
     if (getValues.includes('all')) {
       result = ISICClassification_en?.CategorySystem?.categories?.[0]?.category;
     } else {
-      result = ISICClassification_en?.CategorySystem?.categories?.[0]?.category?.filter((i: any) =>
+      result = ISICClassification_en?.CategorySystem?.categories?.[0]?.category?.filter((i) =>
         getValues.includes(i['@name']),
       );
     }
@@ -29,7 +29,7 @@ export function getISICClassificationZH(getValues: string[]) {
     if (getValues.includes('all')) {
       result = ISICClassification_zh?.CategorySystem?.categories?.[0]?.category;
     } else {
-      result = ISICClassification_zh?.CategorySystem?.categories?.[0]?.category?.filter((i: any) =>
+      result = ISICClassification_zh?.CategorySystem?.categories?.[0]?.category?.filter((i) =>
         getValues.includes(i['@id']),
       );
     }

@@ -1,5 +1,8 @@
 import { FormFlowProperty } from '@/services/flowproperties/data';
-import { createFlowProperty as createTidasFlowProperty } from '@tiangong-lca/tidas-sdk';
+import {
+  createFlowProperty as createTidasFlowProperty,
+  createFlowPropertyFromJSON as createTidasFlowPropertyFromJSON,
+} from '@tiangong-lca/tidas-sdk';
 import {
   classificationToJsonList,
   classificationToStringList,
@@ -201,6 +204,10 @@ export function genFlowpropertyJsonOrdered(id: string, data: any) {
       },
     },
   });
+}
+
+export function validateFlowPropertyJson(data: object) {
+  return createTidasFlowPropertyFromJSON(data).validateEnhanced();
 }
 
 export function genFlowpropertyFromData(data: any): FormFlowProperty {
