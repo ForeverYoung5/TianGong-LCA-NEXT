@@ -139,7 +139,22 @@ describe('addReviewsApi', () => {
     const insertMock = jest.fn().mockReturnValue({ select: selectMock });
     mockFrom.mockReturnValueOnce({ insert: insertMock });
 
-    const payload = { json: { foo: 'bar' } };
+    const payload = {
+      data: {
+        id: 'process-1',
+        version: '01.00.000',
+        name: 'Process 1',
+      },
+      team: {
+        id: 'team-1',
+        name: 'Team 1',
+      },
+      user: {
+        id: 'user-1',
+        name: 'Alice',
+        email: 'alice@example.com',
+      },
+    };
     const result = await reviewsApi.addReviewsApi('review-1', payload);
 
     expect(mockFrom).toHaveBeenCalledWith('reviews');

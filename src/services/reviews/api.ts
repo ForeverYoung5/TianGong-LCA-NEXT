@@ -6,8 +6,26 @@ import { getPendingComment, getRejectedComment, getReviewedComment } from '../co
 import { getLangText } from '../general/util';
 import { getProcessDetailByIdAndVersion } from '../processes/api';
 import { genProcessName } from '../processes/util';
+import type {
+  ReviewJson,
+  ReviewModelDataSnapshot,
+  ReviewSubTableDataMap,
+  ReviewSubTableRow,
+  ReviewUpdatePayload,
+  ReviewsTable,
+} from './data';
 
-export async function addReviewsApi(id: string, data: any) {
+type ReviewRowRecord = {
+  id: string;
+  created_at: string;
+  modified_at: string;
+  deadline?: string | null;
+  state_code: number;
+  json: ReviewJson;
+  comments?: { state_code: number }[];
+};
+
+export async function addReviewsApi(id: string, data: ReviewJson) {
   const { error } = await supabase
     .from('reviews')
     .insert({
@@ -19,7 +37,7 @@ export async function addReviewsApi(id: string, data: any) {
   return { error };
 }
 
-export async function updateReviewApi(reviewIds: React.Key[], data: any) {
+export async function updateReviewApi(reviewIds: React.Key[], data: ReviewUpdatePayload) {
   const session = await supabase.auth.getSession();
   const newData =
     data?.state_code && [-1, 2, 1].includes(data.state_code)
@@ -101,8 +119,8 @@ export async function getReviewsTableDataOfReviewMember(
       total: 0,
     });
   } else {
-    const reviews: any[] = [];
-    commentResult.data.forEach((c: any) => {
+    const reviews: ReviewRowRecord[] = [];
+    commentResult.data.forEach((c: { reviews?: ReviewRowRecord }) => {
       if (c.reviews) {
         reviews.push({ ...c.reviews });
       }
@@ -112,12 +130,12 @@ export async function getReviewsTableDataOfReviewMember(
     reviews.forEach((i) => {
       const id = i?.json?.data?.id;
       const version = i?.json?.data?.version;
-      if (id) {
+      if (id && version) {
         processes.push({ id, version });
       }
     });
     const modelResult = await getLifeCyclesByIdAndVersion(processes);
-    let data = reviews.map((i: any) => {
+    const data: ReviewsTable[] = reviews.map((i) => {
       const model = modelResult?.data?.find(
         (j) => j.id === i?.json?.data?.id && j.version === i?.json?.data?.version,
       );
@@ -134,12 +152,17 @@ export async function getReviewsTableDataOfReviewMember(
         teamName: getLangText(i?.json?.team?.name ?? {}, lang),
         userName: i?.json?.user?.name ?? i?.json?.user?.email ?? '-',
         createAt: new Date(i.created_at).toISOString(),
-        modifiedAt: new Date(i?.modified_at).toISOString(),
+        modifiedAt: new Date(i.modified_at).toISOString(),
         deadline: i?.deadline ? new Date(i?.deadline).toISOString() : i?.deadline,
-        json: i?.json,
+        json: i.json,
         // Store complete model data for subtable preloading
         modelData: model
-          ? { id: model.id, version: model.version, json: model.json, json_tg: model.json_tg }
+          ? ({
+              id: model.id,
+              version: model.version,
+              json: model.json,
+              json_tg: model.json_tg,
+            } satisfies ReviewModelDataSnapshot)
           : null,
       };
     });
@@ -206,7 +229,7 @@ export async function getReviewsTableDataOfReviewAdmin(
       }
     });
     const modelResult = await getLifeCyclesByIdAndVersion(processes);
-    let data = result?.data.map((i: any) => {
+    const data: ReviewsTable[] = result?.data.map((i: ReviewRowRecord) => {
       const model = modelResult?.data?.find(
         (j) => j.id === i?.json?.data?.id && j.version === i?.json?.data?.version,
       );
@@ -223,12 +246,17 @@ export async function getReviewsTableDataOfReviewAdmin(
         teamName: getLangText(i?.json?.team?.name ?? {}, lang),
         userName: i?.json?.user?.name ?? i?.json?.user?.email ?? '-',
         createAt: new Date(i.created_at).toISOString(),
-        modifiedAt: new Date(i?.modified_at).toISOString(),
+        modifiedAt: new Date(i.modified_at).toISOString(),
         deadline: i?.deadline ? new Date(i?.deadline).toISOString() : i?.deadline,
-        json: i?.json,
+        json: i.json,
         comments: i?.comments,
         modelData: model
-          ? { id: model.id, version: model.version, json: model.json, json_tg: model.json_tg }
+          ? ({
+              id: model.id,
+              version: model.version,
+              json: model.json,
+              json_tg: model.json_tg,
+            } satisfies ReviewModelDataSnapshot)
           : null,
       };
     });
@@ -317,7 +345,7 @@ export async function getNotifyReviews(
       }
     });
     const modelResult = await getLifeCyclesByIdAndVersion(processIdAndVersions);
-    let data = result?.data.map((i: any) => {
+    const data: ReviewsTable[] = result?.data.map((i: ReviewRowRecord) => {
       const model = modelResult?.data?.find(
         (j) => j.id === i?.json?.data?.id && j.version === i?.json?.data?.version,
       );
@@ -335,7 +363,7 @@ export async function getNotifyReviews(
         userName: i?.json?.user?.name ?? i?.json?.user?.email ?? '-',
         modifiedAt: new Date(i.modified_at).toISOString(),
         stateCode: i.state_code,
-        json: i?.json,
+        json: i.json,
       };
     });
 
@@ -413,29 +441,10 @@ export async function getLatestReviewOfMine() {
 export async function getLifeCycleModelSubTableDataBatch(
   modelDatas: Array<{
     reviewId: string;
-    modelData: {
-      id: string;
-      version: string;
-      json: any;
-      json_tg: any;
-    };
+    modelData: ReviewModelDataSnapshot;
   }>,
   lang: string,
-): Promise<{
-  data: Record<
-    string,
-    Array<{
-      key: string;
-      id: string;
-      version: string;
-      name: string;
-      generalComment: string;
-      sourceType: 'processInstance' | 'submodel';
-      submodelType: string;
-    }>
-  >;
-  success: boolean;
-}> {
+): Promise<{ data: ReviewSubTableDataMap; success: boolean }> {
   if (!modelDatas.length) {
     return { data: {}, success: true };
   }
@@ -453,10 +462,14 @@ export async function getLifeCycleModelSubTableDataBatch(
     const { json, json_tg, version } = modelData;
 
     // Extract from json.processInstance
-    const processInstances =
-      json?.lifeCycleModelDataSet?.lifeCycleModelInformation?.technology?.processes
-        ?.processInstance ?? [];
-    processInstances.forEach((instance: any) => {
+    const processInstances = (json?.lifeCycleModelDataSet?.lifeCycleModelInformation?.technology
+      ?.processes?.processInstance ?? []) as Array<{
+      referenceToProcess?: {
+        '@refObjectId'?: string;
+        '@version'?: string;
+      };
+    }>;
+    processInstances.forEach((instance) => {
       const refObjectId = instance?.referenceToProcess?.['@refObjectId'];
       const refVersion = instance?.referenceToProcess?.['@version'];
       if (refObjectId && refVersion) {
@@ -508,9 +521,9 @@ export async function getLifeCycleModelSubTableDataBatch(
   }
 
   // 3. Group and format process data by reviewId
-  const resultData: Record<string, any[]> = {};
+  const resultData: ReviewSubTableDataMap = {};
 
-  processesResult.data.forEach((process: any) => {
+  processesResult.data.forEach((process) => {
     if (process.state_code !== 20) {
       return;
     }
@@ -525,18 +538,20 @@ export async function getLifeCycleModelSubTableDataBatch(
       }
 
       // Avoid adding the same process multiple times
-      if (!resultData[reviewId].some((item: any) => item.id === process.id)) {
-        resultData[reviewId].push({
+      if (!resultData[reviewId].some((item) => item.id === process.id)) {
+        const row: ReviewSubTableRow = {
           key: process.id,
           id: process.id,
           version: process.version,
-          name: genProcessName(
-            process.json?.processDataSet?.processInformation?.dataSetInformation?.name ?? {},
-            lang,
-          ),
+          name:
+            genProcessName(
+              process.json?.processDataSet?.processInformation?.dataSetInformation?.name ?? {},
+              lang,
+            ) || '-',
           sourceType: sourceInfo?.source,
           submodelType: sourceInfo?.type,
-        });
+        };
+        resultData[reviewId].push(row);
       }
     });
   });

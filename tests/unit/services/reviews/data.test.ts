@@ -32,14 +32,18 @@ describe('reviews data shapes', () => {
       modelData: {
         id: 'model-1',
         version: '01.00.000',
-        json: { lifeCycleModelDataSet: {} },
+        json: {
+          lifeCycleModelDataSet: {
+            lifeCycleModelInformation: {},
+          },
+        },
         json_tg: { xflow: { nodes: [], edges: [] } },
       },
     };
 
     expect(row.comments?.map((item) => item.state_code)).toEqual([10, 20]);
     expect(row.json.team.name).toBe('Team Alpha');
-    expect(row.modelData?.json_tg.xflow.nodes).toEqual([]);
+    expect(row.modelData?.json_tg?.xflow?.nodes).toEqual([]);
   });
 
   it('allows review rows without model data for process-only reviews', () => {
@@ -101,6 +105,12 @@ describe('reviews data shapes', () => {
 
     expect(row.comments).toBeUndefined();
     expect(row.modifiedAt).toBeUndefined();
-    expect((row.json.data.name as any).baseName[0]['#text']).toBe('Process C');
+    if (typeof row.json.data.name === 'string') {
+      throw new Error('Expected structured review name payload');
+    }
+    const baseName = row.json.data.name.baseName;
+    expect(Array.isArray(baseName) ? baseName[0]?.['#text'] : baseName?.['#text']).toBe(
+      'Process C',
+    );
   });
 });

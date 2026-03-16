@@ -17,6 +17,8 @@ import { getNotifyReviews } from '@/services/reviews/api';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 
+let mockLocale = 'en';
+
 // Mock dependencies
 jest.mock('@/services/reviews/api', () => ({
   getNotifyReviews: jest.fn(),
@@ -37,7 +39,7 @@ jest.mock('umi', () => ({
         return acc.replace(new RegExp(`{${key}}`, 'g'), String(value));
       }, message);
     },
-    locale: 'en',
+    locale: mockLocale,
   }),
 }));
 
@@ -88,6 +90,7 @@ describe('DataNotification Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLocale = 'en';
     mockGetNotifyReviews.mockResolvedValue(mockReviewData);
     onDataLoadedMock.mockResolvedValue(undefined);
   });
@@ -126,6 +129,20 @@ describe('DataNotification Component', () => {
 
     await waitFor(() => {
       expect(mockGetNotifyReviews).toHaveBeenCalledWith({ pageSize: 10, current: 1 }, 'en', 3);
+    });
+  });
+
+  it('should map zh-CN locale to zh before requesting notifications', async () => {
+    mockLocale = 'zh-CN';
+
+    render(
+      <ConfigProvider>
+        <DataNotification {...defaultProps} />
+      </ConfigProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mockGetNotifyReviews).toHaveBeenCalledWith({ pageSize: 10, current: 1 }, 'zh', 3);
     });
   });
 
@@ -422,21 +439,18 @@ describe('DataNotification Component', () => {
     });
   });
 
-  it('should render name in correct language', async () => {
-    const zhData = {
+  it('should render localized names returned by the service', async () => {
+    const localizedData = {
       ...mockReviewData,
       data: [
         {
           ...mockReviewData.data[0],
-          name: [
-            { '@xml:lang': 'zh', '#text': '测试流程' },
-            { '@xml:lang': 'en', '#text': 'Test Process' },
-          ],
+          name: '测试流程',
         },
       ],
       page: 1,
     };
-    mockGetNotifyReviews.mockResolvedValue(zhData);
+    mockGetNotifyReviews.mockResolvedValue(localizedData);
 
     render(
       <ConfigProvider>
@@ -445,7 +459,7 @@ describe('DataNotification Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Test Process')).toBeInTheDocument();
+      expect(screen.getByText('测试流程')).toBeInTheDocument();
     });
   });
 
