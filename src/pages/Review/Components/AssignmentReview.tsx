@@ -7,11 +7,16 @@ import {
   getReviewsTableDataOfReviewAdmin,
   getReviewsTableDataOfReviewMember,
 } from '@/services/reviews/api';
-import { ReviewsTable } from '@/services/reviews/data';
+import type {
+  ReviewSubTableDataMap,
+  ReviewSubTableRow,
+  ReviewsTable,
+} from '@/services/reviews/data';
 import { ProColumns, ProTable } from '@ant-design/pro-components';
 import { FormattedMessage, useIntl } from '@umijs/max';
 import { Card, Col, Input, Row, Space, Spin, Table, theme } from 'antd';
 import { SearchProps } from 'antd/es/input/Search';
+import type { ColumnsType } from 'antd/es/table';
 import { SortOrder } from 'antd/es/table/interface';
 import { useState } from 'react';
 import RejectReview from './RejectReview';
@@ -66,9 +71,9 @@ const AssignmentReview = ({
   const intl = useIntl();
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
-  const [subTableData, setSubTableData] = useState<Record<string, any[]>>({});
+  const [subTableData, setSubTableData] = useState<ReviewSubTableDataMap>({});
   const [subTableLoading, setSubTableLoading] = useState<Record<string, boolean>>({});
-  const [preloadedSubTableData, setPreloadedSubTableData] = useState<Record<string, any[]>>({});
+  const [preloadedSubTableData, setPreloadedSubTableData] = useState<ReviewSubTableDataMap>({});
 
   const onSearch: SearchProps['onSearch'] = () => {
     // setKeyWord(value);
@@ -127,7 +132,7 @@ const AssignmentReview = ({
     setExpandedRowKeys(newExpandedKeys);
   };
 
-  const subColumns = [
+  const subColumns: ColumnsType<ReviewSubTableRow> = [
     {
       title: (
         <FormattedMessage
@@ -137,7 +142,7 @@ const AssignmentReview = ({
       ),
       dataIndex: 'name',
       key: 'name',
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: ReviewSubTableRow) => {
         return (
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <ProcessView
@@ -158,7 +163,7 @@ const AssignmentReview = ({
       dataIndex: 'type',
       key: 'type',
       width: 120,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: ReviewSubTableRow) => {
         if (record.sourceType === 'processInstance') {
           return (
             <FormattedMessage id='pages.review.table.type.modelNode' defaultMessage='Model Node' />
@@ -291,10 +296,9 @@ const AssignmentReview = ({
           dataIndex: 'progress',
           sorter: false,
           search: false,
-          render: (_: any, record: ReviewsTable) => {
-            const total = record.comments?.filter((item: any) => item.state_code >= 0).length ?? 0;
-            const reviewed =
-              record.comments?.filter((item: any) => item.state_code === 1).length ?? 0;
+          render: (_: unknown, record: ReviewsTable) => {
+            const total = record.comments?.filter((item) => item.state_code >= 0).length ?? 0;
+            const reviewed = record.comments?.filter((item) => item.state_code === 1).length ?? 0;
             return [<Space key={0}>{`${reviewed}/${total}`}</Space>];
           },
         },
@@ -302,7 +306,7 @@ const AssignmentReview = ({
           title: <FormattedMessage id='pages.review.actions' defaultMessage='Actions' />,
           dataIndex: 'actions',
           search: false,
-          render: (_: any, record: ReviewsTable) => {
+          render: (_: unknown, record: ReviewsTable) => {
             return [
               <Space key={0}>
                 {record.isFromLifeCycle ? (
@@ -358,7 +362,7 @@ const AssignmentReview = ({
           title: <FormattedMessage id='pages.review.actions' defaultMessage='Actions' />,
           dataIndex: 'actions',
           search: false,
-          render: (_: any, record: ReviewsTable) => {
+          render: (_: unknown, record: ReviewsTable) => {
             return [
               <Space key={0}>
                 {record.isFromLifeCycle ? (
@@ -434,7 +438,7 @@ const AssignmentReview = ({
           title: <FormattedMessage id='pages.review.actions' defaultMessage='Actions' />,
           dataIndex: 'actions',
           search: false,
-          render: (_: any, record: ReviewsTable) => {
+          render: (_: unknown, record: ReviewsTable) => {
             return [
               <Space key={0}>
                 {record.isFromLifeCycle ? (

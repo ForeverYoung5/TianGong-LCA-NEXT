@@ -29,7 +29,9 @@ export const waitForAsync = () =>
 /**
  * Create mock function with type safety
  */
-export const createMockFn = <T extends (...args: any[]) => any>(): jest.MockedFunction<T> => {
+export const createMockFn = <
+  T extends (...args: unknown[]) => unknown,
+>(): jest.MockedFunction<T> => {
   return jest.fn() as unknown as jest.MockedFunction<T>;
 };
 

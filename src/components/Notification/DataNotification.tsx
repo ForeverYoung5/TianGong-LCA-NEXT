@@ -1,5 +1,6 @@
+import { getLang } from '@/services/general/util';
 import { getNotifyReviews } from '@/services/reviews/api';
-import type { ReviewsTable } from '@/services/reviews/data';
+import type { ReviewJson, ReviewsTable } from '@/services/reviews/data';
 import { Button, Space, Table, Tag, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useState } from 'react';
@@ -15,7 +16,7 @@ interface DataNotificationItem {
   isFromLifeCycle: boolean;
   stateCode?: number;
   rejectReason?: string;
-  json: any;
+  json: ReviewJson;
 }
 
 interface DataNotificationProps {
@@ -32,16 +33,13 @@ const DataNotification: React.FC<DataNotificationProps> = ({ timeFilter, onDataL
     total: 0,
   });
   const intl = useIntl();
+  const lang = getLang(intl.locale);
   const { token } = theme.useToken();
 
   const fetchDataNotifications = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      const reviewsRes = await getNotifyReviews(
-        { pageSize, current: page },
-        intl.locale,
-        timeFilter,
-      );
+      const reviewsRes = await getNotifyReviews({ pageSize, current: page }, lang, timeFilter);
       if (!reviewsRes.success) {
         return;
       }
@@ -54,7 +52,7 @@ const DataNotification: React.FC<DataNotificationProps> = ({ timeFilter, onDataL
           userName: item.userName,
           modifiedAt: item.modifiedAt || '-',
           isFromLifeCycle: item.isFromLifeCycle,
-          rejectReason: (item.json as any)?.comment?.message || '',
+          rejectReason: item.json.comment?.message || '',
           stateCode: item.stateCode,
           json: item.json,
         })) || [];
@@ -123,16 +121,7 @@ const DataNotification: React.FC<DataNotificationProps> = ({ timeFilter, onDataL
       title: intl.formatMessage({ id: 'pages.review.table.name', defaultMessage: 'Name' }),
       dataIndex: 'name',
       key: 'name',
-      render: (name: any) => {
-        if (typeof name === 'object' && name !== null) {
-          return intl.locale === 'zh-CN'
-            ? (name.find((item: any) => item['@xml:lang'] === 'zh')?.['#text'] ??
-                name[0]?.['#text'])
-            : (name.find((item: any) => item['@xml:lang'] === 'en')?.['#text'] ??
-                name[0]?.['#text']);
-        }
-        return name;
-      },
+      render: (name: string) => name,
     },
     {
       title: intl.formatMessage({ id: 'pages.review.table.teamName', defaultMessage: 'Team' }),

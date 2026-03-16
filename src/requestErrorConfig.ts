@@ -11,13 +11,53 @@ enum ErrorShowType {
   REDIRECT = 9,
 }
 // 与后端约定的响应数据格式
-interface ResponseStructure {
+interface ResponseStructure<TData = unknown> {
   success: boolean;
-  data: any;
+  data: TData;
   errorCode?: number;
   errorMessage?: string;
   showType?: ErrorShowType;
 }
+
+type BizErrorInfo = Omit<ResponseStructure, 'success'>;
+
+type BizError = Error & {
+  info?: BizErrorInfo;
+};
+
+type ErrorHandlerOptions = {
+  skipErrorHandler?: boolean;
+};
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const toResponseStructure = (value: unknown): ResponseStructure | null => {
+  if (
+    !isObject(value) ||
+    typeof value.success !== 'boolean' ||
+    !Object.prototype.hasOwnProperty.call(value, 'data')
+  ) {
+    return null;
+  }
+
+  return {
+    success: value.success,
+    data: value.data,
+    errorCode: typeof value.errorCode === 'number' ? value.errorCode : undefined,
+    errorMessage: typeof value.errorMessage === 'string' ? value.errorMessage : undefined,
+    showType: typeof value.showType === 'number' ? (value.showType as ErrorShowType) : undefined,
+  };
+};
+
+const isBizError = (error: unknown): error is BizError =>
+  error instanceof Error && error.name === 'BizError';
+
+const hasResponse = (error: unknown): error is { response: { status?: number } } =>
+  isObject(error) && isObject(error.response);
+
+const hasRequest = (error: unknown): error is { request: unknown } =>
+  isObject(error) && Object.prototype.hasOwnProperty.call(error, 'request');
 
 /**
  * @name 错误处理
@@ -29,21 +69,25 @@ export const errorConfig: RequestConfig = {
   errorConfig: {
     // 错误抛出
     errorThrower: (res) => {
-      const { success, data, errorCode, errorMessage, showType } =
-        res as unknown as ResponseStructure;
+      const response = toResponseStructure(res);
+      if (!response) {
+        return;
+      }
+
+      const { success, data, errorCode, errorMessage, showType } = response;
       if (!success) {
-        const error: any = new Error(errorMessage);
+        const error = new Error(errorMessage) as BizError;
         error.name = 'BizError';
         error.info = { errorCode, errorMessage, showType, data };
         throw error; // 抛出自制的错误
       }
     },
     // 错误接收及处理
-    errorHandler: (error: any, opts: any) => {
+    errorHandler: (error: unknown, opts?: ErrorHandlerOptions) => {
       if (opts?.skipErrorHandler) throw error;
       // 我们的 errorThrower 抛出的错误。
-      if (error.name === 'BizError') {
-        const errorInfo: ResponseStructure | undefined = error.info;
+      if (isBizError(error)) {
+        const errorInfo = error.info;
         if (errorInfo) {
           const { errorMessage, errorCode } = errorInfo;
           switch (errorInfo.showType) {
@@ -69,11 +113,11 @@ export const errorConfig: RequestConfig = {
               message.error(errorMessage);
           }
         }
-      } else if (error.response) {
+      } else if (hasResponse(error)) {
         // Axios 的错误
         // 请求成功发出且服务器也响应了状态码，但状态代码超出了 2xx 的范围
         message.error(`Response status:${error.response.status}`);
-      } else if (error.request) {
+      } else if (hasRequest(error)) {
         // 请求已经成功发起，但没有收到响应
         // \`error.request\` 在浏览器中是 XMLHttpRequest 的实例，
         // 而在node.js中是 http.ClientRequest 的实例
@@ -98,7 +142,7 @@ export const errorConfig: RequestConfig = {
   responseInterceptors: [
     (response) => {
       // 拦截响应数据，进行个性化处理
-      const { data } = response as unknown as ResponseStructure;
+      const data = (response as { data?: { success?: boolean } }).data;
 
       if (data?.success === false) {
         message.error('请求失败！');

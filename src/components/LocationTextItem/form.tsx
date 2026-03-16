@@ -1,13 +1,29 @@
 import { getILCDLocationAll } from '@/services/ilcd/api';
 import { Form, Select, Space } from 'antd';
-import { FC, useEffect, useState } from 'react';
+import type { NamePath, Rule } from 'rc-field-form/lib/interface';
+import { FC, ReactNode, useEffect, useState } from 'react';
 import RequiredMark from '../RequiredMark';
+
+type IlcdLocationItem = {
+  '@value'?: string;
+  '#text'?: string;
+};
+
+type IlcdLocationRow = {
+  location?: IlcdLocationItem[];
+};
+
+type LocationOption = {
+  label: string;
+  value: string;
+};
+
 type Props = {
-  name: any;
-  label: any;
+  name: NamePath;
+  label: ReactNode | string;
   lang: string;
   onData: () => void;
-  rules?: any[];
+  rules?: Rule[];
   showRequiredLable?: boolean;
 };
 
@@ -19,27 +35,26 @@ const LocationTextItemForm: FC<Props> = ({
   rules,
   showRequiredLable = false,
 }) => {
-  const [locationData, setLocationData] = useState<any>([]);
+  const [locationData, setLocationData] = useState<LocationOption[]>([]);
 
-  const handleLChange = async (value: any) => {
-    console.log(value);
+  const handleLChange = async () => {
     onData();
   };
 
   useEffect(() => {
     getILCDLocationAll(lang).then((res) => {
       if (res.success) {
-        const data: any = res.data?.[0]?.location ?? [];
+        const data = ((res.data ?? []) as IlcdLocationRow[])[0]?.location ?? [];
         setLocationData(
-          data?.map((l: any) => {
-            if (l?.['@value'] === 'NULL') {
+          data.map((location) => {
+            if (location?.['@value'] === 'NULL') {
               return { label: '', value: 'NULL' };
             }
             return {
-              label: l?.['@value'] + ' (' + l?.['#text'] + ')',
-              value: l?.['@value'],
+              label: `${location?.['@value'] ?? ''} (${location?.['#text'] ?? ''})`,
+              value: location?.['@value'] ?? '',
             };
-          }) ?? [],
+          }),
         );
       }
     });
@@ -58,8 +73,9 @@ const LocationTextItemForm: FC<Props> = ({
           // defaultValue={null} defaultValue报错
           onChange={handleLChange}
           options={locationData}
-          filterOption={(input: any, option: any) =>
-            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          filterOption={(input, option) =>
+            typeof option?.label === 'string' &&
+            option.label.toLowerCase().includes(input.toLowerCase())
           }
         />
       </Form.Item>

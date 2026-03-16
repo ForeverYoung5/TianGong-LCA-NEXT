@@ -1,18 +1,28 @@
+import type { LangTextEntry } from '@/services/general/data';
 import { langOptions } from '@/services/general/data';
 import { CloseOutlined } from '@ant-design/icons';
+import type { FormInstance } from 'antd';
 import { Button, Col, Form, Input, Row, Select, message } from 'antd';
-import { FC, ReactNode, useRef } from 'react';
+import type { NamePath, Rule } from 'rc-field-form/lib/interface';
+import { FC, ReactNode, useRef, type MutableRefObject } from 'react';
 import { FormattedMessage, useIntl } from 'umi';
 
 const { TextArea } = Input;
 
+type FormListEntry = Record<PropertyKey, LangTextEntry[] | undefined>;
+type FormValueReader = Pick<FormInstance, 'getFieldValue'>;
+type FormValueReaderRef = MutableRefObject<FormValueReader | undefined>;
+
+const isLangTextFieldValue = (value: unknown): value is LangTextEntry =>
+  typeof value === 'object' && value !== null;
+
 type Props = {
-  name: any;
+  name: NamePath;
   label: ReactNode | string;
-  rules?: any[];
+  rules?: Rule[];
   setRuleErrorState?: (showError: boolean) => void;
-  formRef?: any;
-  listName?: string[];
+  formRef?: FormValueReaderRef;
+  listName?: Array<string | number>;
 };
 
 const LangTextItemForm: FC<Props> = ({
@@ -24,26 +34,32 @@ const LangTextItemForm: FC<Props> = ({
   listName,
 }) => {
   const intl = useIntl();
-  const isRequired = rules?.some((rule) => rule.required);
+  const isRequired = rules?.some(
+    (rule) => typeof rule === 'object' && rule !== null && 'required' in rule && !!rule.required,
+  );
   const initialRenderRef = useRef(true);
 
   const formContext = Form.useFormInstance();
-  const form = formRef?.current || formContext;
+  const form: FormValueReader | undefined = formRef?.current ?? formContext;
+  const namePath = Array.isArray(name) ? name : [name];
 
-  let formValues = [];
+  let formValues: LangTextEntry[] = [];
   if (listName) {
-    formValues = form?.getFieldValue([...listName]);
-    const fieldName = name[name.length - 1];
-    if (fieldName) {
-      formValues = formValues?.[0]?.[fieldName];
+    const listValues = (form?.getFieldValue([...listName]) as FormListEntry[] | undefined) ?? [];
+    const fieldName = namePath[namePath.length - 1];
+    if (fieldName !== undefined) {
+      formValues = listValues[0]?.[fieldName] ?? [];
     }
   } else {
-    formValues = form.getFieldValue(name);
+    formValues = (form?.getFieldValue(name) as LangTextEntry[] | undefined) ?? [];
   }
 
   const selectedLangValues = (formValues ?? [])
-    .filter((item: any) => item && item['@xml:lang'])
-    .map((item: any) => item['@xml:lang']);
+    .filter(
+      (item): item is LangTextEntry & { '@xml:lang': string } =>
+        isLangTextFieldValue(item) && typeof item['@xml:lang'] === 'string',
+    )
+    .map((item) => item['@xml:lang']);
 
   return (
     <Form.Item>
@@ -54,11 +70,12 @@ const LangTextItemForm: FC<Props> = ({
             ? [
                 {
                   // When adding or deleting items, check whether the language meets the requirements
-                  validator: async (_, value) => {
-                    const lists = value.filter(
-                      (item: any) => item && item.hasOwnProperty('@xml:lang'),
+                  validator: async (_, value?: LangTextEntry[]) => {
+                    const lists = (value ?? []).filter(
+                      (item): item is LangTextEntry & { '@xml:lang': string } =>
+                        isLangTextFieldValue(item) && typeof item['@xml:lang'] === 'string',
                     );
-                    const langs = lists.map((item: any) => item['@xml:lang']);
+                    const langs = lists.map((item) => item['@xml:lang']);
                     const enIndex = langs.indexOf('en');
                     if (langs && langs.length && enIndex === -1) {
                       if (setRuleErrorState) {

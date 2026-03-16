@@ -50,7 +50,7 @@ const setupModuleMocks = () => {
       LogoutOutlined: () => <span data-testid='icon-logout' />,
       SettingOutlined: () => <span data-testid='icon-setting' />,
       TeamOutlined: () => <span data-testid='icon-team' />,
-      UserOutlined: () => <span data-testid='icon-user' />,
+      UserOutlined: () => <span role='img' aria-label='user' data-testid='icon-user' />,
     }),
     { virtual: true },
   );
@@ -434,7 +434,7 @@ describe('AvatarName', () => {
     render(<AvatarName />);
 
     expect(screen.getByText('Taylor')).toBeInTheDocument();
-    expect(screen.getByTestId('icon-user')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /user/i })).toBeInTheDocument();
   });
 
   it('renders without crashing when current user is missing', () => {
@@ -447,7 +447,7 @@ describe('AvatarName', () => {
 
     render(<AvatarName />);
 
-    expect(screen.getByTestId('icon-user')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /user/i })).toBeInTheDocument();
     expect(screen.queryByText('Taylor')).not.toBeInTheDocument();
   });
 });
