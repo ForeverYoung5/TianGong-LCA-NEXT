@@ -399,7 +399,10 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
       expect(supabase.from).toHaveBeenCalledWith('teams');
       expect(builder.select).toHaveBeenCalledWith('*');
       expect(builder.eq).toHaveBeenCalledWith('id', 'team-123');
-      expect(result).toEqual(createMockSuccessResponse(mapTeamRows([mockTeam] as any)));
+      expect(result).toEqual({
+        data: mapTeamRows([mockTeam] as any),
+        error: null,
+      });
     });
   });
 

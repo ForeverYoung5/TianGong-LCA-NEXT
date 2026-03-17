@@ -360,6 +360,10 @@ describe('TeamEdit component', () => {
 
     await user.click(screen.getByRole('button', { name: /edit/i }));
     await screen.findByRole('dialog');
+    await waitFor(() => {
+      expect(screen.getByTestId('light-logo-prop')).toHaveTextContent('existing/light.png');
+      expect(screen.getByTestId('dark-logo-prop')).toHaveTextContent('existing/dark.png');
+    });
 
     await user.click(screen.getByRole('button', { name: /clear logos/i }));
     await user.click(screen.getByRole('button', { name: /save/i }));
@@ -367,6 +371,8 @@ describe('TeamEdit component', () => {
     await waitFor(() => {
       expect(mockRemoveLogoApi).toHaveBeenCalledTimes(2);
     });
+    expect(mockRemoveLogoApi).toHaveBeenNthCalledWith(1, ['existing/light.png']);
+    expect(mockRemoveLogoApi).toHaveBeenNthCalledWith(2, ['existing/dark.png']);
   });
 
   it('reuses existing logo paths without uploading again', async () => {

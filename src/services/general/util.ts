@@ -397,10 +397,13 @@ export function getLangList(langTexts: any) {
   }
 }
 
-export const isJsonObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
+export function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
-export const isLangTextEntry = (value: unknown): value is LangTextEntry => isJsonObject(value);
+export function isLangTextEntry(value: unknown): value is LangTextEntry {
+  return isJsonObject(value);
+}
 
 export function jsonToList<T = unknown>(json: T | T[] | null | undefined): T[] {
   if (json) {
@@ -412,10 +415,10 @@ export function jsonToList<T = unknown>(json: T | T[] | null | undefined): T[] {
   return [];
 }
 
-export const toLangTextList = (value: unknown): LangTextEntry[] | undefined => {
+export function toLangTextList(value: unknown): LangTextEntry[] | undefined {
   const langTextList = jsonToList(value).filter(isLangTextEntry);
   return langTextList.length > 0 ? langTextList : undefined;
-};
+}
 
 export type LangValidationIssueCode = 'missing_en' | 'invalid_en';
 
