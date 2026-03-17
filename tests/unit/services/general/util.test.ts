@@ -30,6 +30,8 @@ import {
   getLangText,
   getLangValidationErrorMessage,
   getUnitData,
+  isJsonObject,
+  isLangTextEntry,
   isSupabaseDuplicateKeyError,
   isValidURL,
   jsonToList,
@@ -38,6 +40,7 @@ import {
   normalizeLangPayloadBeforeSave,
   removeEmptyObjects,
   toAmountNumber,
+  toLangTextList,
   validatePasswordStrength,
 } from '@/services/general/util';
 import { getReferenceUnits } from '@/services/unitgroups/api';
@@ -890,6 +893,39 @@ describe('General Utility Functions', () => {
     it('should handle primitive values', () => {
       expect(jsonToList('string')).toEqual(['string']);
       expect(jsonToList(123)).toEqual([123]);
+    });
+  });
+
+  describe('json shape helpers', () => {
+    it('should detect plain json objects', () => {
+      expect(isJsonObject({ key: 'value' })).toBe(true);
+      expect(isJsonObject(['value'])).toBe(false);
+      expect(isJsonObject(null)).toBe(false);
+      expect(isJsonObject('value')).toBe(false);
+    });
+
+    it('should treat object-shaped lang entries as reusable lang text items', () => {
+      expect(isLangTextEntry({ '@xml:lang': 'en', '#text': 'Team' })).toBe(true);
+      expect(isLangTextEntry({ '#text': 'Team' })).toBe(true);
+      expect(isLangTextEntry('Team')).toBe(false);
+    });
+
+    it('should normalize lang text values into list form', () => {
+      expect(toLangTextList({ '@xml:lang': 'en', '#text': 'Team' })).toEqual([
+        { '@xml:lang': 'en', '#text': 'Team' },
+      ]);
+      expect(
+        toLangTextList([
+          { '@xml:lang': 'en', '#text': 'Team' },
+          null,
+          'invalid',
+          { '@xml:lang': 'zh', '#text': '团队' },
+        ]),
+      ).toEqual([
+        { '@xml:lang': 'en', '#text': 'Team' },
+        { '@xml:lang': 'zh', '#text': '团队' },
+      ]);
+      expect(toLangTextList(null)).toBeUndefined();
     });
   });
 

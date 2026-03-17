@@ -28,6 +28,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { getThumbFileUrls } from '@/services/supabase/storage';
 import { getTeams } from '@/services/teams/api';
+import type { TeamTable } from '@/services/teams/data';
 import { PageContainer } from '@ant-design/pro-components';
 import CountUp from 'react-countup';
 import { FormattedMessage, useIntl } from 'umi';
@@ -42,12 +43,35 @@ const Welcome: React.FC = () => {
 
   const isDarkMode = localStorage.getItem('isDarkMode') === 'true';
 
-  const [teams, setTeams] = React.useState<any>(null);
-  const [teamsCount, setTeamsCount] = React.useState<number>(0);
+  const [teams, setTeams] = React.useState<TeamTable[] | null>(null);
+  const [teamsCount, setTeamsCount] = React.useState(0);
   const [isDataModalOpen, setIsDataModalOpen] = useState(false);
   const [isTeamsLoading, setIsTeamsLoading] = useState(false);
   const [modalWidth, setModalWidth] = useState(720);
   const [isTidasModalOpen, setIsTidasModalOpen] = useState(false);
+
+  const addPreviewUrls = React.useCallback(async (team: TeamTable) => {
+    const nextTeam: TeamTable = {
+      ...team,
+      json: { ...team.json },
+    };
+
+    if (nextTeam.json.lightLogo) {
+      const thumbResult = await getThumbFileUrls([{ '@uri': `${nextTeam.json.lightLogo}` }]);
+      if (thumbResult[0]?.status === 'done') {
+        nextTeam.json.previewLightUrl = thumbResult[0].thumbUrl;
+      }
+    }
+
+    if (nextTeam.json.darkLogo) {
+      const thumbResult = await getThumbFileUrls([{ '@uri': `${nextTeam.json.darkLogo}` }]);
+      if (thumbResult[0]?.status === 'done') {
+        nextTeam.json.previewDarkUrl = thumbResult[0].thumbUrl;
+      }
+    }
+
+    return nextTeam;
+  }, []);
 
   const handleOpenDataModal = React.useCallback(
     (event?: React.MouseEvent<HTMLElement>) => {
@@ -65,24 +89,7 @@ const Welcome: React.FC = () => {
     try {
       const res = await getTeams();
       if (res?.data && res.data.length > 0) {
-        const processTeams = [...res.data];
-        const promises = processTeams.map(async (team, index) => {
-          if (team.json?.lightLogo) {
-            const thumbResult = await getThumbFileUrls([{ '@uri': `${team.json.lightLogo}` }]);
-            if (thumbResult[0]?.status === 'done') {
-              processTeams[index].json.previewLightUrl = thumbResult[0].thumbUrl;
-            }
-          }
-          if (team.json?.darkLogo) {
-            const thumbResult = await getThumbFileUrls([{ '@uri': `${team.json.darkLogo}` }]);
-            if (thumbResult[0]?.status === 'done') {
-              processTeams[index].json.previewDarkUrl = thumbResult[0].thumbUrl;
-            }
-          }
-          return team;
-        });
-
-        await Promise.all(promises);
+        const processTeams = await Promise.all(res.data.map((team) => addPreviewUrls(team)));
         setTeams(processTeams);
       } else {
         setTeams(res?.data);
@@ -90,7 +97,7 @@ const Welcome: React.FC = () => {
     } finally {
       setIsTeamsLoading(false);
     }
-  }, [isTeamsLoading, teams]);
+  }, [addPreviewUrls, isTeamsLoading, teams]);
 
   const getTeamCount = async () => {
     const res = await getTeams();
@@ -488,11 +495,10 @@ const Welcome: React.FC = () => {
             </Row>
           ) : (
             <Row gutter={[16, 16]}>
-              {teams?.map((team: any, index: number) => {
-                let logoUrl = '';
-                if (team.json?.previewLightUrl) {
-                  logoUrl = isDarkMode ? team.json?.previewDarkUrl : team.json?.previewLightUrl;
-                }
+              {teams?.map((team, index) => {
+                const logoUrl = isDarkMode
+                  ? (team.json.previewDarkUrl ?? '')
+                  : (team.json.previewLightUrl ?? '');
                 return (
                   <Col xs={24} sm={12} lg={8} key={team.id ?? index}>
                     <Card

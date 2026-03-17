@@ -29,6 +29,7 @@ import {
   updateSort,
   updateTeamRank,
 } from '@/services/teams/api';
+import { mapTeamRows, mapTeamSummaryRows } from '@/services/teams/data';
 import { FunctionRegion } from '@supabase/supabase-js';
 import {
   createMockEdgeFunctionResponse,
@@ -104,7 +105,7 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
       expect(builder.gt).toHaveBeenCalledWith('rank', 0);
       expect(builder.order).toHaveBeenCalledWith('rank', { ascending: true });
       expect(result).toEqual({
-        data: mockTeams,
+        data: mapTeamSummaryRows(mockTeams as any),
         success: true,
       });
     });
@@ -139,7 +140,7 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
       expect(builder.select).toHaveBeenCalledWith('*');
       expect(builder.or).toHaveBeenCalledWith(expect.stringContaining(`%${keyword}%`));
       expect(result).toEqual({
-        data: mockTeams,
+        data: mapTeamRows(mockTeams as any),
         success: true,
       });
     });
@@ -270,7 +271,7 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
       expect(builder.select).toHaveBeenCalled();
       expect(builder.eq).toHaveBeenCalledWith('id', teamId);
       expect(result).toEqual({
-        data: [mockTeam],
+        data: mapTeamSummaryRows([mockTeam] as any),
         success: true,
       });
     });
@@ -398,7 +399,7 @@ describe('Teams API Service (src/services/teams/api.ts)', () => {
       expect(supabase.from).toHaveBeenCalledWith('teams');
       expect(builder.select).toHaveBeenCalledWith('*');
       expect(builder.eq).toHaveBeenCalledWith('id', 'team-123');
-      expect(result).toEqual(createMockSuccessResponse([mockTeam]));
+      expect(result).toEqual(createMockSuccessResponse(mapTeamRows([mockTeam] as any)));
     });
   });
 

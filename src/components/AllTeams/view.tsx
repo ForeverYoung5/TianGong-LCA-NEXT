@@ -1,5 +1,6 @@
 import { getThumbFileUrls } from '@/services/supabase/storage';
 import { getTeamMessageApi } from '@/services/teams/api';
+import type { TeamTable } from '@/services/teams/data';
 import { CloseOutlined, ProfileOutlined } from '@ant-design/icons';
 import { Button, Card, Descriptions, Drawer, Image, Space, Spin, Tooltip } from 'antd';
 import type { ButtonType } from 'antd/es/button';
@@ -16,7 +17,7 @@ type Props = {
 const TeamView: FC<Props> = ({ id, buttonType, buttonTypeProp = 'default' }) => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [spinning, setSpinning] = useState(false);
-  const [initData, setInitData] = useState<any>({});
+  const [initData, setInitData] = useState<TeamTable | null>(null);
 
   const teamContent: React.ReactNode = (
     <>
@@ -25,17 +26,15 @@ const TeamView: FC<Props> = ({ id, buttonType, buttonTypeProp = 'default' }) => 
         title={<FormattedMessage id='pages.team.info.title' defaultMessage='Team Name' />}
       >
         <Descriptions bordered size={'small'} column={1}>
-          {initData?.json?.title?.map(
-            (item: { '#text': string; '@xml:lang': string }, index: number) => (
-              <Descriptions.Item
-                key={index}
-                label={item['@xml:lang'] === 'zh' ? '简体中文' : 'English'}
-                labelStyle={{ width: '120px' }}
-              >
-                {item['#text'] || '-'}
-              </Descriptions.Item>
-            ),
-          )}
+          {initData?.json?.title?.map((item, index) => (
+            <Descriptions.Item
+              key={index}
+              label={item['@xml:lang'] === 'zh' ? '简体中文' : 'English'}
+              labelStyle={{ width: '120px' }}
+            >
+              {item['#text'] || '-'}
+            </Descriptions.Item>
+          ))}
         </Descriptions>
       </Card>
       <br />
@@ -46,17 +45,15 @@ const TeamView: FC<Props> = ({ id, buttonType, buttonTypeProp = 'default' }) => 
         }
       >
         <Descriptions bordered size={'small'} column={1}>
-          {initData?.json?.description?.map(
-            (item: { '#text': string; '@xml:lang': string }, index: number) => (
-              <Descriptions.Item
-                key={index}
-                label={item['@xml:lang'] === 'zh' ? '简体中文' : 'English'}
-                labelStyle={{ width: '120px' }}
-              >
-                {item['#text'] || '-'}
-              </Descriptions.Item>
-            ),
-          )}
+          {initData?.json?.description?.map((item, index) => (
+            <Descriptions.Item
+              key={index}
+              label={item['@xml:lang'] === 'zh' ? '简体中文' : 'English'}
+              labelStyle={{ width: '120px' }}
+            >
+              {item['#text'] || '-'}
+            </Descriptions.Item>
+          ))}
         </Descriptions>
       </Card>
       <br />
@@ -98,8 +95,8 @@ const TeamView: FC<Props> = ({ id, buttonType, buttonTypeProp = 'default' }) => 
               }
               labelStyle={{ width: '120px' }}
             >
-              {initData?.json?.lightLogoPreviewUrl ? (
-                <Image width={100} src={initData?.json?.lightLogoPreviewUrl} alt='Light Logo' />
+              {initData?.json?.previewLightUrl ? (
+                <Image width={100} src={initData?.json?.previewLightUrl} alt='Light Logo' />
               ) : (
                 '-'
               )}
@@ -110,15 +107,15 @@ const TeamView: FC<Props> = ({ id, buttonType, buttonTypeProp = 'default' }) => 
               label={<FormattedMessage id='pages.team.info.darkLogo' defaultMessage='Dark Logo' />}
               labelStyle={{ width: '120px' }}
             >
-              {initData?.json?.darkLogoPreviewUrl ? (
+              {initData?.json?.previewDarkUrl ? (
                 <Image
                   style={
-                    initData?.json?.darkLogoPreviewUrl
+                    initData?.json?.previewDarkUrl
                       ? { background: '#141414', display: 'inline-block', borderRadius: '8px' }
                       : {}
                   }
                   width={100}
-                  src={initData?.json?.darkLogoPreviewUrl}
+                  src={initData?.json?.previewDarkUrl}
                   alt='Dark Logo'
                 />
               ) : (
@@ -135,28 +132,30 @@ const TeamView: FC<Props> = ({ id, buttonType, buttonTypeProp = 'default' }) => 
     setDrawerVisible(true);
     setSpinning(true);
     getTeamMessageApi(id)
-      .then(async (result: any) => {
-        if (result.data && result.data.length > 0) {
-          const { lightLogo, darkLogo } = result.data[0]?.json;
-          Promise.all([
-            getThumbFileUrls([{ '@uri': `${lightLogo}` }]).then((res) => {
-              if (res[0]?.status === 'done') {
-                result.data[0].json.lightLogoPreviewUrl = res[0]?.thumbUrl;
-              }
-            }),
-            getThumbFileUrls([{ '@uri': `${darkLogo}` }]).then((res) => {
-              if (res[0]?.status === 'done') {
-                result.data[0].json.darkLogoPreviewUrl = res[0]?.thumbUrl;
-              }
-            }),
-          ])
-            .then(() => {
-              setInitData(result.data[0]);
-            })
-            .finally(() => {
-              setSpinning(false);
-            });
+      .then(async (result) => {
+        const teamData = result.data?.[0];
+        if (!teamData) {
+          return;
         }
+
+        const nextTeamData: TeamTable = {
+          ...teamData,
+          json: { ...teamData.json },
+        };
+        const { lightLogo, darkLogo } = nextTeamData.json;
+        const [lightThumbs, darkThumbs] = await Promise.all([
+          lightLogo ? getThumbFileUrls([{ '@uri': `${lightLogo}` }]) : Promise.resolve([]),
+          darkLogo ? getThumbFileUrls([{ '@uri': `${darkLogo}` }]) : Promise.resolve([]),
+        ]);
+
+        if (lightThumbs[0]?.status === 'done') {
+          nextTeamData.json.previewLightUrl = lightThumbs[0].thumbUrl;
+        }
+        if (darkThumbs[0]?.status === 'done') {
+          nextTeamData.json.previewDarkUrl = darkThumbs[0].thumbUrl;
+        }
+
+        setInitData(nextTeamData);
       })
       .finally(() => {
         setSpinning(false);

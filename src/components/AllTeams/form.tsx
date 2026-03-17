@@ -5,10 +5,15 @@ import { Card, Form, Space, Upload } from 'antd';
 import { FC, useEffect, useState } from 'react';
 import { FormattedMessage } from 'umi';
 
+export type TeamLogoChange = {
+  lightLogo: FileType[];
+  darkLogo: FileType[];
+};
+
 type Props = {
-  onLogoChange: (data: any) => void;
-  lightLogoProps: string;
-  darkLogoProps: string;
+  onLogoChange: (data: TeamLogoChange) => void;
+  lightLogoProps?: string | null;
+  darkLogoProps?: string | null;
 };
 
 const TeamForm: FC<Props> = ({ onLogoChange, lightLogoProps, darkLogoProps }) => {
@@ -33,8 +38,8 @@ const TeamForm: FC<Props> = ({ onLogoChange, lightLogoProps, darkLogoProps }) =>
   }, [lightLogoProps, darkLogoProps]);
 
   useEffect(() => {
-    onLogoChange({ lightLogo: lightLogo, darkLogo: darkLogo });
-  }, [lightLogo, darkLogo]);
+    onLogoChange({ lightLogo, darkLogo });
+  }, [darkLogo, lightLogo]);
 
   const removeLogo = async (type: 'lightLogo' | 'darkLogo') => {
     if (type === 'lightLogo') {

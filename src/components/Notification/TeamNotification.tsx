@@ -4,10 +4,16 @@ import {
   rejectTeamInvitationApi,
 } from '@/services/roles/api';
 import { getTeamById } from '@/services/teams/api';
+import type { TeamRole } from '@/services/teams/data';
 import { Button, message, Space, Table, Tag, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'umi';
+
+type SupportedTeamNotificationRole = Extract<
+  TeamRole,
+  'admin' | 'owner' | 'member' | 'is_invited' | 'rejected'
+>;
 
 interface TeamNotificationItem {
   key: string;
@@ -15,7 +21,7 @@ interface TeamNotificationItem {
   teamId: string;
   userId: string;
   teamTitle: string;
-  role: string;
+  role: SupportedTeamNotificationRole;
   createTime: string;
 }
 
@@ -42,10 +48,10 @@ const TeamNotification: React.FC<TeamNotificationProps> = ({ timeFilter, onDataL
           const teamTitle = teamData.data[0]?.json?.title;
           const title =
             intl.locale === 'zh-CN'
-              ? (teamTitle?.find((item: any) => item['@xml:lang'] === 'zh')?.['#text'] ??
-                teamTitle[0]?.['#text'])
-              : (teamTitle?.find((item: any) => item['@xml:lang'] === 'en')?.['#text'] ??
-                teamTitle[0]?.['#text']);
+              ? (teamTitle?.find((item) => item['@xml:lang'] === 'zh')?.['#text'] ??
+                teamTitle?.[0]?.['#text'])
+              : (teamTitle?.find((item) => item['@xml:lang'] === 'en')?.['#text'] ??
+                teamTitle?.[0]?.['#text']);
 
           setData([
             {
@@ -121,7 +127,7 @@ const TeamNotification: React.FC<TeamNotificationProps> = ({ timeFilter, onDataL
       title: intl.formatMessage({ id: 'teams.members.role', defaultMessage: 'Status' }),
       dataIndex: 'role',
       key: 'role',
-      render: (role: string) => {
+      render: (role: SupportedTeamNotificationRole) => {
         const statusMap = {
           empty: {
             color: 'gray',
@@ -157,7 +163,7 @@ const TeamNotification: React.FC<TeamNotificationProps> = ({ timeFilter, onDataL
             text: intl.formatMessage({ id: 'teams.members.role.owner', defaultMessage: 'Owner' }),
           },
         };
-        const { color, text } = statusMap[role as keyof typeof statusMap] || statusMap.empty;
+        const { color, text } = statusMap[role] || statusMap.empty;
         return <Tag color={color}>{text}</Tag>;
       },
     },

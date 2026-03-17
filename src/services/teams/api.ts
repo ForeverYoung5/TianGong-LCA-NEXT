@@ -4,7 +4,8 @@ import { SortOrder } from 'antd/lib/table/interface';
 import type { FunctionInvokeResult, PaginationParams } from '../general/data';
 import { addRoleApi, getRoleByuserId, getTeamRoles, getUserIdsByTeamIds } from '../roles/api';
 import { getUserEmailByUserIds, getUserIdByEmail, getUsersByIds } from '../users/api';
-import type { TeamJson, TeamMemberTable, TeamTable } from './data';
+import type { TeamInsert, TeamJson, TeamMemberTable, TeamRole, TeamRow, TeamTable } from './data';
+import { mapTeamRows, mapTeamSummaryRows } from './data';
 
 type TeamMutationResult = {
   data?: unknown;
@@ -12,9 +13,34 @@ type TeamMutationResult = {
 };
 
 type TeamMember = TeamMemberTable & {
-  role: 'admin' | 'member' | 'is_invited';
   team_title?: string;
 };
+
+async function withTeamOwners(teams: TeamTable[]) {
+  if (teams.length === 0) {
+    return teams;
+  }
+
+  const teamIds = teams.map((item) => item.id);
+  const users = await getUserIdsByTeamIds(teamIds);
+
+  users.forEach((user) => {
+    const team = teams.find((item) => item.id === user.team_id);
+    if (team && user.role === 'owner') {
+      team.user_id = user.user_id;
+    }
+  });
+
+  const userEmails = await getUserEmailByUserIds(users.map((item) => item.user_id));
+  userEmails.forEach((user) => {
+    const team = teams.find((item) => item.user_id === user.id);
+    if (team) {
+      team.ownerEmail = user.email;
+    }
+  });
+
+  return teams;
+}
 
 export async function getTeams() {
   const result = await supabase
@@ -28,8 +54,10 @@ export async function getTeams() {
     )
     .gt('rank', 0)
     .order('rank', { ascending: true });
+
+  const teams = mapTeamSummaryRows(result.data as TeamRow[] | null);
   return Promise.resolve({
-    data: result.data ?? [],
+    data: teams,
     success: true,
   });
 }
@@ -47,8 +75,9 @@ export async function getTeamsByKeyword(keyword: string) {
     });
   }
 
+  const teams = mapTeamRows(result.data as TeamRow[] | null);
   return Promise.resolve({
-    data: result.data ?? [],
+    data: teams,
     success: true,
   });
 }
@@ -73,27 +102,10 @@ export async function getAllTableTeams(
       query.gt('rank', 0);
     }
     const { data, count } = await query;
-    const teams = (data ?? []) as TeamTable[];
+    const teams = await withTeamOwners(mapTeamRows(data as TeamRow[] | null));
 
-    if (teams && teams.length > 0) {
-      const teamIds = teams.map((item) => item.id);
-      const users = await getUserIdsByTeamIds(teamIds);
-      users.forEach((user) => {
-        const team = teams.find((item) => item.id === user.team_id);
-        if (team && user.role === 'owner') {
-          team.user_id = user.user_id;
-        }
-      });
-      const userEmails = await getUserEmailByUserIds(users.map((item) => item.user_id));
-      userEmails.forEach((user) => {
-        const team = teams.find((item) => item.user_id === user.id);
-        if (team) {
-          team.ownerEmail = user.email;
-        }
-      });
-    }
     return Promise.resolve({
-      data: teams ?? [],
+      data: teams,
       success: true,
       total: count ?? 0,
     });
@@ -144,8 +156,9 @@ export async function getTeamById(id: string) {
       `,
     )
     .eq('id', id);
+  const teams = mapTeamSummaryRows(result.data as TeamRow[] | null);
   return Promise.resolve({
-    data: result.data ?? [],
+    data: teams,
     success: true,
   });
 }
@@ -187,7 +200,10 @@ export async function editTeamMessage(
 
 export async function getTeamMessageApi(id: string) {
   const result = await supabase.from('teams').select('*').eq('id', id);
-  return result;
+  return {
+    data: mapTeamRows(result.data as TeamRow[] | null),
+    error: result.error,
+  };
 }
 
 // const getTeamsByIds = async (teamIds: string[]) => {
@@ -222,7 +238,7 @@ export async function getTeamMembersApi(
             user_id: role.user_id,
             team_id: role.team_id,
             email: user?.email ?? '',
-            role: role.role,
+            role: role.role as TeamRole,
             display_name: user?.display_name ?? '-',
           };
         });
@@ -287,7 +303,8 @@ export async function addTeamMemberApi(teamId: string, email: string) {
 }
 
 export async function addTeam(id: string, data: TeamJson, rank: number, is_public: boolean) {
-  const { error } = await supabase.from('teams').insert({ id, json: data, rank, is_public });
+  const payload: TeamInsert = { id, json: data, rank, is_public };
+  const { error } = await supabase.from('teams').insert(payload);
   return error;
 }
 
@@ -303,31 +320,10 @@ export async function getUnrankedTeams(params: PaginationParams) {
         (params.current ?? 1) * (params.pageSize ?? 10) - 1,
       );
 
-    const teams = (data ?? []) as TeamTable[];
-
-    if (teams.length > 0) {
-      const teamIds = teams.map((item) => item.id);
-      const users = await getUserIdsByTeamIds(teamIds);
-      users.forEach((user) => {
-        const team = teams.find((item) => item.id === user.team_id);
-        if (team && user.role === 'owner') {
-          team.user_id = user.user_id;
-        }
-      });
-      const userEmails = await getUserEmailByUserIds(users.map((item) => item.user_id));
-
-      userEmails.forEach((user) => {
-        const team = teams.find((item) => item.user_id === user.id);
-        if (team) {
-          team.ownerEmail = user.email;
-        }
-      });
-    } else {
-      throw new Error('No teams found');
-    }
+    const teams = await withTeamOwners(mapTeamRows(data as TeamRow[] | null));
 
     return Promise.resolve({
-      data: teams ?? [],
+      data: teams,
       success: true,
       total: count || 0,
     });

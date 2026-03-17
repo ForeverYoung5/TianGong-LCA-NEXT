@@ -112,7 +112,7 @@ const ManageSystem = () => {
       {
         title: <FormattedMessage id='teams.members.actions' defaultMessage='Actions' />,
         key: 'actions',
-        render: (_: any, record: TeamMemberTable) => (
+        render: (_, record: TeamMemberTable) => (
           <Flex gap='small'>
             {
               <Tooltip

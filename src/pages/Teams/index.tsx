@@ -51,6 +51,8 @@ import { Children, useEffect, useRef, useState } from 'react';
 import { v4 } from 'uuid';
 import AddMemberModal from './Components/AddMemberModal';
 
+type TeamLogoValue = FileType | string;
+
 const Team = () => {
   const { token } = theme.useToken();
   const [activeTabKey, setActiveTabKey] = useState('info');
@@ -59,12 +61,12 @@ const Team = () => {
 
   const formRefEdit = useRef<ProFormInstance>();
 
-  const [lightLogo, setLightLogo] = useState<FileType[]>([]);
+  const [lightLogo, setLightLogo] = useState<TeamLogoValue[]>([]);
   const [lightLogoPreviewUrl, setLightLogoPreviewUrl] = useState('');
   const [lightLogoError, setLightLogoError] = useState(false);
   const [beforeLightLogoPath, setBeforeLightLogoPath] = useState<string>('');
 
-  const [darkLogo, setDarkLogo] = useState<FileType[]>([]);
+  const [darkLogo, setDarkLogo] = useState<TeamLogoValue[]>([]);
   const [darkLogoPreviewUrl, setDarkLogoPreviewUrl] = useState('');
   const [darkLogoError, setDarkLogoError] = useState(false);
   const [beforeDarkLogoPath, setBeforeDarkLogoPath] = useState<string>('');
@@ -123,8 +125,8 @@ const Team = () => {
         darkLogo: data[0]?.json?.darkLogo,
       };
 
-      setBeforeLightLogoPath(data[0]?.json?.lightLogo);
-      setBeforeDarkLogoPath(data[0]?.json?.darkLogo);
+      setBeforeLightLogoPath(data[0]?.json?.lightLogo ?? '');
+      setBeforeDarkLogoPath(data[0]?.json?.darkLogo ?? '');
 
       getThumbFileUrls([{ '@uri': `${data[0]?.json?.lightLogo}` }]).then((res) => {
         if (res[0]?.status === 'done') {
@@ -132,11 +134,7 @@ const Team = () => {
         }
       });
       if (data[0]?.json?.lightLogo) {
-        setLightLogo(
-          Array.isArray(data[0]?.json?.lightLogo)
-            ? data[0]?.json?.lightLogo
-            : [data[0]?.json?.lightLogo],
-        );
+        setLightLogo([data[0].json.lightLogo]);
       } else {
         setLightLogo([]);
       }
@@ -147,11 +145,7 @@ const Team = () => {
         }
       });
       if (data[0]?.json?.darkLogo) {
-        setDarkLogo(
-          Array.isArray(data[0]?.json?.darkLogo)
-            ? data[0]?.json?.darkLogo
-            : [data[0]?.json?.darkLogo],
-        );
+        setDarkLogo([data[0].json.darkLogo]);
       } else {
         setDarkLogo([]);
       }
@@ -258,10 +252,10 @@ const Team = () => {
       }
     };
 
-    const uploadLogo = async (fileList: FileType[], type: 'lightLogo' | 'darkLogo') => {
+    const uploadLogo = async (fileList: TeamLogoValue[], type: 'lightLogo' | 'darkLogo') => {
       if (fileList.length > 0) {
         const file = fileList[0];
-        if (file) {
+        if (file && typeof file !== 'string') {
           if (!isImage(file)) {
             message.error(
               intl.formatMessage({
@@ -672,7 +666,7 @@ const Team = () => {
       {
         title: <FormattedMessage id='teams.members.actions' defaultMessage='Actions' />,
         key: 'actions',
-        render: (_: any, record: TeamMemberTable) => (
+        render: (_, record: TeamMemberTable) => (
           <Flex gap='small'>
             {
               <Tooltip
