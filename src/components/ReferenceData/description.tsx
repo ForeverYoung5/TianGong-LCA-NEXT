@@ -1,10 +1,15 @@
 import LangTextItemDescription from '@/components/LangTextItem/description';
+import type { ReferenceItem } from '@/services/general/data';
 import { Card, Descriptions, Divider } from 'antd';
-import { FC } from 'react';
+import type { FC } from 'react';
+
+type ReferenceDescriptionData = Partial<Omit<ReferenceItem, 'common:shortDescription'>> & {
+  'common:shortDescription'?: unknown;
+};
 
 type Props = {
   title: string;
-  data: any;
+  data: ReferenceDescriptionData | null | undefined;
 };
 
 const SourceDescription: FC<Props> = ({ title, data }) => {

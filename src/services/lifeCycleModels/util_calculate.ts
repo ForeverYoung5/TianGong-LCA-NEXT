@@ -2372,8 +2372,9 @@ export async function genLifeCycleModelProcesses(
   if (refRemainingRate > 0 && refRemainingRate !== 1) {
     sumFinalProductGroups?.forEach((process) => {
       const isPrimaryGroup = process?.modelInfo?.type === 'primary';
-      if (process?.data?.processDataSet?.exchanges?.exchange?.length > 0)
-        process?.data?.processDataSet?.exchanges?.exchange?.forEach((e: any) => {
+      const processExchanges = process?.data?.processDataSet?.exchanges?.exchange;
+      if (Array.isArray(processExchanges) && processExchanges.length > 0)
+        processExchanges.forEach((e) => {
           const isRefExchange = isPrimaryGroup && e?.quantitativeReference;
           const amount = isRefExchange
             ? modelTargetAmount.toString()
@@ -2382,8 +2383,9 @@ export async function genLifeCycleModelProcesses(
           e.resultingAmount = amount;
         });
 
-      if (process?.data?.processDataSet?.LCIAResults?.LCIAResult?.length > 0)
-        process?.data?.processDataSet?.LCIAResults?.LCIAResult?.forEach((lcia: any) => {
+      const processLciaResults = process?.data?.processDataSet?.LCIAResults?.LCIAResult;
+      if (Array.isArray(processLciaResults) && processLciaResults.length > 0)
+        processLciaResults.forEach((lcia) => {
           const amount = toBigNumberOrZero(lcia?.meanAmount).div(refRemainingRate).toString();
           lcia.meanAmount = amount;
         });

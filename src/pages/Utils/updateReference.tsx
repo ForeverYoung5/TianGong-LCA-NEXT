@@ -2,9 +2,17 @@ import type { RefVersionItem } from '@/components/RefsOfNewVersionDrawer';
 import { getAllRefObj, getRefTableName } from '@/pages/Utils/review';
 import { genFlowNameJson } from '@/services/flows/util';
 import { getDataDetail, getDataDetailById } from '@/services/general/api';
+import type { LangTextEntry, ReferenceItem } from '@/services/general/data';
 import { getLangList } from '@/services/general/util';
 
-export const getNewVersionShortDescription = (json: any, type: string) => {
+type ReferenceVersionSource = {
+  '@refObjectId': NonNullable<ReferenceItem['@refObjectId']>;
+  '@version': NonNullable<ReferenceItem['@version']>;
+  '@type': NonNullable<ReferenceItem['@type']>;
+  'common:shortDescription'?: ReferenceItem['common:shortDescription'];
+};
+
+export const getNewVersionShortDescription = (json: any, type: string): LangTextEntry[] => {
   try {
     if (!json || !type) return [];
     if (type === 'flow data set') {
@@ -51,9 +59,9 @@ export const getNewVersionShortDescription = (json: any, type: string) => {
 
 export const getRefsOfNewVersion = async (initData: any) => {
   if (!initData) return { newRefs: [] as RefVersionItem[], oldRefs: [] as RefVersionItem[] };
-  const refObjs = getAllRefObj(initData) ?? [];
+  const refObjs = (getAllRefObj(initData) ?? []) as ReferenceVersionSource[];
   const seen = new Set<string>();
-  const unique = refObjs.filter((r: any) => {
+  const unique = refObjs.filter((r) => {
     const key = `${r['@refObjectId']}:${r['@version']}:${r['@type']}`;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -62,7 +70,7 @@ export const getRefsOfNewVersion = async (initData: any) => {
   const newRefs: RefVersionItem[] = [];
   const oldRefs: RefVersionItem[] = [];
   await Promise.all(
-    unique.map(async (r: any) => {
+    unique.map(async (r) => {
       const table = getRefTableName(r['@type']);
       if (!table) return;
       try {
@@ -85,7 +93,7 @@ export const getRefsOfNewVersion = async (initData: any) => {
           newVersion: r['@version'],
           description: getLangList(r['common:shortDescription']),
           newDescription: currentNormDesc,
-        } as any);
+        });
         if (otherVersions.length > 0) {
           otherVersions.forEach((ver: string, idx: number) => {
             const newRow = rows.find(
@@ -113,9 +121,9 @@ export const getRefsOfNewVersion = async (initData: any) => {
 
 export const getRefsOfCurrentVersion = async (initData: any) => {
   if (!initData) return { oldRefs: [] as RefVersionItem[] };
-  const refObjs = getAllRefObj(initData) ?? [];
+  const refObjs = (getAllRefObj(initData) ?? []) as ReferenceVersionSource[];
   const seen = new Set<string>();
-  const unique = refObjs.filter((r: any) => {
+  const unique = refObjs.filter((r) => {
     const key = `${r['@refObjectId']}:${r['@version']}:${r['@type']}`;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -124,7 +132,7 @@ export const getRefsOfCurrentVersion = async (initData: any) => {
 
   const oldRefs: RefVersionItem[] = [];
   await Promise.all(
-    unique.map(async (r: any) => {
+    unique.map(async (r) => {
       const table = getRefTableName(r['@type']);
       if (!table) return;
       try {
@@ -140,7 +148,7 @@ export const getRefsOfCurrentVersion = async (initData: any) => {
             newVersion: r['@version'],
             description: getLangList(r['common:shortDescription']),
             newDescription: currentNormDesc,
-          } as any);
+          });
         }
       } catch (e) {
         // ignore single ref error

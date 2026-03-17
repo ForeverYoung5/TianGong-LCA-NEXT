@@ -109,7 +109,7 @@ type SolverLciaValueRow = {
 type LciaMethodMeta = {
   description?: LciaMethodListItem['description'];
   version?: string;
-  referenceQuantityDesc?: string;
+  referenceQuantityDesc?: LCIAResultTable['referenceQuantityDesc'];
 };
 
 const LCA_SCOPE = 'dev-v1';

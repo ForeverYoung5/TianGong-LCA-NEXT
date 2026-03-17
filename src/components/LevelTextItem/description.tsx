@@ -1,10 +1,12 @@
+import type { Classification } from '@/services/general/data';
 import { genClassStr } from '@/services/general/util';
 import { getILCDClassification, getILCDFlowCategorization } from '@/services/ilcd/api';
 import { Descriptions, Spin } from 'antd';
 import { FC, useEffect, useState } from 'react';
 import { FormattedMessage } from 'umi';
+
 type Props = {
-  data: any;
+  data: string[] | null | undefined;
   lang: string;
   categoryType: string;
   flowType?: string;
@@ -12,7 +14,7 @@ type Props = {
 
 const LevelTextItemDescription: FC<Props> = ({ data, lang, categoryType, flowType }) => {
   const [spinning, setSpinning] = useState<boolean>(false);
-  const [calssStr, setClassStr] = useState<any>(undefined);
+  const [calssStr, setClassStr] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (data && Array.isArray(data) && data.length > 0) {
@@ -24,10 +26,12 @@ const LevelTextItemDescription: FC<Props> = ({ data, lang, categoryType, flowTyp
             setSpinning(false);
           });
         } else {
-          getILCDClassification(categoryType, lang, [data[0]]).then((res) => {
-            setClassStr(genClassStr(data, 0, res.data));
-            setSpinning(false);
-          });
+          getILCDClassification(categoryType, lang, [data[0]]).then(
+            (res: { data: Classification[] }) => {
+              setClassStr(genClassStr(data, 0, res.data));
+              setSpinning(false);
+            },
+          );
         }
       }
     }

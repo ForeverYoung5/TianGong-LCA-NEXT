@@ -1,3 +1,4 @@
+import type { LangTextEntry } from '@/services/general/data';
 import { getLang, getLangText } from '@/services/general/util';
 import { CloseOutlined } from '@ant-design/icons';
 import { ActionType, ProTable } from '@ant-design/pro-components';
@@ -20,8 +21,8 @@ export type RefVersionItem = {
   type: string;
   currentVersion: string;
   newVersion: string;
-  description?: any[];
-  newDescription?: any[];
+  description?: LangTextEntry[];
+  newDescription?: LangTextEntry[];
 };
 
 const RefsOfNewVersionDrawer: FC<Props> = ({

@@ -1,9 +1,10 @@
+import type { LangTextEntry } from '@/services/general/data';
 import { getLangList } from '@/services/general/util';
 import { Descriptions } from 'antd';
-import { FC } from 'react';
+import type { FC } from 'react';
 
 type Props = {
-  data: any;
+  data: unknown;
 };
 
 const LangTextItemDescription: FC<Props> = ({ data }) => {
@@ -16,22 +17,26 @@ const LangTextItemDescription: FC<Props> = ({ data }) => {
       </Descriptions>
     );
   }
-  const items = getLangList(data);
+  const items = getLangList(data) as Array<LangTextEntry | string | null | undefined>;
   return (
     <Descriptions bordered size={'small'} column={1}>
-      {items?.map((name: any, index: number) => (
+      {items.map((name, index) => (
         <Descriptions.Item
           key={index}
           label={
-            name?.['@xml:lang'] === 'en'
+            (typeof name === 'object' ? name?.['@xml:lang'] : undefined) === 'en'
               ? 'English'
-              : name?.['@xml:lang'] === 'zh'
+              : (typeof name === 'object' ? name?.['@xml:lang'] : undefined) === 'zh'
                 ? '简体中文'
                 : '-'
           }
           labelStyle={{ width: '100px' }}
         >
-          {name?.['#text'] ?? '-'}
+          {typeof name === 'string'
+            ? name
+            : typeof name?.['#text'] === 'string'
+              ? name['#text']
+              : '-'}
         </Descriptions.Item>
       ))}
     </Descriptions>

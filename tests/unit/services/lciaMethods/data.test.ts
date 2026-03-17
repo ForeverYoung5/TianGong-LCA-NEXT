@@ -6,6 +6,10 @@
 import type { LCIAResultTable } from '@/services/lciaMethods/data';
 import { createMockTableResponse } from '../../../helpers/testData';
 
+const asShortDescriptionList = (
+  value: LCIAResultTable['referenceToLCIAMethodDataSet']['common:shortDescription'],
+) => (Array.isArray(value) ? value : [value]);
+
 describe('LCIA Methods Data Types (src/services/lciaMethods/data.ts)', () => {
   describe('LCIAResultTable type', () => {
     it('should have correct structure for LCIA results', () => {
@@ -24,13 +28,19 @@ describe('LCIA Methods Data Types (src/services/lciaMethods/data.ts)', () => {
           ],
         },
         meanAmount: 123.45,
-        referenceQuantityDesc: 'kg CO2 eq',
+        referenceQuantityDesc: {
+          '@xml:lang': 'en',
+          '#text': 'kg CO2 eq',
+        },
       };
 
       expect(mockResult.key).toBe('result-123');
       expect(mockResult.meanAmount).toBe(123.45);
       expect(mockResult.referenceToLCIAMethodDataSet['@refObjectId']).toBe('method-456');
-      expect(mockResult.referenceQuantityDesc).toBe('kg CO2 eq');
+      expect(mockResult.referenceQuantityDesc).toEqual({
+        '@xml:lang': 'en',
+        '#text': 'kg CO2 eq',
+      });
     });
 
     it('should support short descriptions in different languages', () => {
@@ -46,10 +56,12 @@ describe('LCIA Methods Data Types (src/services/lciaMethods/data.ts)', () => {
         meanAmount: 0.0567,
       };
 
-      expect(mockResult.referenceToLCIAMethodDataSet['common:shortDescription']).toHaveLength(1);
-      expect(mockResult.referenceToLCIAMethodDataSet['common:shortDescription'][0]['#text']).toBe(
-        'Acidification',
+      const shortDescriptions = asShortDescriptionList(
+        mockResult.referenceToLCIAMethodDataSet['common:shortDescription'],
       );
+
+      expect(shortDescriptions).toHaveLength(1);
+      expect(shortDescriptions[0]['#text']).toBe('Acidification');
     });
 
     it('should handle zero and negative mean amounts', () => {
@@ -145,9 +157,11 @@ describe('LCIA Methods Data Types (src/services/lciaMethods/data.ts)', () => {
       };
 
       expect(result.referenceQuantityDesc).toBeUndefined();
-      expect(result.referenceToLCIAMethodDataSet['common:shortDescription'][0]['#text']).toBe(
-        'Minimal method',
-      );
+      expect(
+        asShortDescriptionList(result.referenceToLCIAMethodDataSet['common:shortDescription'])[0][
+          '#text'
+        ],
+      ).toBe('Minimal method');
     });
   });
 });

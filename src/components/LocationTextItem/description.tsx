@@ -1,11 +1,12 @@
 import { getILCDLocationByValue } from '@/services/ilcd/api';
 import { Descriptions, Spin } from 'antd';
-import { FC, ReactNode, useEffect, useState } from 'react';
+import { CSSProperties, FC, ReactNode, useEffect, useState } from 'react';
+
 type Props = {
-  lang: any;
-  data: any;
+  lang: string;
+  data: string | null | undefined;
   label: ReactNode | string;
-  labelStyle: any;
+  labelStyle?: CSSProperties;
 };
 
 const LocationTextItemDescription: FC<Props> = ({ lang, data, label, labelStyle }) => {

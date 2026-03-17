@@ -1,16 +1,32 @@
 import { RefCheckType } from '@/contexts/refCheckContext';
 import { Form, theme } from 'antd';
+import type { Rule } from 'antd/lib/form';
 import { ReactNode } from 'react';
 import { FormattedMessage } from 'umi';
+
+type ErrRefDisplay = Partial<
+  Pick<
+    RefCheckType,
+    | 'ruleVerification'
+    | 'nonExistent'
+    | 'stateCode'
+    | 'underReviewVersion'
+    | 'version'
+    | 'versionUnderReview'
+    | 'versionIsInTg'
+  >
+>;
+
+type RequiredRuleLike = Rule | { message?: ReactNode };
 
 type RequiredSelectFormTitleProps = {
   label: ReactNode;
   ruleErrorState: boolean;
-  requiredRules: any[];
-  errRef?: any;
+  requiredRules: RequiredRuleLike[];
+  errRef?: ErrRefDisplay | null;
 };
 
-export const ErrRefTipMessage = ({ errRef }: { errRef: RefCheckType }) => {
+export const ErrRefTipMessage = ({ errRef }: { errRef: ErrRefDisplay }) => {
   if (errRef?.ruleVerification === false) {
     return (
       <FormattedMessage id='pages.select.unRuleVerification' defaultMessage='Data is incomplete' />
@@ -68,14 +84,18 @@ const RequiredSelectFormTitle = ({
         <label className='ant-form-item-required'>
           {label}
           {ruleErrorState &&
-            requiredRules.map((rule: any, index: number) => {
+            requiredRules.map((rule, index: number) => {
+              const message =
+                typeof rule === 'object' && rule !== null && 'message' in rule
+                  ? rule.message
+                  : undefined;
               return (
                 <span
                   key={index}
                   className='ant-form-item-explain-error'
                   style={{ fontWeight: 'normal', marginLeft: '5px' }}
                 >
-                  {rule.message}
+                  {message}
                 </span>
               );
             })}

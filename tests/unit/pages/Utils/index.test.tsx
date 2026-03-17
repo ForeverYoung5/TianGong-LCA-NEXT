@@ -8,6 +8,13 @@ import {
 } from '@/pages/Utils';
 import { render, screen } from '@testing-library/react';
 
+type NormalizedRule = {
+  pattern?: RegExp;
+  message?: JSX.Element | string;
+  defaultMessage?: unknown;
+  messageKey?: unknown;
+};
+
 jest.mock('umi', () => ({
   FormattedMessage: ({ id, defaultMessage }: { id: string; defaultMessage?: string }) => (
     <span data-testid={id}>{defaultMessage ?? id}</span>
@@ -73,15 +80,20 @@ describe('Utils page helpers', () => {
         messageKey: 'rule.raw',
         defaultMessage: 'Raw pattern is invalid',
       },
-    ] as any);
+    ] as any) as NormalizedRule[];
 
-    expect(rules[0].pattern.test('01.02.003')).toBe(true);
-    expect(rules[0].pattern.test('1.2.3')).toBe(false);
-    expect(rules[1].pattern.test('50-00-0')).toBe(true);
-    expect(rules[1].pattern.test('invalid')).toBe(false);
-    expect(rules[2].pattern.test('2026')).toBe(true);
-    expect(rules[2].pattern.test('26')).toBe(false);
-    expect(rules[3].pattern).toEqual(/foo/);
+    const versionPattern = rules[0].pattern as RegExp;
+    const casPattern = rules[1].pattern as RegExp;
+    const yearPattern = rules[2].pattern as RegExp;
+    const rawPattern = rules[3].pattern as RegExp;
+
+    expect(versionPattern.test('01.02.003')).toBe(true);
+    expect(versionPattern.test('1.2.3')).toBe(false);
+    expect(casPattern.test('50-00-0')).toBe(true);
+    expect(casPattern.test('invalid')).toBe(false);
+    expect(yearPattern.test('2026')).toBe(true);
+    expect(yearPattern.test('26')).toBe(false);
+    expect(rawPattern).toEqual(/foo/);
     expect(rules[0]).not.toHaveProperty('defaultMessage');
     expect(rules[0]).not.toHaveProperty('messageKey');
 
