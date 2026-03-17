@@ -14,17 +14,19 @@ export type MultilingualText = XmlLangText[];
 
 export type TeamJson = {
   title: MultilingualText;
-  description?: string | MultilingualText;
+  description?: MultilingualText;
   lightLogo?: string;
   darkLogo?: string;
+};
+
+export type TeamRuntimeJson = TeamJson & {
   previewLightUrl?: string;
   previewDarkUrl?: string;
-  [key: string]: unknown;
 };
 
 export type TeamRecord = {
   id: string;
-  json: TeamJson;
+  json: TeamRuntimeJson;
   rank: number;
   is_public: boolean;
   created_at: string;
@@ -42,7 +44,10 @@ export const mockTeam: TeamRecord = {
       { '@xml:lang': 'en', '#text': 'Test Team EN' },
       { '@xml:lang': 'zh', '#text': '测试团队' },
     ],
-    description: 'Test team description',
+    description: [
+      { '@xml:lang': 'en', '#text': 'Test team description' },
+      { '@xml:lang': 'zh', '#text': '测试团队描述' },
+    ],
   },
   rank: 1,
   is_public: true,

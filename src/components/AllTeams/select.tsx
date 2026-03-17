@@ -21,9 +21,9 @@ const SelectTeams: FC<SelectTeamsProps> = ({
 }) => {
   const intl = useIntl();
   const lang = getLang(intl.locale);
-  const [visible, setVisible] = useState<boolean>(false);
+  const [visible, setVisible] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
   const actionRef = useRef<ActionType>();
 
   const showDrawer = () => {

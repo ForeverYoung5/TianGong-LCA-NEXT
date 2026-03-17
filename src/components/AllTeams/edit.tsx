@@ -1,5 +1,6 @@
 import { FileType, isImage, removeLogoApi, uploadLogoApi } from '@/services/supabase/storage';
 import { editTeamMessage, getTeamMessageApi } from '@/services/teams/api';
+import type { TeamJson, TeamTable } from '@/services/teams/data';
 import styles from '@/style/custom.less';
 import { CloseOutlined, FormOutlined } from '@ant-design/icons';
 import { ActionType, ProForm, ProFormInstance } from '@ant-design/pro-components';
@@ -7,7 +8,7 @@ import { Button, Drawer, Space, Spin, Tooltip, message } from 'antd';
 import type { FC } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'umi';
-import TeamForm from './form';
+import TeamForm, { type TeamLogoChange } from './form';
 
 type Props = {
   id: string;
@@ -16,6 +17,10 @@ type Props = {
   setViewDrawerVisible?: React.Dispatch<React.SetStateAction<boolean>>;
   disabled?: boolean;
 };
+
+type TeamLogoSelection = FileType[] | string | null | undefined;
+type TeamEditFormValues = TeamJson;
+const EMPTY_TEAM_FORM_VALUES: TeamEditFormValues = {};
 
 const TeamEdit: FC<Props> = ({
   id,
@@ -27,21 +32,22 @@ const TeamEdit: FC<Props> = ({
   const [drawerVisible, setDrawerVisible] = useState(false);
   const formRefEdit = useRef<ProFormInstance>();
   const [spinning, setSpinning] = useState(false);
-  const [initData, setInitData] = useState<any>({});
-  const [fromData, setFromData] = useState<any>(undefined);
-  const [lightLogo, setLightLogo] = useState<any>(undefined);
-  const [darkLogo, setDarkLogo] = useState<any>(undefined);
+  const [initData, setInitData] = useState<TeamTable | null>(null);
+  const [hasLoadedData, setHasLoadedData] = useState(false);
+  const [lightLogo, setLightLogo] = useState<TeamLogoSelection>(undefined);
+  const [darkLogo, setDarkLogo] = useState<TeamLogoSelection>(undefined);
 
-  const [beforeLightLogoPath, setBeforeLightLogoPath] = useState<string>('');
-  const [beforeDarkLogoPath, setBeforeDarkLogoPath] = useState<string>('');
+  const [beforeLightLogoPath, setBeforeLightLogoPath] = useState('');
+  const [beforeDarkLogoPath, setBeforeDarkLogoPath] = useState('');
   const intl = useIntl();
 
   const onEdit = useCallback(() => {
+    setHasLoadedData(false);
     setDrawerVisible(true);
-  }, [setViewDrawerVisible]);
+  }, []);
 
-  const handletLogoChange = (data: any) => {
-    if (fromData) {
+  const handletLogoChange = (data: TeamLogoChange) => {
+    if (hasLoadedData) {
       setLightLogo(data.lightLogo);
       setDarkLogo(data.darkLogo);
     }
@@ -49,10 +55,14 @@ const TeamEdit: FC<Props> = ({
   const handleRemoveLogo = async (type: 'lightLogo' | 'darkLogo') => {
     if (type === 'lightLogo') {
       setLightLogo([]);
-      await removeLogoApi([beforeLightLogoPath]);
+      if (beforeLightLogoPath) {
+        await removeLogoApi([beforeLightLogoPath]);
+      }
     } else {
       setDarkLogo([]);
-      await removeLogoApi([beforeDarkLogoPath]);
+      if (beforeDarkLogoPath) {
+        await removeLogoApi([beforeDarkLogoPath]);
+      }
     }
   };
   const uploadLogo = async (fileList: FileType[], type: 'lightLogo' | 'darkLogo') => {
@@ -90,6 +100,19 @@ const TeamEdit: FC<Props> = ({
       }
     }
   };
+  const resolveLogoValue = async (logo: TeamLogoSelection, type: 'lightLogo' | 'darkLogo') => {
+    if (!logo || (Array.isArray(logo) && logo.length === 0)) {
+      await handleRemoveLogo(type);
+      return null;
+    }
+
+    if (typeof logo === 'string') {
+      return logo;
+    }
+
+    const logoPath = await uploadLogo(logo, type);
+    return logoPath ? `../sys-files/${logoPath}` : null;
+  };
   const onReset = async () => {
     setSpinning(true);
     formRefEdit.current?.resetFields();
@@ -109,16 +132,11 @@ const TeamEdit: FC<Props> = ({
         lightLogo: teamData.json?.lightLogo,
         darkLogo: teamData.json?.darkLogo,
       };
-      setLightLogo(teamData.json?.lightLogo);
-      setDarkLogo(teamData.json?.darkLogo);
+      setLightLogo(teamData.json?.lightLogo ?? undefined);
+      setDarkLogo(teamData.json?.darkLogo ?? undefined);
 
       formRefEdit.current?.setFieldsValue({ ...formValues });
-      setFromData({
-        ...formValues,
-        json: {
-          ...teamData.json,
-        },
-      });
+      setHasLoadedData(true);
     }
     setSpinning(false);
   };
@@ -185,30 +203,15 @@ const TeamEdit: FC<Props> = ({
                 return [];
               },
             }}
-            initialValues={initData}
+            initialValues={EMPTY_TEAM_FORM_VALUES}
             onFinish={async () => {
               setSpinning(true);
-              const formValues = formRefEdit.current?.getFieldsValue() ?? {};
-              if (!lightLogo?.length) {
-                handleRemoveLogo('lightLogo');
-                formValues.lightLogo = null;
-              } else {
-                const lightLogoPath =
-                  typeof lightLogo === 'string'
-                    ? lightLogo
-                    : await uploadLogo(lightLogo, 'lightLogo');
-                formValues.lightLogo =
-                  typeof lightLogo === 'string' ? lightLogo : `../sys-files/${lightLogoPath}`;
-              }
-              if (!darkLogo?.length) {
-                handleRemoveLogo('darkLogo');
-                formValues.darkLogo = null;
-              } else {
-                const darkLogoPath =
-                  typeof darkLogo === 'string' ? darkLogo : await uploadLogo(darkLogo, 'darkLogo');
-                formValues.darkLogo =
-                  typeof darkLogo === 'string' ? darkLogo : `../sys-files/${darkLogoPath}`;
-              }
+              const formValues = {
+                ...((formRefEdit.current?.getFieldsValue() as TeamEditFormValues | undefined) ??
+                  {}),
+              };
+              formValues.lightLogo = await resolveLogoValue(lightLogo, 'lightLogo');
+              formValues.darkLogo = await resolveLogoValue(darkLogo, 'darkLogo');
               const updateResult = await editTeamMessage(id, formValues);
               if (updateResult?.data) {
                 message.success(

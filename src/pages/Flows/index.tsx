@@ -42,7 +42,7 @@ const TableList: FC = () => {
   const [keyWord, setKeyWord] = useState<string>('');
   const [team, setTeam] = useState<TeamTable | null>(null);
   const [importData, setImportData] = useState<FlowImportData | null>(null);
-  const [openAI, setOpenAI] = useState<boolean>(false);
+  const [openAI, setOpenAI] = useState(false);
   const [classificationFilterOptions, setClassificationFilterOptions] = useState<
     Array<{ text: ReactNode; value: string }>
   >([]);
@@ -302,7 +302,7 @@ const TableList: FC = () => {
       return;
     }
     getTeamById(tid ?? '').then((res) => {
-      const teamData = (res.data as TeamTable[])[0];
+      const teamData = res.data[0];
       if (teamData) {
         setTeam(teamData);
       }

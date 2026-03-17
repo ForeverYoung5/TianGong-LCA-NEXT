@@ -30,9 +30,9 @@ const TableList: FC<TableListProps> = ({ systemUserRole, tableType }) => {
   const intl = useIntl();
   const lang = getLang(intl.locale);
   const actionRef = useRef<ActionType>();
-  const [keyWord, setKeyWord] = useState<any>('');
+  const [keyWord, setKeyWord] = useState('');
   const [tableData, setTableData] = useState<TeamTable[]>([]);
-  const [isDragged, setIsDragged] = useState<boolean>(false);
+  const [isDragged, setIsDragged] = useState(false);
   const draggedDataRef = useRef<TeamTable[]>([]);
   const { token } = theme.useToken();
 

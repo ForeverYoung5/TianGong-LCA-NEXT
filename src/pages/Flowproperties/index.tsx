@@ -39,7 +39,7 @@ const TableList: FC = () => {
   const [stateCode, setStateCode] = useState<string | number>('all');
   const [team, setTeam] = useState<TeamTable | null>(null);
   const [importData, setImportData] = useState<FlowpropertyImportData | null>(null);
-  const [openAI, setOpenAI] = useState<boolean>(false);
+  const [openAI, setOpenAI] = useState(false);
   const { token } = theme.useToken();
   const location = useLocation();
   const dataSource = getDataSource(location.pathname);
@@ -276,7 +276,7 @@ const TableList: FC = () => {
       return;
     }
     getTeamById(tid ?? '').then((res) => {
-      if (res.data.length > 0) setTeam(res.data[0] as TeamTable);
+      if (res.data.length > 0) setTeam(res.data[0]);
     });
   }, []);
 

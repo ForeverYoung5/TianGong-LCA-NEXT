@@ -36,8 +36,8 @@ const TableList: FC = () => {
   const [stateCode, setStateCode] = useState<string | number>('all');
   const [team, setTeam] = useState<TeamTable | null>(null);
   const [importData, setImportData] = useState<UnitGroupImportItem[] | null>(null);
-  const [openAI, setOpenAI] = useState<boolean>(false);
-  const [isSystemAdmin, setIsSystemAdmin] = useState<boolean>(false);
+  const [openAI, setOpenAI] = useState(false);
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false);
   const { token } = theme.useToken();
   const location = useLocation();
   const dataSource = getDataSource(location.pathname);
@@ -269,7 +269,7 @@ const TableList: FC = () => {
       return;
     }
     getTeamById(tid ?? '').then((res) => {
-      if (res.data.length > 0) setTeam(res.data[0] as TeamTable);
+      if (res.data.length > 0) setTeam(res.data[0]);
     });
     getRoleByUserId().then((res) => {
       const systemAdmin = res?.find(

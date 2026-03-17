@@ -143,7 +143,7 @@ const ReviewMember = ({ userData }: { userData: { user_id: string; role: string 
     {
       title: <FormattedMessage id='pages.review.actions' defaultMessage='Actions' />,
       key: 'actions',
-      render: (_: any, record: TeamMemberTable) => (
+      render: (_, record: TeamMemberTable) => (
         <Flex gap='small'>
           {
             <Tooltip

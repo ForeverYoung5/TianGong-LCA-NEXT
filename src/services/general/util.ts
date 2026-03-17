@@ -1,7 +1,7 @@
 import { getReferenceUnitGroups } from '@/services/flowproperties/api';
 import { getFlowProperties } from '@/services/flows/api';
 import { getReferenceUnits } from '@/services/unitgroups/api';
-import { Classification } from './data';
+import type { Classification, LangTextEntry } from './data';
 
 export type RefVersionItem = {
   key: string;
@@ -397,6 +397,26 @@ export function getLangList(langTexts: any) {
   }
 }
 
+export const isJsonObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+export const isLangTextEntry = (value: unknown): value is LangTextEntry => isJsonObject(value);
+
+export function jsonToList<T = unknown>(json: T | T[] | null | undefined): T[] {
+  if (json) {
+    if (Array.isArray(json)) {
+      return json;
+    }
+    return [json];
+  }
+  return [];
+}
+
+export const toLangTextList = (value: unknown): LangTextEntry[] | undefined => {
+  const langTextList = jsonToList(value).filter(isLangTextEntry);
+  return langTextList.length > 0 ? langTextList : undefined;
+};
+
 export type LangValidationIssueCode = 'missing_en' | 'invalid_en';
 
 export type LangValidationIssue = {
@@ -414,11 +434,8 @@ const TEXT_KEY = '#text';
 const NON_ENGLISH_SCRIPT_REGEX =
   /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}\p{Script=Arabic}\p{Script=Hebrew}\p{Script=Devanagari}\p{Script=Thai}]/u;
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const isLangTextEntry = (value: unknown): value is Record<string, unknown> =>
-  isObject(value) && Object.prototype.hasOwnProperty.call(value, LANG_KEY);
+const hasLangKeyEntry = (value: unknown): value is Record<string, unknown> =>
+  isJsonObject(value) && Object.prototype.hasOwnProperty.call(value, LANG_KEY);
 
 const normalizeLangCode = (lang: unknown): string => {
   if (typeof lang !== 'string') return '';
@@ -468,7 +485,7 @@ async function normalizeLangEntries(
   const orderedLangCodes: string[] = [];
 
   for (const entry of langEntries) {
-    if (!isLangTextEntry(entry)) {
+    if (!hasLangKeyEntry(entry)) {
       continue;
     }
     const langCode = normalizeLangCode(entry[LANG_KEY]);
@@ -542,7 +559,7 @@ async function normalizeLangNode(
   }
 
   if (Array.isArray(value)) {
-    const looksLikeLangList = value.some((item) => isLangTextEntry(item));
+    const looksLikeLangList = value.some((item) => hasLangKeyEntry(item));
     if (looksLikeLangList) {
       return normalizeLangEntries(value, path, issues, options, translationCache);
     }
@@ -554,11 +571,11 @@ async function normalizeLangNode(
     return mapped;
   }
 
-  if (isLangTextEntry(value)) {
+  if (hasLangKeyEntry(value)) {
     return normalizeLangEntries([value], path, issues, options, translationCache);
   }
 
-  if (isObject(value)) {
+  if (isJsonObject(value)) {
     const entries = Object.entries(value);
     const normalizedEntries = await Promise.all(
       entries.map(async ([key, nodeValue]) => {
@@ -845,17 +862,6 @@ export function validatePasswordStrength(_: any, value: string) {
     return Promise.reject(new Error('Password must contain at least one special character!'));
   }
   return Promise.resolve();
-}
-
-export function jsonToList(json: any) {
-  if (json) {
-    if (Array.isArray(json)) {
-      return json;
-    } else {
-      return [json];
-    }
-  }
-  return [];
 }
 
 export function listToJson(list: any) {
