@@ -1,5 +1,17 @@
-import { ProColumns, ProFormInstance } from '@ant-design/pro-components';
+import type { ProColumns, ProFormInstance } from '@ant-design/pro-components';
+import type { Rule } from 'antd/lib/form';
+import type { MutableRefObject } from 'react';
 import { FormattedMessage } from 'umi';
+
+type SchemaRule = {
+  pattern?: RegExp | string;
+  type?: string;
+  messageKey?: string;
+  defaultMessage?: string;
+  [key: string]: unknown;
+};
+
+type FormRefValidator = Pick<ProFormInstance, 'validateFields'>;
 
 export function getDataTitle(dataSource: string) {
   if (dataSource === 'my') {
@@ -25,32 +37,33 @@ export function getAllVersionsColumns(columns: ProColumns<any>[], versionIndex: 
   return newColumns;
 }
 
-export function getRules(rules: any[]) {
+const getRulePattern = (pattern?: SchemaRule['pattern']): RegExp | undefined => {
+  if (pattern === 'dataSetVersion') {
+    return /^\d{2}\.\d{2}\.\d{3}$/;
+  }
+  if (pattern === 'CASNumber') {
+    return /^\d{2,7}-\d{2}-\d$/;
+  }
+  if (pattern === 'year') {
+    return /^[0-9]{4}$/;
+  }
+  return pattern instanceof RegExp ? pattern : undefined;
+};
+
+export function getRules(rules: SchemaRule[]): Rule[] {
   return rules.map((rule) => {
-    let _rule = { ...rule };
-    if (rule.hasOwnProperty('pattern')) {
-      if (rule.pattern === 'dataSetVersion') {
-        _rule.pattern = /^\d{2}\.\d{2}\.\d{3}$/;
-      }
-      if (rule.pattern === 'CASNumber') {
-        _rule.pattern = /^\d{2,7}-\d{2}-\d$/;
-      }
-      if (rule.pattern === 'year') {
-        _rule.pattern = /^[0-9]{4}$/;
-      }
-    }
+    const { defaultMessage, messageKey, ...restRule } = rule;
     const result = {
-      ..._rule,
-      message: <FormattedMessage id={rule.messageKey} defaultMessage={rule.defaultMessage} />,
+      ...restRule,
+      pattern: getRulePattern(rule.pattern),
+      message: <FormattedMessage id={messageKey ?? ''} defaultMessage={defaultMessage} />,
     };
-    delete result.defaultMessage;
-    delete result.messageKey;
-    return result;
+    return result as Rule;
   });
 }
 
 export const validateRefObjectId = (
-  formRef: React.MutableRefObject<ProFormInstance | undefined>,
+  formRef: MutableRefObject<FormRefValidator | undefined>,
   name: Array<string | number>,
   parentName?: Array<string | number>,
 ) => {

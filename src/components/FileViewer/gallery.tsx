@@ -1,21 +1,32 @@
 import { getOriginalFileUrl, getThumbFileUrls, isImage } from '@/services/supabase/storage';
+import type { UploadFile } from 'antd';
 import { Card, Image, Space, Spin } from 'antd';
 import React, { FC } from 'react';
 
 import { FileTwoTone } from '@ant-design/icons';
 import { useIntl } from 'umi';
 
+type FileReference = {
+  '@uri'?: string;
+};
+
+type GalleryFileUrl = UploadFile & {
+  thumbUrl?: string;
+  url?: string;
+};
+
 type Props = {
-  data: any;
+  data: FileReference | FileReference[] | null | undefined;
 };
 
 const FileGallery: FC<Props> = ({ data }) => {
-  const [fileUrls, setFileUrls] = React.useState<any[]>([]);
+  const [fileUrls, setFileUrls] = React.useState<GalleryFileUrl[]>([]);
   const [spinning, setSpinning] = React.useState<boolean>(false);
 
   const intl = useIntl();
+  const files = Array.isArray(data) ? data : data ? [data] : [];
 
-  const updateFileUrls = (previewUrl: any, index: number) => {
+  const updateFileUrls = (previewUrl: string | undefined, index: number) => {
     setFileUrls((prevFileUrls) => {
       const newFileUrls = [...prevFileUrls];
       if (newFileUrls.length > index) {
@@ -30,9 +41,10 @@ const FileGallery: FC<Props> = ({ data }) => {
 
   React.useEffect(() => {
     const fetchData = async () => {
+      const normalizedFiles = Array.isArray(data) ? data : data ? [data] : [];
       if (data) {
-        const urls = await getThumbFileUrls(data);
-        setFileUrls(urls);
+        const urls = await getThumbFileUrls(normalizedFiles);
+        setFileUrls(urls as GalleryFileUrl[]);
         setSpinning(false);
       }
     };
@@ -40,7 +52,7 @@ const FileGallery: FC<Props> = ({ data }) => {
     fetchData();
   }, [data]);
 
-  if (!data || data.length === 0) {
+  if (files.length === 0) {
     return <>-</>;
   }
 

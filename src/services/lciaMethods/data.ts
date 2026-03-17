@@ -1,4 +1,4 @@
-import type { LangTextValue } from '../general/data';
+import type { LangTextEntry, LangTextValue } from '../general/data';
 
 export type LCIAResultTable = {
   key: string;
@@ -7,15 +7,10 @@ export type LCIAResultTable = {
     '@type': string;
     '@uri': string;
     '@version': string;
-    'common:shortDescription': [
-      {
-        '@xml:lang': string;
-        '#text': string;
-      },
-    ];
+    'common:shortDescription': LangTextEntry | LangTextEntry[];
   };
   meanAmount: string | number;
-  referenceQuantityDesc?: string;
+  referenceQuantityDesc?: LangTextValue | Record<string, never>;
 };
 
 export type LciaMethodListItem = {
