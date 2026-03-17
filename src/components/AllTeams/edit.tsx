@@ -116,6 +116,11 @@ const TeamEdit: FC<Props> = ({
   const onReset = async () => {
     setSpinning(true);
     formRefEdit.current?.resetFields();
+    setInitData(null);
+    setLightLogo(undefined);
+    setDarkLogo(undefined);
+    setBeforeLightLogoPath('');
+    setBeforeDarkLogoPath('');
     const result = await getTeamMessageApi(id);
     if (result.data && result.data.length > 0) {
       const teamData = result.data[0];
@@ -134,6 +139,8 @@ const TeamEdit: FC<Props> = ({
       };
       setLightLogo(teamData.json?.lightLogo ?? undefined);
       setDarkLogo(teamData.json?.darkLogo ?? undefined);
+      setBeforeLightLogoPath(teamData.json?.lightLogo ?? '');
+      setBeforeDarkLogoPath(teamData.json?.darkLogo ?? '');
 
       formRefEdit.current?.setFieldsValue({ ...formValues });
       setHasLoadedData(true);
