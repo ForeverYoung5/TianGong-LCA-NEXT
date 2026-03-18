@@ -18,6 +18,23 @@ import {
   updateUserContact,
 } from '@/services/users/api';
 
+const mockUserContact = {
+  '@uri': '../contacts/29fc594e-a182-41c0-b2d4-de19e9de1abb.xml',
+  '@type': 'contact data set' as const,
+  '@version': '01.01.000',
+  '@refObjectId': '29fc594e-a182-41c0-b2d4-de19e9de1abb',
+  'common:shortDescription': [
+    {
+      '#text': 'Hao Yujiao',
+      '@xml:lang': 'en',
+    },
+    {
+      '#text': '郝玉娇',
+      '@xml:lang': 'zh',
+    },
+  ],
+};
+
 jest.mock('@/services/supabase', () => ({
   supabase: {
     from: jest.fn(),
@@ -222,7 +239,7 @@ describe('Users API service (src/services/users/api.ts)', () => {
       const mockUserData = {
         id: 'user-123',
         raw_user_meta_data: { email: 'user@example.com', display_name: 'User' },
-        contact: { phone: '123-456-7890' },
+        contact: mockUserContact,
       };
 
       const mockSelect = jest.fn().mockReturnThis();
@@ -241,7 +258,7 @@ describe('Users API service (src/services/users/api.ts)', () => {
 
       expect(result).toEqual({
         user: mockUserData,
-        contact: { phone: '123-456-7890' },
+        contact: mockUserContact,
         success: true,
       });
     });
@@ -309,7 +326,7 @@ describe('Users API service (src/services/users/api.ts)', () => {
       mockAuthGetSession.mockResolvedValue(mockSession);
       mockFunctionsInvoke.mockResolvedValue(mockResult);
 
-      const contactInfo = { phone: '123-456-7890', address: '123 Main St' };
+      const contactInfo = mockUserContact;
       const result = await updateUserContact('user-123', contactInfo);
 
       expect(mockAuthGetSession).toHaveBeenCalledTimes(1);
@@ -326,7 +343,7 @@ describe('Users API service (src/services/users/api.ts)', () => {
     it('returns empty result when session is not available', async () => {
       mockAuthGetSession.mockResolvedValue({ data: { session: null } });
 
-      const result = await updateUserContact('user-123', { phone: '123' });
+      const result = await updateUserContact('user-123', mockUserContact);
 
       expect(mockFunctionsInvoke).not.toHaveBeenCalled();
       expect(result).toEqual({});
@@ -342,7 +359,7 @@ describe('Users API service (src/services/users/api.ts)', () => {
         role: 'member',
       } as any);
 
-      const mockContact = { phone: '123-456-7890' };
+      const mockContact = mockUserContact;
       const mockSelect = jest.fn().mockReturnThis();
       const mockEq = jest.fn().mockReturnThis();
       const mockSingle = jest

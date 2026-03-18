@@ -1,6 +1,7 @@
 import ContactSelectDrawer from '@/pages/Contacts/Components/select/drawer';
 import { getContactDetail } from '@/services/contacts/api';
 import { genContactFromData } from '@/services/contacts/util';
+import type { LangTextEntry } from '@/services/general/data';
 import { getLang, getLangText, jsonToList } from '@/services/general/util';
 import { addReviewMemberApi } from '@/services/roles/api';
 import type { UserContactInfo, UserDetailRecord } from '@/services/users/api';
@@ -27,24 +28,13 @@ interface AddMemberModalProps {
   onSuccess: () => void;
 }
 
-type ContactInfo = UserContactInfo & {
-  '@refObjectId'?: string;
-  '@type'?: string;
-  '@uri'?: string;
-  '@version'?: string;
-  'common:shortDescription'?: Array<{
-    '#text': string;
-    '@xml:lang': string;
-  }>;
-};
-
 const AddMemberModal: React.FC<AddMemberModalProps> = ({ open, onCancel, onSuccess }) => {
   const formRef = useRef<FormInstance>(null);
   const [loading, setLoading] = useState(false);
   const [queryLoading, setQueryLoading] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
   const [userInfo, setUserInfo] = useState<UserDetailRecord | null>(null);
-  const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
+  const [contactInfo, setContactInfo] = useState<UserContactInfo | null>(null);
   const intl = useIntl();
   const lang = getLang(intl.locale);
 
@@ -74,7 +64,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ open, onCancel, onSucce
 
       if (result.success) {
         setUserInfo(result.user);
-        setContactInfo(result.contact as ContactInfo | null);
+        setContactInfo(result.contact);
         message.success(
           intl.formatMessage({
             id: 'pages.review.members.querySuccess',
@@ -118,10 +108,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ open, onCancel, onSucce
         setLoading(false);
         return;
       }
-      const associatedContactResult = await updateUserContact(
-        userInfo?.id ?? '',
-        (contactInfo ?? {}) as UserContactInfo,
-      );
+      const associatedContactResult = await updateUserContact(userInfo?.id ?? '', contactInfo!);
 
       if (!result?.success || associatedContactResult.error) {
         message.error(
@@ -155,14 +142,14 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ open, onCancel, onSucce
     getContactDetail(rowId, rowVersion).then(async (result: any) => {
       const selectedData = genContactFromData(result.data?.json?.contactDataSet ?? {});
 
-      const contactInfo = {
+      const contactInfo: UserContactInfo = {
         '@refObjectId': rowId,
         '@type': 'contact data set',
         '@uri': `../contacts/${rowId}.xml`,
         '@version': result.data?.version,
-        'common:shortDescription':
-          jsonToList(selectedData?.contactInformation?.dataSetInformation?.['common:shortName']) ??
-          [],
+        'common:shortDescription': jsonToList<LangTextEntry>(
+          selectedData?.contactInformation?.dataSetInformation?.['common:shortName'],
+        ),
       };
       setContactInfo(contactInfo);
       setContactLoading(false);

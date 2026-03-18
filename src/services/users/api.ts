@@ -1,9 +1,14 @@
 import { getCurrentUser } from '@/services/auth';
 import { supabase } from '@/services/supabase';
 import { FunctionRegion } from '@supabase/supabase-js';
-import type { FunctionInvokeResult, JsonObject } from '../general/data';
+import type { FunctionInvokeResult, LangTextEntry, ReferenceItem } from '../general/data';
 
-export type UserContactInfo = JsonObject;
+export type UserContactInfo = Required<
+  Pick<ReferenceItem, '@uri' | '@refObjectId' | '@version' | 'common:shortDescription'>
+> & {
+  '@type': 'contact data set';
+  'common:shortDescription': LangTextEntry[];
+};
 
 export type UserMetadata = {
   email?: string;
@@ -21,9 +26,14 @@ export type UserEmailLookup = {
   email?: string;
 };
 
-export type UserDetailRecord = UserSummary & {
-  raw_user_meta_data?: UserMetadata;
+export type UserDetailRecord = {
+  id: string;
+  raw_user_meta_data?: UserMetadata | null;
   contact?: UserContactInfo | null;
+};
+
+type UserContactDetail = {
+  contact: UserContactInfo | null;
 };
 
 type UserInfoByEmailResult =
@@ -134,5 +144,12 @@ export async function updateUserContact(
 export async function getUserDetail() {
   const id = await getUserId();
   const result = await supabase.from('users').select('contact').eq('id', id).single();
-  return result;
+  return {
+    ...result,
+    data: result.data
+      ? ({
+          contact: (result.data.contact as UserContactInfo | null | undefined) ?? null,
+        } satisfies UserContactDetail)
+      : result.data,
+  };
 }
