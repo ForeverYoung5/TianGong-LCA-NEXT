@@ -17,7 +17,7 @@ describe('reviews data shapes', () => {
         data: {
           id: 'process-1',
           version: '01.00.000',
-          name: { baseName: [{ '@xml:lang': 'en', '#text': 'Process A' }] },
+          name: [{ '@xml:lang': 'en', '#text': 'Process A' }],
         },
         team: {
           id: 'team-1',
@@ -39,7 +39,7 @@ describe('reviews data shapes', () => {
 
     expect(row.comments?.map((item) => item.state_code)).toEqual([10, 20]);
     expect(row.json.team.name).toBe('Team Alpha');
-    expect(row.modelData?.json_tg.xflow.nodes).toEqual([]);
+    expect((row.modelData?.json_tg?.xflow as any)?.nodes).toEqual([]);
   });
 
   it('allows review rows without model data for process-only reviews', () => {
@@ -54,7 +54,7 @@ describe('reviews data shapes', () => {
         data: {
           id: 'process-2',
           version: '02.00.000',
-          name: 'Process B',
+          name: { '@xml:lang': 'en', '#text': 'Process B' },
         },
         team: {
           id: 'team-2',
@@ -85,7 +85,7 @@ describe('reviews data shapes', () => {
         data: {
           id: 'process-3',
           version: '03.00.000',
-          name: { baseName: [{ '@xml:lang': 'en', '#text': 'Process C' }] },
+          name: [{ '@xml:lang': 'en', '#text': 'Process C' }],
         },
         team: {
           id: 'team-3',
@@ -101,6 +101,6 @@ describe('reviews data shapes', () => {
 
     expect(row.comments).toBeUndefined();
     expect(row.modifiedAt).toBeUndefined();
-    expect((row.json.data.name as any).baseName[0]['#text']).toBe('Process C');
+    expect((row.json.data.name as any)[0]['#text']).toBe('Process C');
   });
 });

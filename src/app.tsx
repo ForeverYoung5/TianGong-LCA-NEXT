@@ -8,6 +8,7 @@ import {
   Question,
   SelectLang,
 } from '@/components';
+import ILCDCacheMonitor from '@/components/ILCDCacheMonitor';
 import LCIACacheMonitor from '@/components/LCIACacheMonitor';
 import { Link, getIntl, history } from '@umijs/max';
 
@@ -99,6 +100,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
   return {
     actionsRender: () => [
       <LCIACacheMonitor key='LCIACacheMonitor' />,
+      <ILCDCacheMonitor key='ILCDCacheMonitor' />,
       <DarkMode
         key='DarkMode'
         handleClick={handleClickFunction}
