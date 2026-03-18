@@ -9,7 +9,7 @@ import { supabase } from '@/services/supabase';
 import { getCPCClassification, getCPCClassificationZH } from '../flows/classification/api';
 import type { Classification } from '../general/data';
 import { getISICClassification, getISICClassificationZH } from '../processes/classification/api';
-import { getILCDFlowCategorization } from './api';
+import { getILCDFlowCategorization, getILCDLocationEntries } from './api';
 import type { ILCDCategoryNode } from './util';
 import { genClass, genClassZH } from './util';
 
@@ -179,17 +179,10 @@ class ILCDCache {
 
     console.log('[Cache Miss] ILCD Location:', validValues.length, 'values');
 
-    let file_name = 'ILCDLocations';
-    if (lang === 'zh') {
-      file_name = 'ILCDLocations_zh';
-    }
-
-    const result = await supabase.rpc('ilcd_location_get', {
-      this_file_name: file_name,
-      get_values: validValues,
-    });
-
-    const data = (result.data ?? []) as Array<Record<string, unknown>>;
+    const data =
+      ((await getILCDLocationEntries(lang, validValues)) as Array<
+        Record<string, unknown>
+      > | null) ?? [];
 
     // Cache with default TTL (5 minutes)
     this.set(cacheKey, data, this.defaultTTL);
