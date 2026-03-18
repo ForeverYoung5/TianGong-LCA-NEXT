@@ -1,4 +1,5 @@
 import { getRejectedCommentsByReviewIds } from '@/services/comments/api';
+import type { CommentJson } from '@/services/comments/data';
 import {
   getRefData,
   getRefDataByIds,
@@ -8,6 +9,7 @@ import {
 import { getLifeCycleModelDetail } from '@/services/lifeCycleModels/api';
 import { FormProcess } from '@/services/processes/data';
 import { addReviewsApi, getRejectReviewsByProcess } from '@/services/reviews/api';
+import type { ReviewJson } from '@/services/reviews/data';
 import { getSourcesByIdsAndVersions } from '@/services/sources/api';
 import { getTeamMessageApi } from '@/services/teams/api';
 import { getUserId, getUsersByIds } from '@/services/users/api';
@@ -604,7 +606,11 @@ export const checkData = async (
   }
 };
 
-export const updateReviewsAfterCheckData = async (teamId: string, data: any, reviewId: string) => {
+export const updateReviewsAfterCheckData = async (
+  teamId: string,
+  data: ReviewJson['data'],
+  reviewId: string,
+) => {
   const team = await getTeamMessageApi(teamId);
   const userId = await getUserId();
   const user = await getUsersByIds([userId]);
@@ -890,7 +896,10 @@ export async function checkReviewReport(reviews: any) {
   return reportUnderReview;
 }
 
-export const getRejectedComments = async (processId: string, processVersion: string) => {
+export const getRejectedComments = async (
+  processId: string,
+  processVersion: string,
+): Promise<Array<CommentJson | null>> => {
   if (!processId || !processVersion) {
     return [];
   }
@@ -920,30 +929,28 @@ export const getRejectedComments = async (processId: string, processVersion: str
   return commentsData.map((e) => e.json);
 };
 
-export const mergeCommentsToData = (
-  comments: FormProcess['modellingAndValidation'][],
-  data: FormProcess,
-) => {
+export const mergeCommentsToData = (comments: Array<CommentJson | null>, data: FormProcess) => {
   // Merge rejected comments into formData.modellingAndValidation
   if (Array.isArray(comments) && comments.length) {
     data.modellingAndValidation = data.modellingAndValidation || {};
-    comments.forEach((r: any) => {
-      const mv = r?.modellingAndValidation || {};
+    comments.forEach((comment) => {
+      const mv = comment?.modellingAndValidation || {};
 
       // merge validation
       if (mv.validation) {
         if (!data.modellingAndValidation.validation) {
           data.modellingAndValidation.validation = mv.validation;
         } else {
-          Object.keys(mv.validation).forEach((k) => {
-            const val = mv.validation[k];
-            const target = data.modellingAndValidation.validation as any;
+          const validationEntries = Object.entries(mv.validation as Record<string, unknown>);
+          validationEntries.forEach(([k, val]) => {
+            const target = data.modellingAndValidation.validation as Record<string, unknown>;
+            const currentValue = target[k];
             if (Array.isArray(val)) {
-              if (!Array.isArray(target[k])) target[k] = [];
-              target[k] = [...target[k], ...val];
+              const currentItems = Array.isArray(currentValue) ? currentValue : [];
+              target[k] = [...currentItems, ...val];
             } else {
-              if (Array.isArray(target[k])) target[k].push(val);
-              else if (target[k] !== undefined) target[k] = [target[k], val];
+              if (Array.isArray(currentValue)) currentValue.push(val);
+              else if (currentValue !== undefined) target[k] = [currentValue, val];
               else target[k] = val;
             }
           });
@@ -955,15 +962,21 @@ export const mergeCommentsToData = (
         if (!data.modellingAndValidation.complianceDeclarations) {
           data.modellingAndValidation.complianceDeclarations = mv.complianceDeclarations;
         } else {
-          Object.keys(mv.complianceDeclarations).forEach((k) => {
-            const val = mv.complianceDeclarations[k];
-            const target = data.modellingAndValidation.complianceDeclarations as any;
+          const complianceEntries = Object.entries(
+            mv.complianceDeclarations as Record<string, unknown>,
+          );
+          complianceEntries.forEach(([k, val]) => {
+            const target = data.modellingAndValidation.complianceDeclarations as Record<
+              string,
+              unknown
+            >;
+            const currentValue = target[k];
             if (Array.isArray(val)) {
-              if (!Array.isArray(target[k])) target[k] = [];
-              target[k] = [...target[k], ...val];
+              const currentItems = Array.isArray(currentValue) ? currentValue : [];
+              target[k] = [...currentItems, ...val];
             } else {
-              if (Array.isArray(target[k])) target[k].push(val);
-              else if (target[k] !== undefined) target[k] = [target[k], val];
+              if (Array.isArray(currentValue)) currentValue.push(val);
+              else if (currentValue !== undefined) target[k] = [currentValue, val];
               else target[k] = val;
             }
           });

@@ -114,7 +114,6 @@ export function genLifeCycleModelJsonOrdered(id: string, data: any) {
       connections?: {
         outputExchange?: unknown;
       };
-      [key: string]: unknown;
     };
 
     if (!processInstanceData?.connections) {

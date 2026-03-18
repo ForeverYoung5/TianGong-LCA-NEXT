@@ -10,11 +10,11 @@ export type GraphNode = LifeCycleModelGraphNode;
 export type GraphEdge = LifeCycleModelGraphEdge;
 
 type GraphNodeUpdate = Partial<Omit<GraphNode, 'id'>> & {
-  data?: Record<string, unknown>;
+  data?: Partial<NonNullable<GraphNode['data']>>;
 };
 
-type GraphEdgeUpdate = Partial<Omit<GraphEdge, 'id'>> & {
-  data?: Record<string, unknown>;
+type GraphEdgeUpdate = Omit<Partial<GraphEdge>, 'id' | 'data'> & {
+  data?: Partial<NonNullable<GraphEdge['data']>>;
 };
 
 interface GraphContextValue {

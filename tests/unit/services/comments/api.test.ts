@@ -60,6 +60,16 @@ const createPagedCommentsQueryBuilder = (resolvedValue: any) => {
   return builder;
 };
 
+const createMockCommentRow = (overrides: Record<string, unknown> = {}) => ({
+  created_at: '2024-01-01T00:00:00Z',
+  json: null,
+  modified_at: '2024-01-01T01:00:00Z',
+  review_id: 'review-123',
+  reviewer_id: 'user-123',
+  state_code: 0,
+  ...overrides,
+});
+
 describe('Comments API service (src/services/comments/api.ts)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -67,11 +77,13 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
 
   describe('addCommentApi', () => {
     it('inserts a new comment and returns error status', async () => {
-      const mockData = {
-        review_id: 'review-123',
-        reviewer_id: 'user-123',
-        content: 'Test comment',
-      };
+      const mockData = [
+        {
+          review_id: 'review-123',
+          reviewer_id: 'user-123',
+          state_code: 0,
+        },
+      ];
 
       const mockUpsert = jest.fn().mockReturnThis();
       const mockSelect = jest.fn().mockResolvedValue({ error: null });
@@ -90,6 +102,11 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
     });
 
     it('returns error when upsert fails', async () => {
+      const mockData = {
+        review_id: 'review-123',
+        reviewer_id: 'user-123',
+        state_code: 0,
+      };
       const mockError = { message: 'Insert failed' };
       const mockUpsert = jest.fn().mockReturnThis();
       const mockSelect = jest.fn().mockResolvedValue({ error: mockError });
@@ -100,7 +117,7 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
         }),
       });
 
-      const result = await addCommentApi({});
+      const result = await addCommentApi(mockData);
 
       expect(result).toEqual({ error: mockError });
     });
@@ -121,11 +138,11 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
       });
 
       const result = await updateCommentByreviewerApi('review-123', 'user-123', {
-        content: 'Updated',
+        state_code: -2,
       });
 
       expect(mockFrom).toHaveBeenCalledWith('comments');
-      expect(mockUpdate).toHaveBeenCalledWith({ content: 'Updated' });
+      expect(mockUpdate).toHaveBeenCalledWith({ state_code: -2 });
       expect(mockEq1).toHaveBeenCalledWith('reviewer_id', 'user-123');
       expect(mockEq2).toHaveBeenCalledWith('review_id', 'review-123');
       expect(result).toEqual({ error: null });
@@ -142,7 +159,7 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
       (mockAuthGetSession as jest.Mock).mockResolvedValue(mockSession);
       (mockFunctionsInvoke as jest.Mock).mockResolvedValue(mockResult);
 
-      const result = await updateCommentApi('review-123', { content: 'Updated' }, 'assigned');
+      const result = await updateCommentApi('review-123', { state_code: 1 }, 'assigned');
 
       expect(mockAuthGetSession).toHaveBeenCalledTimes(1);
       expect(mockFunctionsInvoke).toHaveBeenCalledWith('update_comment', {
@@ -151,7 +168,7 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
         },
         body: {
           id: 'review-123',
-          data: { content: 'Updated' },
+          data: { state_code: 1 },
           tabType: 'assigned',
         },
         region: 'us-east-1',
@@ -198,7 +215,17 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
         error: null,
       });
 
-      await updateCommentApi('review-456', { content: 'Updated' }, 'admin-rejected');
+      await updateCommentApi(
+        'review-456',
+        {
+          json: {
+            comment: {
+              message: 'Updated',
+            },
+          },
+        },
+        'admin-rejected',
+      );
 
       expect(mockFunctionsInvoke).toHaveBeenCalledWith('update_comment', {
         headers: {
@@ -206,7 +233,13 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
         },
         body: {
           id: 'review-456',
-          data: { content: 'Updated' },
+          data: {
+            json: {
+              comment: {
+                message: 'Updated',
+              },
+            },
+          },
           tabType: 'admin-rejected',
         },
         region: 'us-east-1',
@@ -218,7 +251,16 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
     it('fetches comments for review action type with current user as reviewer', async () => {
       mockGetUserId.mockResolvedValue('current-user-id');
 
-      const mockData = [{ id: 'comment-1', content: 'Comment 1', reviewer_id: 'current-user-id' }];
+      const mockData = [
+        createMockCommentRow({
+          json: {
+            comment: {
+              message: 'Comment 1',
+            },
+          },
+          reviewer_id: 'current-user-id',
+        }),
+      ];
 
       const mockSelect = jest.fn().mockReturnThis();
       const mockEqReviewId = jest.fn().mockReturnThis();
@@ -253,7 +295,15 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
     it('fetches admin-rejected comments without narrowing to the current reviewer', async () => {
       mockGetUserId.mockResolvedValue('current-user-id');
 
-      const mockData = [{ id: 'comment-1', content: 'Admin rejected' }];
+      const mockData = [
+        createMockCommentRow({
+          json: {
+            comment: {
+              message: 'Admin rejected',
+            },
+          },
+        }),
+      ];
       const mockSelect = jest.fn().mockReturnThis();
       const mockEqReviewId = jest.fn().mockResolvedValue({ data: mockData, error: null });
 
@@ -273,7 +323,15 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
     it('treats reviewer-rejected comments the same as review comments for reviewer filtering', async () => {
       mockGetUserId.mockResolvedValue('current-user-id');
 
-      const mockData = [{ id: 'comment-2', content: 'Rejected by reviewer' }];
+      const mockData = [
+        createMockCommentRow({
+          json: {
+            comment: {
+              message: 'Rejected by reviewer',
+            },
+          },
+        }),
+      ];
       const mockSelect = jest.fn().mockReturnThis();
       const mockEqReviewId = jest.fn().mockReturnThis();
       const mockEqReviewerId = jest.fn().mockResolvedValue({ data: mockData, error: null });
@@ -294,8 +352,22 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
 
     it('fetches all comments for assigned action type', async () => {
       const mockData = [
-        { id: 'comment-1', content: 'Comment 1' },
-        { id: 'comment-2', content: 'Comment 2' },
+        createMockCommentRow({
+          json: {
+            comment: {
+              message: 'Comment 1',
+            },
+          },
+        }),
+        createMockCommentRow({
+          json: {
+            comment: {
+              message: 'Comment 2',
+            },
+          },
+          reviewer_id: 'user-456',
+          state_code: 1,
+        }),
       ];
 
       const mockSelect = jest.fn().mockReturnThis();
@@ -534,7 +606,15 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
   describe('getRejectedCommentsByReviewIds', () => {
     it('fetches rejected comment payloads for the provided review ids', async () => {
       const mockResult = {
-        data: [{ json: { reason: 'Rejected' } }],
+        data: [
+          {
+            json: {
+              comment: {
+                message: 'Rejected',
+              },
+            },
+          },
+        ],
         error: null,
       };
       const builder: any = {
@@ -551,7 +631,18 @@ describe('Comments API service (src/services/comments/api.ts)', () => {
       expect(builder.select).toHaveBeenCalledWith('json');
       expect(builder.in).toHaveBeenCalledWith('review_id', ['review-1', 'review-2']);
       expect(builder.eq).toHaveBeenCalledWith('state_code', -1);
-      expect(result).toEqual(mockResult);
+      expect(result).toEqual({
+        ...mockResult,
+        data: [
+          {
+            json: {
+              comment: {
+                message: 'Rejected',
+              },
+            },
+          },
+        ],
+      });
     });
   });
 });

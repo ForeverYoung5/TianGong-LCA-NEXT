@@ -12,6 +12,7 @@ import type {
   ReviewSubTableRow,
   ReviewsTable,
 } from '@/services/reviews/data';
+import type { ActionType } from '@ant-design/pro-components';
 import { ProColumns, ProTable } from '@ant-design/pro-components';
 import { FormattedMessage, useIntl } from '@umijs/max';
 import { Card, Col, Input, Row, Space, Spin, Table, theme } from 'antd';
@@ -36,7 +37,7 @@ type AssignmentReviewProps = {
     | 'pending'
     | 'reviewer-rejected'
     | 'admin-rejected';
-  actionRef: any;
+  actionRef: React.MutableRefObject<ActionType | undefined>;
   actionFrom?: 'reviewMember';
   hideReviewButton?: boolean;
 };

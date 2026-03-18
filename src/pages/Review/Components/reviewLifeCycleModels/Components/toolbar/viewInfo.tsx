@@ -16,6 +16,7 @@ import {
 } from '@/pages/Processes/Components/optiondata';
 import SourceSelectDescription from '@/pages/Sources/Components/select/description';
 import { updateCommentApi } from '@/services/comments/api';
+import type { CommentJson } from '@/services/comments/data';
 import { getUserDetail } from '@/services/users/api';
 import styles from '@/style/custom.less';
 import { CloseOutlined, InfoOutlined } from '@ant-design/icons';
@@ -1615,8 +1616,8 @@ const ToolbarViewInfo: FC<Props> = ({ lang, data, type, reviewId, tabType, actio
     };
 
     setSpinning(true);
-    const { error } = await updateCommentApi(reviewId, { json: submitData }, tabType);
-    if (!error) {
+    const updateResult = await updateCommentApi(reviewId, { json: submitData }, tabType);
+    if (updateResult) {
       message.success(
         intl.formatMessage({
           id: 'pages.review.temporarySaveSuccess',
@@ -1629,7 +1630,7 @@ const ToolbarViewInfo: FC<Props> = ({ lang, data, type, reviewId, tabType, actio
     setSpinning(false);
   };
 
-  const updateCommentJsonRefsToUnderReview = async (data: any) => {
+  const updateCommentJsonRefsToUnderReview = async (data: CommentJson) => {
     const refObjs = getAllRefObj(data);
     const unReview: refDataType[] = []; //stateCode < 20
     const underReview: refDataType[] = []; //stateCode >= 20 && stateCode < 100
@@ -1778,12 +1779,12 @@ const ToolbarViewInfo: FC<Props> = ({ lang, data, type, reviewId, tabType, actio
                     setSpinning(false);
                     return false;
                   }
-                  const { error } = await updateCommentApi(
+                  const updateResult = await updateCommentApi(
                     reviewId,
                     { json: submitData, state_code: 1 },
                     tabType,
                   );
-                  if (!error) {
+                  if (updateResult) {
                     message.success(
                       intl.formatMessage({
                         id: 'pages.review.ReviewProcessDetail.edit.success',

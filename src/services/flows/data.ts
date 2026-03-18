@@ -45,7 +45,6 @@ export type FlowRefUnitDisplay = {
   name?: LangTextValue;
   refUnitName?: string;
   refUnitGeneralComment?: LangTextValue;
-  [key: string]: unknown;
 };
 
 export type FlowPropertyData = {
@@ -60,7 +59,6 @@ export type FlowPropertyData = {
   quantitativeReference?: boolean;
   generalComment?: LangTextValue;
   'common:generalComment'?: LangTextValue;
-  [key: string]: unknown;
 };
 
 export type FlowDetailData = {

@@ -2,13 +2,37 @@ import { supabase } from '@/services/supabase';
 import { getUserId } from '@/services/users/api';
 import { FunctionRegion } from '@supabase/supabase-js';
 import { SortOrder } from 'antd/lib/table/interface';
+import type { FunctionInvokeResult } from '../general/data';
+import type { ReviewCommentQueryResult } from '../reviews/data';
+import type {
+  CommentActionType,
+  CommentInsertPayload,
+  CommentJsonRecord,
+  CommentMutationResult,
+  CommentReviewerState,
+  CommentUpdatePayload,
+  UserManageCommentSummary,
+} from './data';
+import { mapCommentJsonRecords, mapCommentRows } from './data';
 
-export async function addCommentApi(data: any) {
+type ServiceQueryResult<T> = {
+  data: T | null;
+  error: unknown;
+  count?: number | null;
+  status?: number;
+  statusText?: string;
+};
+
+export async function addCommentApi(data: CommentInsertPayload | CommentInsertPayload[]) {
   const { error } = await supabase.from('comments').upsert(data).select();
   return { error };
 }
 
-export async function updateCommentByreviewerApi(reviewId: string, reviewerId: string, data: any) {
+export async function updateCommentByreviewerApi(
+  reviewId: string,
+  reviewerId: string,
+  data: CommentUpdatePayload,
+) {
   const { error } = await supabase
     .from('comments')
     .update(data)
@@ -19,10 +43,10 @@ export async function updateCommentByreviewerApi(reviewId: string, reviewerId: s
 
 export async function updateCommentApi(
   reviewId: string,
-  data: any,
-  tabType: 'assigned' | 'review' | 'reviewer-rejected' | 'admin-rejected',
+  data: CommentUpdatePayload,
+  tabType: CommentActionType,
 ) {
-  let result: any = {};
+  let result: FunctionInvokeResult<CommentMutationResult> = {};
   const session = await supabase.auth.getSession();
   if (session.data.session) {
     result = await supabase.functions.invoke('update_comment', {
@@ -39,10 +63,7 @@ export async function updateCommentApi(
   return result?.data;
 }
 
-export async function getCommentApi(
-  reviewId: string,
-  actionType: 'assigned' | 'review' | 'reviewer-rejected' | 'admin-rejected',
-) {
+export async function getCommentApi(reviewId: string, actionType: CommentActionType) {
   if (['review', 'reviewer-rejected', 'admin-rejected'].includes(actionType)) {
     const userId = await getUserId();
 
@@ -53,17 +74,26 @@ export async function getCommentApi(
 
     if (actionType === 'admin-rejected') {
       const { data, error } = await query;
-      return { data, error };
+      return {
+        data: data ? mapCommentRows(data) : data,
+        error,
+      };
     }
     if (actionType === 'review' || actionType === 'reviewer-rejected') {
       query = query.eq('reviewer_id', userId);
       const { data, error } = await query;
-      return { data, error };
+      return {
+        data: data ? mapCommentRows(data) : data,
+        error,
+      };
     }
   }
   if (actionType === 'assigned') {
     const { data, error } = await supabase.from('comments').select('*').eq('review_id', reviewId);
-    return { data, error };
+    return {
+      data: data ? mapCommentRows(data) : data,
+      error,
+    };
   }
   return { data: [], error: true };
 }
@@ -75,7 +105,7 @@ export async function getReviewedComment(
   } = {},
   sort: Record<string, SortOrder> = {},
   user_id?: string,
-) {
+): Promise<ReviewCommentQueryResult> {
   const normalizedSort = sort ?? {};
   const sortBy = Object.keys(normalizedSort)[0] ?? 'modified_at';
   const orderBy = normalizedSort[sortBy] ?? 'descend';
@@ -107,7 +137,7 @@ export async function getPendingComment(
   } = {},
   sort: Record<string, SortOrder> = {},
   user_id?: string,
-) {
+): Promise<ReviewCommentQueryResult> {
   const normalizedSort = sort ?? {};
   const sortBy = Object.keys(normalizedSort)[0] ?? 'modified_at';
   const orderBy = normalizedSort[sortBy] ?? 'descend';
@@ -138,7 +168,7 @@ export async function getRejectedComment(
   } = {},
   sort: Record<string, SortOrder> = {},
   user_id?: string,
-) {
+): Promise<ReviewCommentQueryResult> {
   const normalizedSort = sort ?? {};
   const sortBy = Object.keys(normalizedSort)[0] ?? 'modified_at';
   const orderBy = normalizedSort[sortBy] ?? 'descend';
@@ -162,7 +192,9 @@ export async function getRejectedComment(
   return result;
 }
 
-export async function getUserManageComments() {
+export async function getUserManageComments(): Promise<
+  ServiceQueryResult<UserManageCommentSummary[]>
+> {
   const result = await supabase
     .from('comments')
     .select('review_id,state_code,reviewer_id,reviews!inner(state_code)')
@@ -171,7 +203,9 @@ export async function getUserManageComments() {
   return result;
 }
 
-export async function getReviewerIdsByReviewId(reviewId: string) {
+export async function getReviewerIdsByReviewId(
+  reviewId: string,
+): Promise<CommentReviewerState[] | null> {
   const { data } = await supabase
     .from('comments')
     .select('state_code,reviewer_id')
@@ -179,11 +213,16 @@ export async function getReviewerIdsByReviewId(reviewId: string) {
   return data;
 }
 
-export async function getRejectedCommentsByReviewIds(reviewIds: string[]) {
+export async function getRejectedCommentsByReviewIds(
+  reviewIds: string[],
+): Promise<ServiceQueryResult<CommentJsonRecord[]>> {
   const result = await supabase
     .from('comments')
     .select('json')
     .in('review_id', reviewIds)
     .eq('state_code', -1);
-  return result;
+  return {
+    ...result,
+    data: result.data ? mapCommentJsonRecords(result.data) : result.data,
+  };
 }

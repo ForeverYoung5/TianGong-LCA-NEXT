@@ -8,7 +8,6 @@ export type UserContactInfo = JsonObject;
 export type UserMetadata = {
   email?: string;
   display_name?: string;
-  [key: string]: unknown;
 };
 
 export type UserSummary = {

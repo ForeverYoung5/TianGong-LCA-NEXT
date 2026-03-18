@@ -144,6 +144,7 @@ jest.mock('@/services/general/data', () => ({
 jest.mock('@/services/general/util', () => ({
   __esModule: true,
   formatDateTime: () => '2026-03-12 12:00',
+  jsonToList: jest.fn((value: any) => (Array.isArray(value) ? value : value ? [value] : [])),
 }));
 
 describe('ReviewLifeCycleModelToolbarView', () => {

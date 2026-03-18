@@ -2,27 +2,32 @@ import { getLifeCyclesByIdAndVersion } from '@/services/lifeCycleModels/api';
 import { supabase } from '@/services/supabase';
 import { getUserId } from '@/services/users/api';
 import { FunctionRegion } from '@supabase/supabase-js';
+import { SortOrder } from 'antd/lib/table/interface';
 import { getPendingComment, getRejectedComment, getReviewedComment } from '../comments/api';
 import { getLangText } from '../general/util';
 import { getProcessDetailByIdAndVersion } from '../processes/api';
 import { genProcessName } from '../processes/util';
 import type {
+  ReviewCommentQueryResult,
+  ReviewDetailRow,
   ReviewJson,
   ReviewModelDataSnapshot,
+  ReviewProcessRecord,
+  ReviewRow,
+  ReviewRowRecord,
   ReviewSubTableDataMap,
   ReviewSubTableRow,
   ReviewUpdatePayload,
   ReviewsTable,
 } from './data';
+import { mapReviewDetailRow, mapReviewDetailRows, mapReviewProcessRows } from './data';
 
-type ReviewRowRecord = {
-  id: string;
-  created_at: string;
-  modified_at: string;
-  deadline?: string | null;
-  state_code: number;
-  json: ReviewJson;
-  comments?: { state_code: number }[];
+type ServiceQueryResult<T> = {
+  data: T | null;
+  error: unknown;
+  count?: number | null;
+  status?: number;
+  statusText?: string;
 };
 
 export async function addReviewsApi(id: string, data: ReviewJson) {
@@ -70,24 +75,30 @@ export async function getReviewerIdsApi(reviewIds: React.Key[]) {
   return data?.reviewer_id ?? [];
 }
 
-export async function getReviewsDetail(id: string) {
+export async function getReviewsDetail(id: string): Promise<ReviewDetailRow | null> {
   const { data } = await supabase.from('reviews').select('*').eq('id', id).single();
-  return data;
+  return data ? mapReviewDetailRow(data) : data;
 }
 
-export async function getReviewsDetailByReviewIds(reviewIds: React.Key[]) {
+export async function getReviewsDetailByReviewIds(
+  reviewIds: React.Key[],
+): Promise<ReviewDetailRow[] | null> {
   const { data } = await supabase.from('reviews').select('*').in('id', reviewIds);
-  return data;
+  return data ? mapReviewDetailRows(data) : data;
 }
 
 export async function getReviewsTableDataOfReviewMember(
   params: { pageSize: number; current: number },
-  sort: any,
+  sort: Record<string, SortOrder> = {},
   type: 'reviewed' | 'pending' | 'reviewer-rejected',
   lang: string,
   userData?: { user_id: string | undefined },
 ) {
-  let commentResult: any = [];
+  let commentResult: ReviewCommentQueryResult = {
+    data: [],
+    error: null,
+    count: 0,
+  };
 
   switch (type) {
     case 'reviewed': {
@@ -120,10 +131,11 @@ export async function getReviewsTableDataOfReviewMember(
     });
   } else {
     const reviews: ReviewRowRecord[] = [];
-    commentResult.data.forEach((c: { reviews?: ReviewRowRecord }) => {
-      if (c.reviews) {
-        reviews.push({ ...c.reviews });
-      }
+    commentResult.data.forEach((c) => {
+      const relatedReviews = Array.isArray(c.reviews) ? c.reviews : c.reviews ? [c.reviews] : [];
+      relatedReviews.forEach((review) => {
+        reviews.push({ ...review });
+      });
     });
 
     const processes: { id: string; version: string }[] = [];
@@ -178,7 +190,7 @@ export async function getReviewsTableDataOfReviewMember(
 
 export async function getReviewsTableDataOfReviewAdmin(
   params: { pageSize: number; current: number },
-  sort: any,
+  sort: Record<string, SortOrder> = {},
   type: 'unassigned' | 'assigned' | 'admin-rejected',
   lang: string,
 ) {
@@ -275,16 +287,26 @@ export async function getReviewsTableDataOfReviewAdmin(
   });
 }
 
-export async function getReviewsByProcess(processId: string, processVersion: string) {
+export async function getReviewsByProcess(
+  processId: string,
+  processVersion: string,
+): Promise<ServiceQueryResult<ReviewProcessRecord[]>> {
   const result = await supabase
     .from('reviews')
     .select('*')
     .filter('json->data->>id', 'eq', processId)
     .filter('json->data->>version', 'eq', processVersion);
-  return result;
+
+  return {
+    ...result,
+    data: mapReviewProcessRows(result.data),
+  };
 }
 
-export async function getRejectReviewsByProcess(processId: string, processVersion: string) {
+export async function getRejectReviewsByProcess(
+  processId: string,
+  processVersion: string,
+): Promise<ServiceQueryResult<Pick<ReviewRow, 'id'>[]>> {
   const result = await supabase
     .from('reviews')
     .select('id')
@@ -413,7 +435,7 @@ export async function getNotifyReviewsCount(timeFilter: number = 3, lastViewTime
   });
 }
 
-export async function getLatestReviewOfMine() {
+export async function getLatestReviewOfMine(): Promise<ReviewRow[] | null> {
   const userId = await getUserId();
 
   if (!userId) {
@@ -462,14 +484,16 @@ export async function getLifeCycleModelSubTableDataBatch(
     const { json, json_tg, version } = modelData;
 
     // Extract from json.processInstance
-    const processInstances = (json?.lifeCycleModelDataSet?.lifeCycleModelInformation?.technology
-      ?.processes?.processInstance ?? []) as Array<{
-      referenceToProcess?: {
-        '@refObjectId'?: string;
-        '@version'?: string;
-      };
-    }>;
-    processInstances.forEach((instance) => {
+    const processInstances =
+      json?.lifeCycleModelDataSet?.lifeCycleModelInformation?.technology?.processes
+        ?.processInstance;
+    const normalizedProcessInstances = Array.isArray(processInstances)
+      ? processInstances
+      : processInstances
+        ? [processInstances]
+        : [];
+
+    normalizedProcessInstances.forEach((instance) => {
       const refObjectId = instance?.referenceToProcess?.['@refObjectId'];
       const refVersion = instance?.referenceToProcess?.['@version'];
       if (refObjectId && refVersion) {
@@ -487,7 +511,7 @@ export async function getLifeCycleModelSubTableDataBatch(
 
     // Extract from json_tg.submodels
     const submodels = json_tg?.submodels ?? [];
-    submodels.forEach((submodel: any) => {
+    submodels.forEach((submodel) => {
       const submodelId = submodel?.id;
       const submodelType = submodel?.type; // primary or secondary
       if (submodelId) {

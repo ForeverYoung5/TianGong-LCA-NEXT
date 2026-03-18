@@ -1,23 +1,19 @@
 import { getLang } from '@/services/general/util';
 import { getNotifyReviews } from '@/services/reviews/api';
-import type { ReviewJson, ReviewsTable } from '@/services/reviews/data';
+import type { ReviewsTable } from '@/services/reviews/data';
 import { Button, Space, Table, Tag, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useState } from 'react';
 import { useIntl } from 'umi';
 
-interface DataNotificationItem {
+type DataNotificationItem = Pick<
+  ReviewsTable,
+  'id' | 'name' | 'teamName' | 'userName' | 'modifiedAt' | 'isFromLifeCycle' | 'stateCode' | 'json'
+> & {
   key: string;
-  id: string;
-  name: string;
-  teamName: string;
-  userName: string;
   modifiedAt: string;
-  isFromLifeCycle: boolean;
-  stateCode?: number;
   rejectReason?: string;
-  json: ReviewJson;
-}
+};
 
 interface DataNotificationProps {
   timeFilter: number;
@@ -44,7 +40,7 @@ const DataNotification: React.FC<DataNotificationProps> = ({ timeFilter, onDataL
         return;
       }
       const rejectedData =
-        reviewsRes.data?.map((item: ReviewsTable) => ({
+        reviewsRes.data?.map((item) => ({
           key: item.id,
           id: item.id,
           name: item.name,

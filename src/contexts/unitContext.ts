@@ -2,7 +2,6 @@ import { createContext, useContext } from 'react';
 
 export type UnitContextUnit = {
   id?: string;
-  [key: string]: unknown;
 };
 
 export type UnitsContextValue = {

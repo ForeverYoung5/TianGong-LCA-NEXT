@@ -1,4 +1,3 @@
-import { ProcessReviewLog, ProcessReviewRecord } from '@/services/processes/data';
 import { getReviewsByProcess } from '@/services/reviews/api';
 import { CloseOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
@@ -28,10 +27,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ processId, processVersion }
   const fetchLogData = async () => {
     setLoading(true);
     try {
-      const { error, data } = (await getReviewsByProcess(processId, processVersion)) as {
-        error: unknown;
-        data: ProcessReviewRecord[] | null;
-      };
+      const { error, data } = await getReviewsByProcess(processId, processVersion);
 
       if (error) {
         console.error('获取日志数据失败:', error);
@@ -44,7 +40,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ processId, processVersion }
 
       const logItems: LogItem[] = [];
       data?.forEach((review) => {
-        const logs: ProcessReviewLog[] = review.json?.logs ?? [];
+        const logs = review.json?.logs ?? [];
         logs.forEach((log, index: number) => {
           logItems.push({
             key: `${review.id}-${index}`,

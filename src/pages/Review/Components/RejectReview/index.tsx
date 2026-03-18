@@ -14,6 +14,7 @@ import { getReviewsDetail, updateReviewApi } from '@/services/reviews/api';
 import { getUserTeamId } from '@/services/roles/api';
 import { getUserId, getUsersByIds } from '@/services/users/api';
 import { FileExcelOutlined } from '@ant-design/icons';
+import type { ActionType } from '@ant-design/pro-components';
 import { FormattedMessage, useIntl } from '@umijs/max';
 import { Button, Form, FormInstance, Input, message, Modal, Tooltip } from 'antd';
 import { useEffect, useRef, useState } from 'react';
@@ -23,7 +24,7 @@ interface RejectReviewProps {
   dataId: string;
   dataVersion: string;
   isModel: boolean;
-  actionRef: any;
+  actionRef?: React.MutableRefObject<ActionType | undefined>;
   buttonType?: 'icon' | 'text';
   onOk?: (reason: string) => void | Promise<void>;
 }
@@ -77,8 +78,8 @@ const RejectReview: React.FC<RejectReviewProps> = ({
   };
 
   const getUnderReviewReferences = async (
-    refs: any[],
-    refMaps: Map<string, any>,
+    refs: refDataType[],
+    refMaps: Map<string, unknown>,
     userTeamId: string,
     underReview: refDataType[],
     requestKeysSet?: Set<string>,
@@ -113,7 +114,7 @@ const RejectReview: React.FC<RejectReviewProps> = ({
       }
     };
 
-    const processRef = async (ref: any) => {
+    const processRef = async (ref: refDataType) => {
       if (refMaps.has(`${ref['@refObjectId']}:${ref['@version']}:${ref['@type']}`)) {
         await handelSameModelWithProcress(ref);
         return;
@@ -166,16 +167,16 @@ const RejectReview: React.FC<RejectReviewProps> = ({
     if (!processDetail) {
       return;
     }
-    const unReview: any[] = []; // stateCode < 20
-    const underReview: any[] = []; // stateCode >= 20 && stateCode < 100
-    const unRuleVerification: any[] = [];
-    const nonExistentRef: any[] = [];
+    const unReview: refDataType[] = []; // stateCode < 20
+    const underReview: refDataType[] = []; // stateCode >= 20 && stateCode < 100
+    const unRuleVerification: refDataType[] = [];
+    const nonExistentRef: refDataType[] = [];
 
     dealProcress(processDetail, unReview, underReview, unRuleVerification, nonExistentRef);
 
     const userTeamId = await getUserTeamId();
     const refObjs = getAllRefObj(processDetail);
-    await getUnderReviewReferences(refObjs, new Map<string, any>(), userTeamId, underReview);
+    await getUnderReviewReferences(refObjs, new Map<string, unknown>(), userTeamId, underReview);
 
     await updateUnderReviewToRejected(underReview);
   };
@@ -185,10 +186,10 @@ const RejectReview: React.FC<RejectReviewProps> = ({
     if (!success) {
       return;
     }
-    const unReview: any[] = []; // stateCode < 20
-    const underReview: any[] = []; // stateCode >= 20 && stateCode < 100
-    const unRuleVerification: any[] = [];
-    const nonExistentRef: any[] = [];
+    const unReview: refDataType[] = []; // stateCode < 20
+    const underReview: refDataType[] = []; // stateCode >= 20 && stateCode < 100
+    const unRuleVerification: refDataType[] = [];
+    const nonExistentRef: refDataType[] = [];
     dealModel(modelDetail, unReview, underReview, unRuleVerification, nonExistentRef);
     const { data: sameProcressWithModel } = await getProcessDetail(
       modelDetail?.id,
@@ -198,11 +199,11 @@ const RejectReview: React.FC<RejectReviewProps> = ({
 
     const refObjs = getAllRefObj(modelDetail);
     const userTeamId = await getUserTeamId();
-    const refsMap = new Map<string, any>();
+    const refsMap = new Map<string, unknown>();
     await getUnderReviewReferences(refObjs, refsMap, userTeamId, underReview);
     const submodels = modelDetail?.json_tg?.submodels;
     if (submodels) {
-      submodels.forEach((item: any) => {
+      submodels.forEach((item: { id: string }) => {
         underReview.push({
           '@refObjectId': item.id,
           '@version': modelDetail?.version,
@@ -218,8 +219,8 @@ const RejectReview: React.FC<RejectReviewProps> = ({
     if (commentDetail && commentDetail.length > 0) {
       const refObjs = getAllRefObj(commentDetail);
       const userTeamId = await getUserTeamId();
-      const underReview: any[] = [];
-      await getUnderReviewReferences(refObjs, new Map<string, any>(), userTeamId, underReview);
+      const underReview: refDataType[] = [];
+      await getUnderReviewReferences(refObjs, new Map<string, unknown>(), userTeamId, underReview);
 
       await updateUnderReviewToRejected(underReview);
     }

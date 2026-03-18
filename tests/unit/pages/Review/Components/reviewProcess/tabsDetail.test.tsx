@@ -186,6 +186,7 @@ jest.mock('@/services/general/util', () => ({
     return value?.['#text'] ?? '-';
   }),
   getUnitData: (...args: any[]) => mockGetUnitData(...args),
+  jsonToList: jest.fn((value: any) => (Array.isArray(value) ? value : value ? [value] : [])),
 }));
 
 jest.mock('@/services/processes/api', () => ({

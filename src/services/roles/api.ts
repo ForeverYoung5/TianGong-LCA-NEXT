@@ -37,10 +37,6 @@ export type RoleUserTable = {
 
 type RoleTableSort = Record<string, SortOrder | null | undefined>;
 type ReviewRole = Extract<RoleType, 'review-admin' | 'review-member'>;
-type UserManageCommentSummary = {
-  reviewer_id?: string;
-  state_code?: number;
-};
 type RoleMutationResult = {
   data?: unknown;
   error?: unknown;
@@ -481,7 +477,7 @@ export async function getUserManageTableData(
       }
       const { data: comments } = await getUserManageComments();
       if (comments && comments.length) {
-        (comments as UserManageCommentSummary[]).forEach((item) => {
+        comments.forEach((item) => {
           const userIndex = res.findIndex((user) => user.user_id === item.reviewer_id);
           if (userIndex !== -1) {
             res[userIndex].pendingCount =

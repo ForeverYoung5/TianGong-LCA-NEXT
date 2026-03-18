@@ -1,4 +1,12 @@
-import type { ReviewsTable } from '@/services/reviews/data';
+import {
+  mapReviewDetailRow,
+  toReviewMutableJson,
+  type ReviewsTable,
+} from '@/services/reviews/data';
+
+const createReviewName = (text: string) => ({
+  baseName: [{ '@xml:lang': 'en', '#text': text }],
+});
 
 describe('reviews data shapes', () => {
   it('supports the nested review payload used by assignment and review tables', () => {
@@ -17,7 +25,7 @@ describe('reviews data shapes', () => {
         data: {
           id: 'process-1',
           version: '01.00.000',
-          name: { baseName: [{ '@xml:lang': 'en', '#text': 'Process A' }] },
+          name: createReviewName('Process A'),
         },
         team: {
           id: 'team-1',
@@ -58,7 +66,7 @@ describe('reviews data shapes', () => {
         data: {
           id: 'process-2',
           version: '02.00.000',
-          name: 'Process B',
+          name: createReviewName('Process B'),
         },
         team: {
           id: 'team-2',
@@ -89,7 +97,7 @@ describe('reviews data shapes', () => {
         data: {
           id: 'process-3',
           version: '03.00.000',
-          name: { baseName: [{ '@xml:lang': 'en', '#text': 'Process C' }] },
+          name: createReviewName('Process C'),
         },
         team: {
           id: 'team-3',
@@ -105,12 +113,159 @@ describe('reviews data shapes', () => {
 
     expect(row.comments).toBeUndefined();
     expect(row.modifiedAt).toBeUndefined();
-    if (typeof row.json.data.name === 'string') {
-      throw new Error('Expected structured review name payload');
-    }
     const baseName = row.json.data.name.baseName;
     expect(Array.isArray(baseName) ? baseName[0]?.['#text'] : baseName?.['#text']).toBe(
       'Process C',
     );
+  });
+
+  it('keeps known mutable review fields while rejecting invalid field shapes', () => {
+    expect(
+      toReviewMutableJson({
+        data: {
+          id: 'process-1',
+          version: '01.00.000',
+          name: createReviewName('Process A'),
+        },
+        team: {
+          id: 'team-1',
+          name: 'Team Alpha',
+        },
+        user: {
+          id: 'user-1',
+          email: 'alice@example.com',
+        },
+        logs: [
+          {
+            action: 'approved',
+            time: '2026-03-18T08:00:00.000Z',
+            user: {
+              id: 'user-1',
+              display_name: 'Alice',
+            },
+          },
+        ],
+      }),
+    ).toEqual({
+      data: {
+        id: 'process-1',
+        version: '01.00.000',
+        name: createReviewName('Process A'),
+      },
+      team: {
+        id: 'team-1',
+        name: 'Team Alpha',
+      },
+      user: {
+        id: 'user-1',
+        email: 'alice@example.com',
+      },
+      logs: [
+        {
+          action: 'approved',
+          time: '2026-03-18T08:00:00.000Z',
+          user: {
+            id: 'user-1',
+            display_name: 'Alice',
+          },
+        },
+      ],
+    });
+
+    expect(
+      toReviewMutableJson({
+        logs: 'invalid',
+      }),
+    ).toBeNull();
+
+    expect(
+      toReviewMutableJson({
+        data: {
+          id: 'process-1',
+          version: '01.00.000',
+          name: 'Process A',
+        },
+      }),
+    ).toBeNull();
+  });
+
+  it('accepts persisted review metadata with nullable team and email fields', () => {
+    const sample = {
+      data: {
+        id: '289a7384-2dc2-4116-b1f5-73dd48195ab4',
+        version: '01.01.001',
+        name: {
+          baseName: [
+            {
+              '#text': 'raw coal mining',
+              '@xml:lang': 'en',
+            },
+            {
+              '#text': '原煤开采',
+              '@xml:lang': 'zh',
+            },
+          ],
+          mixAndLocationTypes: [
+            {
+              '#text': 'in the underground coal mine',
+              '@xml:lang': 'en',
+            },
+            {
+              '#text': '在井工煤矿',
+              '@xml:lang': 'zh',
+            },
+          ],
+          treatmentStandardsRoutes: [
+            {
+              '#text': 'underground mining',
+              '@xml:lang': 'en',
+            },
+            {
+              '#text': '井工开采',
+              '@xml:lang': 'zh',
+            },
+          ],
+        },
+      },
+      logs: [
+        {
+          time: '2025-12-13T12:05:29.650Z',
+          user: {
+            id: '9e82fec1-faf9-424c-82c7-af5eff9991e7',
+            display_name: 'ZhangSi',
+          },
+          action: 'submit_review',
+        },
+      ],
+      team: {
+        id: null,
+      },
+      user: {
+        id: '9e82fec1-faf9-424c-82c7-af5eff9991e7',
+        name: 'ZhangSi',
+        email: null,
+      },
+      comment: {
+        message: '',
+      },
+    };
+
+    expect(toReviewMutableJson(sample)).toEqual(sample);
+  });
+
+  it('maps review detail rows through the mutable json guard', () => {
+    expect(
+      mapReviewDetailRow({
+        id: 'review-detail-1',
+        json: {
+          logs: [{ action: 'assigned' }],
+        },
+      } as never),
+    ).toEqual({
+      id: 'review-detail-1',
+      json: {
+        logs: [{ action: 'assigned' }],
+      },
+    });
   });
 });

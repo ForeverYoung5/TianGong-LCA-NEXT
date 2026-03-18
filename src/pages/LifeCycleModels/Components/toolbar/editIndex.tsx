@@ -338,7 +338,7 @@ const ToolbarEdit: FC<Props> = ({
                 }
                 return tool;
               }),
-            };
+            } satisfies Parameters<typeof updateNode>[1];
             await updateNode(node.id ?? '', updatedNodeData);
             setTargetAmountDrawerVisible(true);
           } else {
@@ -355,7 +355,7 @@ const ToolbarEdit: FC<Props> = ({
                 }
                 return tool;
               }),
-            };
+            } satisfies Parameters<typeof updateNode>[1];
             await updateNode(node.id ?? '', updatedNodeData);
           }
         });
