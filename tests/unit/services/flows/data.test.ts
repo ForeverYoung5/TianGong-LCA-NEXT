@@ -97,7 +97,11 @@ describe('Flows Data Types (src/services/flows/data.ts)', () => {
         referenceToFlowPropertyDataSetVersion: '2.0',
         referenceToFlowPropertyDataSet: 'Mass',
         quantitativeReference: true,
-        refUnitRes: { kg: 1, g: 0.001 },
+        refUnitRes: {
+          name: [{ '@xml:lang': 'en', '#text': 'Mass' }],
+          refUnitName: 'kg',
+          refUnitGeneralComment: [{ '@xml:lang': 'en', '#text': 'Reference unit' }],
+        },
       };
 
       expect(mockFlowProp.quantitativeReference).toBe(true);

@@ -4,7 +4,6 @@ export type ILCDCategoryNode = {
   '@id': string;
   '@name': string;
   category?: ILCDCategoryNode[] | null;
-  [key: string]: unknown;
 };
 
 export function genClass(data?: ILCDCategoryNode[] | null): Classification[] {

@@ -143,7 +143,9 @@ describe('addReviewsApi', () => {
       data: {
         id: 'process-1',
         version: '01.00.000',
-        name: 'Process 1',
+        name: {
+          baseName: [{ '@xml:lang': 'en', '#text': 'Process 1' }],
+        },
       },
       team: {
         id: 'team-1',
@@ -292,7 +294,7 @@ describe('getReviewsDetail', () => {
 
     expect(builder.select).toHaveBeenCalledWith('*');
     expect(builder.eq).toHaveBeenCalledWith('id', 'review-1');
-    expect(result).toEqual({ id: 'review-1' });
+    expect(result).toEqual({ id: 'review-1', json: null });
   });
 });
 
@@ -305,7 +307,10 @@ describe('getReviewsDetailByReviewIds', () => {
     const result = await reviewsApi.getReviewsDetailByReviewIds(['review-1', 'review-2']);
 
     expect(builder.in).toHaveBeenCalledWith('id', ['review-1', 'review-2']);
-    expect(result).toEqual(supabaseResult.data);
+    expect(result).toEqual([
+      { id: 'review-1', json: null },
+      { id: 'review-2', json: null },
+    ]);
   });
 });
 
@@ -319,7 +324,10 @@ describe('getReviewsByProcess', () => {
 
     expect(builder.filter).toHaveBeenCalledWith('json->data->>id', 'eq', 'process-1');
     expect(builder.filter).toHaveBeenCalledWith('json->data->>version', 'eq', '1.0');
-    expect(result).toEqual(supabaseResult);
+    expect(result).toEqual({
+      data: [{ id: 'review-1', json: null }],
+      error: null,
+    });
   });
 });
 

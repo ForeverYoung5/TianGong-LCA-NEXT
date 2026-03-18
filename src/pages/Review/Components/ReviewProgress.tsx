@@ -1,25 +1,51 @@
-import { ConcurrencyController, getAllRefObj, getRefTableName } from '@/pages/Utils/review';
+import {
+  ConcurrencyController,
+  getAllRefObj,
+  getRefTableName,
+  type refDataType,
+} from '@/pages/Utils/review';
 import {
   getCommentApi,
   updateCommentApi,
   updateCommentByreviewerApi,
 } from '@/services/comments/api';
+import {
+  getCommentCompliances,
+  getCommentMessage,
+  getCommentReviews,
+  type CommentTable,
+} from '@/services/comments/data';
 import { getRefData, updateStateCodeApi } from '@/services/general/api';
+import { jsonToList } from '@/services/general/util';
 import {
   getLifeCycleModelDetail,
   updateLifeCycleModelJsonApi,
 } from '@/services/lifeCycleModels/api';
+import type {
+  LifeCycleModelDetailData,
+  LifeCycleModelReviewMergeComplianceDeclarationsSection,
+  LifeCycleModelReviewMergeJson,
+  LifeCycleModelReviewMergeValidationSection,
+} from '@/services/lifeCycleModels/data';
 import {
   getProcessDetail,
   getProcessDetailByIdAndVersion,
   updateProcessApi,
 } from '@/services/processes/api';
+import type {
+  ProcessComplianceItem,
+  ProcessDetailData,
+  ProcessReviewItem,
+  ProcessReviewMergeComplianceDeclarationsSection,
+  ProcessReviewMergeJson,
+  ProcessReviewMergeValidationSection,
+} from '@/services/processes/data';
 import { updateReviewApi } from '@/services/reviews/api';
 import { getUserTeamId } from '@/services/roles/api';
 import { getUsersByIds } from '@/services/users/api';
 import styles from '@/style/custom.less';
 import { CloseOutlined, DeleteOutlined, FileSyncOutlined } from '@ant-design/icons';
-import { ProColumns, ProTable } from '@ant-design/pro-components';
+import { ActionType, ProColumns, ProTable } from '@ant-design/pro-components';
 import { FormattedMessage, useIntl } from '@umijs/max';
 import { Button, Drawer, Modal, Space, Spin, Tag, Tooltip, message, theme } from 'antd';
 import { useRef, useState } from 'react';
@@ -33,17 +59,12 @@ type ReviewProgressProps = {
   dataVersion: string;
   actionType: 'process' | 'model'; // to identify the type of data being reviewed
   tabType: 'assigned' | 'review' | 'reviewer-rejected' | 'admin-rejected';
-  actionRef: any;
+  actionRef: React.MutableRefObject<ActionType | undefined>;
 };
 
-type ReviewerData = {
-  id: string;
-  reviewer_id: string;
+type ReviewerData = CommentTable & {
   reviewer_name: string;
-  state_code: number;
-  updated_at: string;
   comment?: string;
-  json: any;
 };
 
 export default function ReviewProgress({
@@ -58,26 +79,23 @@ export default function ReviewProgress({
   const [tableLoading, setTableLoading] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const [tableData, setTableData] = useState<ReviewerData[]>([]);
-  const tableRef = useRef<any>(null);
+  const tableRef = useRef<ActionType>();
   const intl = useIntl();
   const { token } = theme.useToken();
   const fetchTableData = async () => {
     setTableLoading(true);
     try {
       const { data: reviewStateResult } = await getCommentApi(reviewId, 'assigned');
-      const tableResult: ReviewerData[] = [];
       if (reviewStateResult && reviewStateResult.length) {
-        const reviewerIds: string[] = [];
-        reviewStateResult.forEach((item: any) => {
-          // if (item.state_code >= 0) {
-          tableResult.push(item);
-          reviewerIds.push(item.reviewer_id);
-          // }
-        });
+        const tableResult: ReviewerData[] = reviewStateResult.map((item) => ({
+          ...item,
+          reviewer_name: '',
+        }));
+        const reviewerIds = tableResult.map((item) => item.reviewer_id);
         const userResult = await getUsersByIds(reviewerIds);
-        tableResult.forEach((item: any) => {
-          const user = userResult?.find((user: any) => user.id === item.reviewer_id);
-          item.reviewer_name = user?.display_name;
+        tableResult.forEach((item) => {
+          const user = userResult?.find((user) => user.id === item.reviewer_id);
+          item.reviewer_name = user?.display_name ?? '';
         });
         setTableData(tableResult);
         return {
@@ -104,7 +122,7 @@ export default function ReviewProgress({
     }
   };
 
-  const getStateText = (stateCode: number) => {
+  const getStateText = (stateCode: number | null | undefined) => {
     switch (stateCode) {
       case -3:
         return {
@@ -232,20 +250,7 @@ export default function ReviewProgress({
       width: 300,
       render: (_, record) => {
         if (record.state_code !== -3) return null;
-        let msg = '';
-        const { comment } = record.json;
-        try {
-          if (!comment) {
-            msg = '';
-          } else if (typeof comment === 'string') {
-            const parsed = JSON.parse(comment);
-            msg = parsed?.message ?? '';
-          } else if (typeof comment === 'object') {
-            msg = (comment as any)?.message ?? '';
-          }
-        } catch (e) {
-          msg = '';
-        }
+        const msg = getCommentMessage(record.json) ?? '';
         if (!msg) return null;
         return (
           <Tooltip title={msg} placement='topLeft'>
@@ -301,58 +306,47 @@ export default function ReviewProgress({
 
   // Helper function: Merge commentReview and commentCompliance into process JSON
   const mergeCommentDataIntoProcessJson = (
-    processJson: any,
-    commentReview: any[],
-    commentCompliance: any[],
-  ) => {
-    const json = {
-      ...processJson,
+    processJson: ProcessDetailData['json'],
+    commentReview: ProcessReviewItem[],
+    commentCompliance: ProcessComplianceItem[],
+  ): ProcessDetailData['json'] => {
+    const json: ProcessReviewMergeJson = {
+      ...(processJson ?? {}),
     };
 
-    // Merge commentReview into review
-    const _review = json?.processDataSet?.modellingAndValidation?.validation?.review ?? [];
-    const _compliance =
-      json?.processDataSet?.modellingAndValidation?.complianceDeclarations?.compliance ?? [];
-    json.processDataSet.modellingAndValidation = {
-      ...json.processDataSet.modellingAndValidation,
+    const processDataSet = json.processDataSet;
+    if (!processDataSet) {
+      return json as ProcessDetailData['json'];
+    }
+
+    const modellingAndValidation = processDataSet.modellingAndValidation ?? {};
+    const validation = (modellingAndValidation.validation ??
+      {}) as ProcessReviewMergeValidationSection;
+    const complianceDeclarations = (modellingAndValidation.complianceDeclarations ??
+      {}) as ProcessReviewMergeComplianceDeclarationsSection;
+    const existingReviews = jsonToList<ProcessReviewItem>(validation.review);
+    const existingCompliance = jsonToList<ProcessComplianceItem>(complianceDeclarations.compliance);
+
+    processDataSet.modellingAndValidation = {
+      ...modellingAndValidation,
       validation: {
-        ...json.processDataSet.modellingAndValidation.validation,
-        review: Array.isArray(_review)
-          ? [..._review, ...commentReview]
-          : _review
-            ? [_review, ...commentReview]
-            : [...commentReview],
+        ...validation,
+        review: [...existingReviews, ...commentReview],
       },
       complianceDeclarations: {
-        ...json.processDataSet.modellingAndValidation.complianceDeclarations,
-        compliance: Array.isArray(_compliance)
-          ? [..._compliance, ...commentCompliance]
-          : _compliance
-            ? [_compliance, ...commentCompliance]
-            : [...commentCompliance],
+        ...complianceDeclarations,
+        compliance: [...existingCompliance, ...commentCompliance],
       },
     };
 
-    return json;
+    return json as ProcessDetailData['json'];
   };
 
-  const updateProcessJson = async (process: any) => {
+  const updateProcessJson = async (process: ProcessDetailData) => {
     const { data: commentData, error } = await getCommentApi(reviewId, tabType);
     if (!error && commentData && commentData.length) {
-      const allReviews: any[] = [];
-      commentData.forEach((item: any) => {
-        if (item?.json?.modellingAndValidation?.validation?.review) {
-          allReviews.push(...item?.json?.modellingAndValidation.validation.review);
-        }
-      });
-      const allCompliance: any[] = [];
-      commentData.forEach((item: any) => {
-        if (item?.json?.modellingAndValidation?.complianceDeclarations?.compliance) {
-          allCompliance.push(
-            ...item?.json?.modellingAndValidation.complianceDeclarations.compliance,
-          );
-        }
-      });
+      const allReviews = commentData.flatMap((item) => getCommentReviews(item.json));
+      const allCompliance = commentData.flatMap((item) => getCommentCompliances(item.json));
 
       const json = mergeCommentDataIntoProcessJson(process.json, allReviews, allCompliance);
       await updateProcessApi(dataId, dataVersion, { json_ordered: json });
@@ -362,12 +356,17 @@ export default function ReviewProgress({
     const result = [];
     const controller = new ConcurrencyController(5);
     const { data: process, success } = await getProcessDetail(id, version);
-    if (success) {
+    if (success && process) {
       await updateProcessJson(process);
-      if (process?.stateCode !== 100 && process?.stateCode !== 200) {
+      if (
+        process.id &&
+        process.version &&
+        process?.stateCode !== 100 &&
+        process?.stateCode !== 200
+      ) {
         result.push({
-          '@refObjectId': process?.id,
-          '@version': process?.version,
+          '@refObjectId': process.id,
+          '@version': process.version,
           '@type': 'process data set',
         });
       }
@@ -376,7 +375,7 @@ export default function ReviewProgress({
       if (refs.length) {
         const teamId = await getUserTeamId();
         const getReferences = (
-          refs: any[],
+          refs: refDataType[],
           checkedIds = new Set<string>(),
           requestKeysSet?: Set<string>,
         ) => {
@@ -430,7 +429,7 @@ export default function ReviewProgress({
   const approveProcessReview = async () => {
     setSpinning(true);
     await updateReviewDataToPublic(dataId, dataVersion);
-    const { error } = await updateCommentApi(
+    const updateResult = await updateCommentApi(
       reviewId,
       {
         state_code: 2,
@@ -444,7 +443,7 @@ export default function ReviewProgress({
       json: newReviewJson,
     });
 
-    if (!error && !error2) {
+    if (updateResult && !error2) {
       message.success(
         intl.formatMessage({
           id: 'pages.review.ReviewProcessDetail.assigned.success',
@@ -458,50 +457,39 @@ export default function ReviewProgress({
   };
 
   // model
-  const updateLifeCycleModelJson = async (lifeCycleModel: any) => {
+  const updateLifeCycleModelJson = async (lifeCycleModel: LifeCycleModelDetailData) => {
     const { data: commentData, error } = await getCommentApi(reviewId, tabType);
     if (!error && commentData && commentData.length) {
-      const allReviews: any[] = [];
-      commentData.forEach((item: any) => {
-        if (item?.json?.modellingAndValidation?.validation?.review) {
-          allReviews.push(...item?.json?.modellingAndValidation.validation.review);
-        }
-      });
-      const allCompliance: any[] = [];
-      commentData.forEach((item: any) => {
-        if (item?.json?.modellingAndValidation?.complianceDeclarations?.compliance) {
-          allCompliance.push(
-            ...item?.json?.modellingAndValidation.complianceDeclarations.compliance,
-          );
-        }
-      });
+      const allReviews = commentData.flatMap((item) => getCommentReviews(item.json));
+      const allCompliance = commentData.flatMap((item) => getCommentCompliances(item.json));
 
-      const _review =
-        lifeCycleModel?.json?.lifeCycleModelDataSet?.modellingAndValidation?.validation?.review;
-      const _compliance =
-        lifeCycleModel?.json?.lifeCycleModelDataSet?.modellingAndValidation?.complianceDeclarations
-          ?.compliance;
-      const json = {
-        ...lifeCycleModel?.json,
+      const json: LifeCycleModelReviewMergeJson = {
+        ...(lifeCycleModel.json ?? {}),
       };
-      json.lifeCycleModelDataSet.modellingAndValidation = {
-        ...lifeCycleModel?.json?.lifeCycleModelDataSet?.modellingAndValidation,
+      const lifeCycleModelDataSet = json.lifeCycleModelDataSet;
+      if (!lifeCycleModelDataSet) {
+        return;
+      }
+
+      const modellingAndValidation = lifeCycleModelDataSet.modellingAndValidation ?? {};
+      const validation = (modellingAndValidation.validation ??
+        {}) as LifeCycleModelReviewMergeValidationSection;
+      const complianceDeclarations = (modellingAndValidation.complianceDeclarations ??
+        {}) as LifeCycleModelReviewMergeComplianceDeclarationsSection;
+      const existingReviews = jsonToList<ProcessReviewItem>(validation.review);
+      const existingCompliance = jsonToList<ProcessComplianceItem>(
+        complianceDeclarations.compliance,
+      );
+
+      lifeCycleModelDataSet.modellingAndValidation = {
+        ...modellingAndValidation,
         validation: {
-          ...lifeCycleModel?.json?.lifeCycleModelDataSet?.modellingAndValidation?.validation,
-          review: Array.isArray(_review)
-            ? [..._review, ...allReviews]
-            : _review
-              ? [_review, ...allReviews]
-              : [...allReviews],
+          ...validation,
+          review: [...existingReviews, ...allReviews],
         },
         complianceDeclarations: {
-          ...lifeCycleModel?.json?.lifeCycleModelDataSet?.modellingAndValidation
-            ?.complianceDeclarations,
-          compliance: Array.isArray(_compliance)
-            ? [..._compliance, ...allCompliance]
-            : _compliance
-              ? [_compliance, ...allCompliance]
-              : [...allCompliance],
+          ...complianceDeclarations,
+          compliance: [...existingCompliance, ...allCompliance],
         },
       };
       const { data: newLifeCycleModel } = await updateLifeCycleModelJsonApi(
@@ -517,8 +505,8 @@ export default function ReviewProgress({
   const updateProcessWithCommentData = async (
     processId: string,
     processVersion: string,
-    commentReview: any[],
-    commentCompliance: any[],
+    commentReview: ProcessReviewItem[],
+    commentCompliance: ProcessComplianceItem[],
   ) => {
     const { data: process } = await getProcessDetail(processId, processVersion);
     if (!process) return;
@@ -530,8 +518,8 @@ export default function ReviewProgress({
   // Helper function: Batch update review and compliance fields for processes
   const updateSubmodelProcessesWithCommentData = async (
     processParams: Array<{ id: string; version: string }>,
-    commentReview: any[],
-    commentCompliance: any[],
+    commentReview: ProcessReviewItem[],
+    commentCompliance: ProcessComplianceItem[],
   ) => {
     if (
       processParams.length === 0 ||
@@ -559,9 +547,9 @@ export default function ReviewProgress({
   };
 
   const updateModelReviewDataToPublic = async (modelId: string, modelVersion: string) => {
-    const result: any[] = [];
+    const result: refDataType[] = [];
     const teamId = await getUserTeamId();
-    const getReferences = async (refs: any[], checkedKeys = new Set<string>()) => {
+    const getReferences = async (refs: refDataType[], checkedKeys = new Set<string>()) => {
       for (const ref of refs) {
         if (checkedKeys.has(`${ref['@refObjectId']}:${ref['@version']}:${ref['@type']}`)) continue;
         checkedKeys.add(`${ref['@refObjectId']}:${ref['@version']}:${ref['@type']}`);
@@ -612,10 +600,15 @@ export default function ReviewProgress({
       }
       const { data: sameProcressWithModel } = await getProcessDetail(modelId, modelVersion);
       if (sameProcressWithModel) {
-        if (sameProcressWithModel?.stateCode !== 100 && sameProcressWithModel?.stateCode !== 200) {
+        if (
+          sameProcressWithModel.id &&
+          sameProcressWithModel.version &&
+          sameProcressWithModel?.stateCode !== 100 &&
+          sameProcressWithModel?.stateCode !== 200
+        ) {
           result.push({
-            '@refObjectId': sameProcressWithModel?.id,
-            '@version': sameProcressWithModel?.version,
+            '@refObjectId': sameProcressWithModel.id,
+            '@version': sameProcressWithModel.version,
             '@type': 'process data set',
           });
         }
@@ -632,12 +625,14 @@ export default function ReviewProgress({
           );
           if (
             success &&
+            sameModeWithProcress?.id &&
+            sameModeWithProcress?.version &&
             sameModeWithProcress?.stateCode !== 100 &&
             sameModeWithProcress?.stateCode !== 200
           ) {
             result.push({
-              '@refObjectId': sameModeWithProcress?.id,
-              '@version': sameModeWithProcress?.version,
+              '@refObjectId': sameModeWithProcress.id,
+              '@version': sameModeWithProcress.version,
               '@type': 'lifeCycleModel data set',
             });
           }
@@ -645,7 +640,7 @@ export default function ReviewProgress({
       }
       const submodels = lifeCycleModel?.json_tg?.submodels;
       if (submodels) {
-        submodels.forEach((item: any) => {
+        submodels.forEach((item: { id: string }) => {
           result.push({
             '@refObjectId': item.id,
             '@version': modelVersion,
@@ -671,7 +666,7 @@ export default function ReviewProgress({
   const approveModelReview = async () => {
     setSpinning(true);
     await updateModelReviewDataToPublic(dataId, dataVersion);
-    const { error } = await updateCommentApi(
+    const updateResult = await updateCommentApi(
       reviewId,
       {
         state_code: 2,
@@ -682,7 +677,7 @@ export default function ReviewProgress({
     const { error: error2 } = await updateReviewApi([reviewId], {
       state_code: 2,
     });
-    if (!error && !error2) {
+    if (updateResult && !error2) {
       message.success(
         intl.formatMessage({
           id: 'pages.review.ReviewProcessDetail.assigned.success',

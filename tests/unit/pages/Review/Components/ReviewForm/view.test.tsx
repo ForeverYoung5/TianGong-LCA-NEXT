@@ -13,6 +13,7 @@ jest.mock('umi', () => ({
 jest.mock('@/services/general/util', () => ({
   __esModule: true,
   getLang: () => 'en',
+  jsonToList: (value: any) => (Array.isArray(value) ? value : value ? [value] : []),
 }));
 
 jest.mock('@/pages/Contacts/Components/select/description', () => ({
@@ -83,6 +84,24 @@ jest.mock('antd', () => {
 });
 
 describe('ReviewFormView', () => {
+  it('renders a single review object and normalizes nested scope and indicator objects', () => {
+    render(
+      <ReviewItemView
+        data={{
+          '@type': 'peer-review',
+          'common:scope': { '@name': 'scope-a' },
+          'common:dataQualityIndicators': {
+            'common:dataQualityIndicator': { '@name': 'indicator-a', '@value': 'good' },
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Peer review')).toBeInTheDocument();
+    expect(screen.getByTestId('scope-view')).toHaveTextContent('1');
+    expect(screen.getByTestId('dqi-view')).toHaveTextContent('1');
+  });
+
   it('renders mapped review type and preserves raw type values when unmapped', () => {
     render(
       <ReviewItemView

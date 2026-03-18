@@ -1,6 +1,12 @@
 import { LifeCycleModel } from '@tiangong-lca/tidas-sdk';
 import type { LangTextValue, ReferenceItem } from '../general/data';
-import type { ProcessExchangeData, ProcessTable } from '../processes/data';
+import type {
+  ProcessExchangeData,
+  ProcessTable,
+  ReviewMergeComplianceDeclarationsSection,
+  ReviewMergeDataSet,
+  ReviewMergeValidationSection,
+} from '../processes/data';
 
 export type LifeCycleModelTable = {
   id: string;
@@ -36,29 +42,24 @@ export type Up2DownEdge = {
 
 export type LifeCycleModelExchangeDirection = 'INPUT' | 'OUTPUT';
 
-export type LifeCycleModelReference = ReferenceItem & {
-  [key: string]: unknown;
-};
+export type LifeCycleModelReference = ReferenceItem;
 
 export type LifeCycleModelNamedText = {
   baseName?: LangTextValue;
   treatmentStandardsRoutes?: LangTextValue;
   mixAndLocationTypes?: LangTextValue;
   functionalUnitFlowProperties?: LangTextValue;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelProcessOutputExchange = {
   '@flowUUID'?: string;
   downstreamProcess?: LifeCycleModelDownstreamProcess | LifeCycleModelDownstreamProcess[] | null;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelDownstreamProcess = {
   '@id'?: string;
   '@flowUUID'?: string;
   nodeId?: string;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelProcessConnections = {
@@ -66,7 +67,6 @@ export type LifeCycleModelProcessConnections = {
     | LifeCycleModelProcessOutputExchange
     | LifeCycleModelProcessOutputExchange[]
     | null;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelProcessDefinition = {
@@ -77,7 +77,6 @@ export type LifeCycleModelProcessDefinition = {
   parameters?: unknown;
   connections?: LifeCycleModelProcessConnections;
   nodeId?: string;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelDbProcessRow = {
@@ -86,7 +85,6 @@ export type LifeCycleModelDbProcessRow = {
   exchange?: ProcessExchangeData | ProcessExchangeData[] | null;
   quantitativeReference?: {
     referenceToReferenceFlow?: string;
-    [key: string]: unknown;
   } | null;
 };
 
@@ -173,13 +171,10 @@ export type LifeCycleModelGeneratedProcessDataSet = {
   processInformation?: Record<string, unknown>;
   exchanges?: {
     exchange?: LifeCycleModelCalculatedExchange[];
-    [key: string]: unknown;
   };
   LCIAResults?: {
     LCIAResult?: Array<Record<string, unknown>>;
-    [key: string]: unknown;
   };
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelGeneratedProcess = {
@@ -211,6 +206,29 @@ export type FormLifeCycleModel = Pick<
   LifeCycleModelDataSetObjectKeys
 >;
 
+type LifeCycleModelModellingAndValidation = NonNullable<
+  FormLifeCycleModel['modellingAndValidation']
+>;
+
+export type LifeCycleModelReviewMergeValidationSection = ReviewMergeValidationSection<
+  LifeCycleModelModellingAndValidation['validation']
+>;
+
+export type LifeCycleModelReviewMergeComplianceDeclarationsSection =
+  ReviewMergeComplianceDeclarationsSection<
+    LifeCycleModelModellingAndValidation['complianceDeclarations']
+  >;
+
+export type LifeCycleModelReviewMergeDataSet = ReviewMergeDataSet<FormLifeCycleModel>;
+
+export type LifeCycleModelReviewMergeModellingAndValidation = NonNullable<
+  LifeCycleModelReviewMergeDataSet['modellingAndValidation']
+>;
+
+export type LifeCycleModelReviewMergeJson = {
+  lifeCycleModelDataSet?: LifeCycleModelReviewMergeDataSet;
+};
+
 export type LifeCycleModelDataSetInformationSnapshot = {
   name?: LifeCycleModelNamedText;
   identifierOfSubDataSet?: unknown;
@@ -218,39 +236,32 @@ export type LifeCycleModelDataSetInformationSnapshot = {
   classificationInformation?: {
     'common:classification'?: {
       'common:class'?: unknown;
-      [key: string]: unknown;
     };
-    [key: string]: unknown;
   };
   'common:generalComment'?: LangTextValue;
   referenceToExternalDocumentation?: LifeCycleModelReference;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelTimeSnapshot = {
   'common:referenceYear'?: unknown;
   'common:dataSetValidUntil'?: unknown;
   'common:timeRepresentativenessDescription'?: unknown;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelGeographyLocationSnapshot = {
   '@location'?: unknown;
   '@subLocation'?: unknown;
   descriptionOfRestrictions?: unknown;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelTechnologySnapshot = {
   processes?: {
     processInstance?: LifeCycleModelProcessDefinition | LifeCycleModelProcessDefinition[] | null;
-    [key: string]: unknown;
   };
   technologyDescriptionAndIncludedProcesses?: unknown;
   technologicalApplicability?: unknown;
   referenceToTechnologyPictogramme?: LifeCycleModelReference;
   referenceToTechnologyFlowDiagrammOrPicture?: LifeCycleModelReference;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelVariableParameterSnapshot = {
@@ -262,30 +273,25 @@ export type LifeCycleModelVariableParameterSnapshot = {
   uncertaintyDistributionType?: unknown;
   relativeStandardDeviation95In?: unknown;
   comment?: unknown;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelMathematicalRelationsSnapshot = {
   modelDescription?: unknown;
   variableParameter?: LifeCycleModelVariableParameterSnapshot | null;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelInformationSnapshot = {
   quantitativeReference?: {
     referenceToReferenceProcess?: string;
-    [key: string]: unknown;
   };
   dataSetInformation?: LifeCycleModelDataSetInformationSnapshot;
   time?: LifeCycleModelTimeSnapshot;
   geography?: {
     locationOfOperationSupplyOrProduction?: LifeCycleModelGeographyLocationSnapshot;
     subLocationOfOperationSupplyOrProduction?: LifeCycleModelGeographyLocationSnapshot;
-    [key: string]: unknown;
   };
   technology?: LifeCycleModelTechnologySnapshot;
   mathematicalRelations?: LifeCycleModelMathematicalRelationsSnapshot;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelModellingValidationSnapshot = {
@@ -298,7 +304,6 @@ export type LifeCycleModelModellingValidationSnapshot = {
     modellingConstants?: unknown;
     deviationsFromModellingConstants?: unknown;
     referenceToLCAMethodDetails?: LifeCycleModelReference;
-    [key: string]: unknown;
   };
   dataSourcesTreatmentAndRepresentativeness?: {
     dataCutOffAndCompletenessPrinciples?: unknown;
@@ -315,21 +320,17 @@ export type LifeCycleModelModellingValidationSnapshot = {
     dataCollectionPeriod?: unknown;
     uncertaintyAdjustments?: unknown;
     useAdviceForDataSet?: unknown;
-    [key: string]: unknown;
   };
   completeness?: {
     completenessProductModel?: unknown;
     completenessElementaryFlows?: {
       '@type'?: unknown;
       '@value'?: unknown;
-      [key: string]: unknown;
     };
     completenessOtherProblemField?: unknown;
-    [key: string]: unknown;
   };
   validation?: Record<string, unknown>;
   complianceDeclarations?: Record<string, unknown>;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelAdministrativeInformationSnapshot = {
@@ -337,11 +338,9 @@ export type LifeCycleModelAdministrativeInformationSnapshot = {
     'common:referenceToCommissioner'?: LifeCycleModelReference;
     'common:project'?: unknown;
     'common:intendedApplications'?: unknown;
-    [key: string]: unknown;
   };
   dataGenerator?: {
     'common:referenceToPersonOrEntityGeneratingTheDataSet'?: LifeCycleModelReference;
-    [key: string]: unknown;
   };
   dataEntryBy?: {
     'common:timeStamp'?: unknown;
@@ -349,7 +348,6 @@ export type LifeCycleModelAdministrativeInformationSnapshot = {
     'common:referenceToConvertedOriginalDataSetFrom'?: LifeCycleModelReference;
     'common:referenceToPersonOrEntityEnteringTheData'?: LifeCycleModelReference;
     'common:referenceToDataSetUseApproval'?: LifeCycleModelReference;
-    [key: string]: unknown;
   };
   publicationAndOwnership?: {
     'common:dateOfLastRevision'?: unknown;
@@ -364,16 +362,13 @@ export type LifeCycleModelAdministrativeInformationSnapshot = {
     'common:referenceToEntitiesWithExclusiveAccess'?: LifeCycleModelReference;
     'common:licenseType'?: unknown;
     'common:accessRestrictions'?: unknown;
-    [key: string]: unknown;
   };
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelDataSetSnapshot = {
   lifeCycleModelInformation?: LifeCycleModelInformationSnapshot;
   modellingAndValidation?: LifeCycleModelModellingValidationSnapshot;
   administrativeInformation?: LifeCycleModelAdministrativeInformationSnapshot;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelOrderedJson = {
@@ -387,9 +382,7 @@ type DeepPartial<T> =
       ? { [K in keyof T]?: DeepPartial<T[K]> }
       : T;
 
-export type LifeCycleModelFormData = DeepPartial<FormLifeCycleModel> & {
-  [key: string]: unknown;
-};
+export type LifeCycleModelFormData = DeepPartial<FormLifeCycleModel>;
 
 export type LifeCycleModelFormState = LifeCycleModelFormData & {
   id?: string;
@@ -404,7 +397,6 @@ export type LifeCycleModelPortData = {
   flowVersion?: string;
   quantitativeReference?: boolean;
   allocations?: ProcessExchangeData['allocations'];
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelPortItem = {
@@ -417,13 +409,10 @@ export type LifeCycleModelPortItem = {
       cursor?: string;
       fill?: string;
       'font-weight'?: string;
-      [key: string]: unknown;
     };
-    [key: string]: unknown;
   };
   group: LifeCycleModelPortGroup | string;
   data?: LifeCycleModelPortData;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelNodeData = {
@@ -436,11 +425,11 @@ export type LifeCycleModelNodeData = {
   targetAmount?: string | number;
   originalAmount?: string | number;
   scalingFactor?: string | number;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelGraphNode = {
   id?: string;
+  label?: string;
   shape?: string;
   x?: number;
   y?: number;
@@ -455,7 +444,6 @@ export type LifeCycleModelGraphNode = {
   };
   tools?: Array<{ id?: string; [key: string]: unknown } | string>;
   selected?: boolean;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelEdgeConnection = {
@@ -469,7 +457,6 @@ export type LifeCycleModelEdgeConnection = {
   isBalanced?: boolean;
   exchangeAmount?: number;
   unbalancedAmount?: number;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelEdgeNodeData = {
@@ -479,13 +466,11 @@ export type LifeCycleModelEdgeNodeData = {
   sourceProcessVersion?: string;
   targetProcessId?: string;
   targetProcessVersion?: string;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelEdgeData = {
   connection?: LifeCycleModelEdgeConnection;
   node?: LifeCycleModelEdgeNodeData;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelGraphEdge = {
@@ -493,18 +478,15 @@ export type LifeCycleModelGraphEdge = {
   source?: {
     cell?: string;
     port?: string;
-    [key: string]: unknown;
   };
   target?: {
     cell?: string;
     port?: string;
-    [key: string]: unknown;
   };
   attrs?: Record<string, unknown>;
   labels?: unknown[];
   data?: LifeCycleModelEdgeData;
   selected?: boolean;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelGraphData = {
@@ -543,7 +525,6 @@ export type LifeCycleModelSubModel = {
   version: string;
   type?: 'primary' | 'secondary' | string;
   finalId?: LifeCycleModelSubModelFinalId;
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelJsonTg = {
@@ -552,7 +533,6 @@ export type LifeCycleModelJsonTg = {
     edges?: LifeCycleModelGraphEdge[];
   };
   submodels?: LifeCycleModelSubModel[];
-  [key: string]: unknown;
 };
 
 export type LifeCycleModelDetailData = {
@@ -578,7 +558,6 @@ export type LifeCycleModelDetailResponse =
 export type LifeCycleModelImportData = Array<{
   lifeCycleModelDataSet?: FormLifeCycleModel;
   json_tg?: LifeCycleModelJsonTg;
-  [key: string]: unknown;
 }>;
 
 export type LifeCycleModelProcessInstance = Pick<ProcessTable, 'id' | 'version'> & {

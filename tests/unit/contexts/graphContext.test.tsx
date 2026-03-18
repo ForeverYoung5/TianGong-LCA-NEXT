@@ -268,17 +268,17 @@ describe('graphContext (src/contexts/graphContext.tsx)', () => {
     });
 
     act(() => {
-      result.current.addNodes([{ id: 'node-1', data: { value: 1 } }]);
+      result.current.addNodes([{ id: 'node-1', data: { label: 'Node 1' } }]);
     });
 
     expect(graph.getNodes()).toHaveLength(1);
-    expect(result.current.nodes).toEqual([{ id: 'node-1', data: { value: 1 } }]);
+    expect(result.current.nodes).toEqual([{ id: 'node-1', data: { label: 'Node 1' } }]);
 
     act(() => {
       result.current.updateNode('node-1', {
-        data: { extra: true },
-        tools: { name: 'tool' },
-        ports: { items: ['p1'] },
+        data: { scalingFactor: 2 },
+        tools: ['tool'],
+        ports: { items: [{ id: 'p1', group: 'groupInput' }] },
         width: 80,
         height: 40,
         label: 'Node label',
@@ -287,12 +287,12 @@ describe('graphContext (src/contexts/graphContext.tsx)', () => {
       });
     });
 
-    expect(graph.getCellById('node-1')?.getData()).toEqual({ value: 1, extra: true });
+    expect(graph.getCellById('node-1')?.getData()).toEqual({ label: 'Node 1', scalingFactor: 2 });
     expect(result.current.nodes[0]).toMatchObject({
       id: 'node-1',
-      data: { extra: true },
-      tools: { name: 'tool' },
-      ports: { items: ['p1'] },
+      data: { scalingFactor: 2 },
+      tools: ['tool'],
+      ports: { items: [{ id: 'p1', group: 'groupInput' }] },
       width: 80,
       height: 40,
       label: 'Node label',
@@ -310,43 +310,47 @@ describe('graphContext (src/contexts/graphContext.tsx)', () => {
     act(() => {
       result.current.initData({
         nodes: [{ id: 'init-node' }],
-        edges: [{ id: 'edge-1', data: { existing: true } }],
+        edges: [{ id: 'edge-1', data: { node: { sourceNodeID: 'existing-node' } } }],
       });
     });
 
     expect(graph.getNodes()).toHaveLength(1);
     expect(graph.getEdges()).toHaveLength(1);
     expect(result.current.nodes).toEqual([{ id: 'init-node' }]);
-    expect(result.current.edges).toEqual([{ id: 'edge-1', data: { existing: true } }]);
+    expect(result.current.edges).toEqual([
+      { id: 'edge-1', data: { node: { sourceNodeID: 'existing-node' } } },
+    ]);
 
     act(() => {
       result.current.updateEdge('edge-1', {
-        data: { connection: true, weight: 2 },
+        data: { connection: { isBalanced: true, exchangeAmount: 2 } },
         attrs: { stroke: 'red' },
         labels: ['Edge'],
-        target: 'target',
-        source: 'source',
+        target: { cell: 'target-node', port: 'target-port' },
+        source: { cell: 'source-node', port: 'source-port' },
         selected: true,
       });
     });
 
     expect(graph.getCellById('edge-1')?.getData()).toEqual({
-      existing: true,
-      connection: true,
-      weight: 2,
+      node: { sourceNodeID: 'existing-node' },
+      connection: { isBalanced: true, exchangeAmount: 2 },
     });
     expect(result.current.edges[0]).toMatchObject({
       id: 'edge-1',
-      data: { connection: true, weight: 2 },
+      data: { connection: { isBalanced: true, exchangeAmount: 2 } },
       attrs: { stroke: 'red' },
       labels: ['Edge'],
-      target: 'target',
-      source: 'source',
+      target: { cell: 'target-node', port: 'target-port' },
+      source: { cell: 'source-node', port: 'source-port' },
       selected: true,
     });
     expect(result.current.edges[1]).toMatchObject({
       id: 'edge-1',
-      data: { existing: true, connection: true, weight: 2 },
+      data: {
+        node: { sourceNodeID: 'existing-node' },
+        connection: { isBalanced: true, exchangeAmount: 2 },
+      },
     });
 
     act(() => {
@@ -356,8 +360,12 @@ describe('graphContext (src/contexts/graphContext.tsx)', () => {
     expect(graph.getEdges()).toHaveLength(0);
     expect(result.current.edges).toEqual([]);
 
-    graph.addNode({ id: 'sync-node', data: { synced: true }, attrs: { color: 'green' } });
-    graph.addEdge({ id: 'sync-edge', data: { synced: true }, attrs: { color: 'blue' } });
+    graph.addNode({ id: 'sync-node', data: { label: 'Synced Node' }, attrs: { color: 'green' } });
+    graph.addEdge({
+      id: 'sync-edge',
+      data: { connection: { isBalanced: false } },
+      attrs: { color: 'blue' },
+    });
 
     act(() => {
       result.current.syncGraphData();
@@ -366,12 +374,12 @@ describe('graphContext (src/contexts/graphContext.tsx)', () => {
     expect(result.current.nodes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'init-node' }),
-        expect.objectContaining({ id: 'sync-node', data: { synced: true } }),
+        expect.objectContaining({ id: 'sync-node', data: { label: 'Synced Node' } }),
       ]),
     );
     expect(result.current.nodes).toHaveLength(2);
     expect(result.current.edges).toEqual([
-      expect.objectContaining({ id: 'sync-edge', data: { synced: true } }),
+      expect.objectContaining({ id: 'sync-edge', data: { connection: { isBalanced: false } } }),
     ]);
   });
 

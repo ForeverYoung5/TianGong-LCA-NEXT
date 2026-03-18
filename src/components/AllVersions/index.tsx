@@ -18,7 +18,6 @@ import { FormattedMessage, useLocation } from 'umi';
 type VersionTableRow = {
   id: string;
   version: string;
-  [key: string]: unknown;
 };
 
 interface AllVersionsListProps {

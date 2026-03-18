@@ -27,7 +27,6 @@ export type ProcessRefUnitDisplay = {
   name?: LangTextValue;
   refUnitName?: string;
   refUnitGeneralComment?: LangTextValue;
-  [key: string]: unknown;
 };
 
 export type ProcessExchangeData = {
@@ -62,7 +61,6 @@ export type ProcessExchangeData = {
   refUnitRes?: ProcessRefUnitDisplay;
   stateCode?: number;
   typeOfDataSet?: string;
-  [key: string]: unknown;
 };
 
 export type ProcessExchangeTable = {
@@ -183,6 +181,60 @@ export type ProcessDataSetObjectKeys = Exclude<
 >;
 
 export type FormProcess = Pick<Process['processDataSet'], ProcessDataSetObjectKeys>;
+
+type ReviewMergeSections = {
+  validation?: unknown;
+  complianceDeclarations?: unknown;
+};
+
+export type ReviewMergeValidationSection<TValidation> = Omit<
+  Partial<NonNullable<TValidation>>,
+  'review'
+> & {
+  review?: ProcessReviewItem | ProcessReviewItem[];
+};
+
+export type ReviewMergeComplianceDeclarationsSection<TComplianceDeclarations> = Omit<
+  Partial<NonNullable<TComplianceDeclarations>>,
+  'compliance'
+> & {
+  compliance?: ProcessComplianceItem | ProcessComplianceItem[];
+};
+
+export type ReviewMergeModellingAndValidation<TModellingAndValidation extends ReviewMergeSections> =
+  Omit<Partial<TModellingAndValidation>, 'validation' | 'complianceDeclarations'> & {
+    validation?: ReviewMergeValidationSection<TModellingAndValidation['validation']>;
+    complianceDeclarations?: ReviewMergeComplianceDeclarationsSection<
+      TModellingAndValidation['complianceDeclarations']
+    >;
+  };
+
+export type ReviewMergeDataSet<
+  TDataSet extends { modellingAndValidation?: ReviewMergeSections | undefined },
+> = Omit<TDataSet, 'modellingAndValidation'> & {
+  modellingAndValidation?: ReviewMergeModellingAndValidation<
+    NonNullable<TDataSet['modellingAndValidation']>
+  >;
+};
+
+type ProcessModellingAndValidation = NonNullable<FormProcess['modellingAndValidation']>;
+
+export type ProcessReviewMergeValidationSection = ReviewMergeValidationSection<
+  ProcessModellingAndValidation['validation']
+>;
+
+export type ProcessReviewMergeComplianceDeclarationsSection =
+  ReviewMergeComplianceDeclarationsSection<ProcessModellingAndValidation['complianceDeclarations']>;
+
+export type ProcessReviewMergeDataSet = ReviewMergeDataSet<FormProcess>;
+
+export type ProcessReviewMergeModellingAndValidation = NonNullable<
+  ProcessReviewMergeDataSet['modellingAndValidation']
+>;
+
+export type ProcessReviewMergeJson = {
+  processDataSet?: ProcessReviewMergeDataSet;
+};
 
 export type ProcessFormState = FormProcess & {
   id?: string;

@@ -1,6 +1,7 @@
 import { GraphEdge, GraphNode, useGraphEvent, useGraphStore } from '@/contexts/graphContext';
 import ProcessView from '@/pages/Processes/Components/view';
 import { getCommentApi } from '@/services/comments/api';
+import { getCommentCompliances, getCommentReviews } from '@/services/comments/data';
 import { initVersion } from '@/services/general/data';
 import { formatDateTime } from '@/services/general/util';
 import { getLifeCycleModelDetail } from '@/services/lifeCycleModels/api';
@@ -378,20 +379,8 @@ const ToolbarView: FC<Props> = ({
         const { data, error } = await getCommentApi(reviewId, tabType);
 
         if (!error && data && data.length) {
-          const allReviews: any[] = [];
-          data.forEach((item: any) => {
-            if (item?.json?.modellingAndValidation?.validation?.review) {
-              allReviews.push(...item?.json?.modellingAndValidation.validation.review);
-            }
-          });
-          const allCompliance: any[] = [];
-          data.forEach((item: any) => {
-            if (item?.json?.modellingAndValidation?.complianceDeclarations?.compliance) {
-              allCompliance.push(
-                ...item?.json?.modellingAndValidation.complianceDeclarations.compliance,
-              );
-            }
-          });
+          const allReviews = data.flatMap((item) => getCommentReviews(item.json));
+          const allCompliance = data.flatMap((item) => getCommentCompliances(item.json));
           if (result?.data?.json?.lifeCycleModelDataSet) {
             const _compliance =
               result?.data?.json?.lifeCycleModelDataSet?.modellingAndValidation

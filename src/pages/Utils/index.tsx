@@ -8,7 +8,6 @@ type SchemaRule = {
   type?: string;
   messageKey?: string;
   defaultMessage?: string;
-  [key: string]: unknown;
 };
 
 type FormRefValidator = Pick<ProFormInstance, 'validateFields'>;

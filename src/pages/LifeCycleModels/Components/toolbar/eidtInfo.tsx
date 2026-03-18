@@ -639,11 +639,19 @@ const ToolbarEditInfo = forwardRef<ToolbarEditInfoHandle, Props>(
       }
 
       const reviewId = v4();
+      const reviewTargetId = data.id ?? currentModelDetail.id;
+      const reviewTargetVersion = data.version ?? currentModelDetail.version;
+
+      if (!reviewTargetId || !reviewTargetVersion) {
+        setSpinning(false);
+        return;
+      }
+
       const result = await updateReviewsAfterCheckData(
         currentModelDetail.teamId ?? '',
         {
-          id: data.id,
-          version: data.version,
+          id: reviewTargetId,
+          version: reviewTargetVersion,
           name:
             currentModelDetail.json?.lifeCycleModelDataSet?.lifeCycleModelInformation
               ?.dataSetInformation?.name ?? {},

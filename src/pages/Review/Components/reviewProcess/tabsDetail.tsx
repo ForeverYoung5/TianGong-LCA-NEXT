@@ -5,11 +5,20 @@ import LocationTextItemDescription from '@/components/LocationTextItem/descripti
 import QuantitativeReferenceIcon from '@/components/QuantitativeReferenceIcon';
 import ContactSelectDescription from '@/pages/Contacts/Components/select/description';
 import SourceSelectDescription from '@/pages/Sources/Components/select/description';
+import {
+  getCommentCompliances,
+  getCommentReviews,
+  type CommentJson,
+} from '@/services/comments/data';
 import { getFlowStateCodeByIdsAndVersions } from '@/services/flows/api';
 import { ListPagination } from '@/services/general/data';
 import { getLangText, getUnitData } from '@/services/general/util';
 import { getProcessExchange } from '@/services/processes/api';
-import { ProcessExchangeTable } from '@/services/processes/data';
+import {
+  ProcessComplianceItem,
+  ProcessExchangeTable,
+  ProcessReviewItem,
+} from '@/services/processes/data';
 import { genProcessExchangeTableData } from '@/services/processes/util';
 import { getUserDetail } from '@/services/users/api';
 import { ActionType, ProColumns, ProFormInstance, ProTable } from '@ant-design/pro-components';
@@ -45,7 +54,7 @@ type Props = {
   formType?: string;
   initData: any;
   type: 'edit' | 'view';
-  rejectedComments?: Record<string, any>[];
+  rejectedComments?: Array<CommentJson | null>;
 };
 
 const getProcesstypeOfDataSetOptions = (value: string) => {
@@ -1655,29 +1664,23 @@ export const TabsDetail: FC<Props> = ({
   };
 
   const getValidationReview = () => {
-    const result: any[] = [];
+    const result: ProcessReviewItem[] = [];
     if (!rejectedComments || rejectedComments.length === 0) {
       return result;
     }
     rejectedComments.forEach((comment) => {
-      const review = comment?.modellingAndValidation?.validation?.review;
-      if (review) {
-        result.push(...(Array.isArray(review) ? review : [review]));
-      }
+      result.push(...getCommentReviews(comment));
     });
     return result;
   };
 
   const getValidationCompliance = () => {
-    const result: any[] = [];
+    const result: ProcessComplianceItem[] = [];
     if (!rejectedComments || rejectedComments.length === 0) {
       return result;
     }
     rejectedComments.forEach((comment) => {
-      const compliance = comment?.modellingAndValidation?.complianceDeclarations?.compliance;
-      if (compliance) {
-        result.push(...(Array.isArray(compliance) ? compliance : [compliance]));
-      }
+      result.push(...getCommentCompliances(comment));
     });
     return result;
   };

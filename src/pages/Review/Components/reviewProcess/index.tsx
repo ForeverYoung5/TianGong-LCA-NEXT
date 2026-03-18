@@ -8,7 +8,13 @@ import {
   updateUnReviewToUnderReview,
 } from '@/pages/Utils/review';
 import { getCommentApi, updateCommentApi } from '@/services/comments/api';
+import {
+  getCommentCompliances,
+  getCommentReviews,
+  type CommentJson,
+} from '@/services/comments/data';
 import { getProcessDetail } from '@/services/processes/api';
+import type { ProcessComplianceItem, ProcessReviewItem } from '@/services/processes/data';
 import { genProcessFromData } from '@/services/processes/util';
 import { getReviewsDetail, updateReviewApi } from '@/services/reviews/api';
 import { getUserTeamId } from '@/services/roles/api';
@@ -34,14 +40,127 @@ type Props = {
   hideButton?: boolean;
 };
 
+const DEFAULT_COMMENT_REVIEWS: ProcessReviewItem[] = [
+  {
+    'common:scope': [{ '@name': undefined }],
+  },
+];
+
+const DEFAULT_COMMENT_COMPLIANCES: ProcessComplianceItem[] = [
+  {
+    'common:referenceToComplianceSystem': {
+      '@refObjectId': '1ea48531-e397-4ca7-ac08-056e4fa11826',
+      '@type': 'source data set',
+      '@uri': '../sources/1ea48531-e397-4ca7-ac08-056e4fa11826.xml',
+      '@version': '20.20.002',
+      'common:shortDescription': [
+        {
+          '@xml:lang': 'en',
+          '#text':
+            'ISO 14040 Environmental Management – Life Cycle Assessment – Principles and Framework, 2006',
+        },
+      ],
+    },
+    'common:approvalOfOverallCompliance': 'Fully compliant',
+    'common:nomenclatureCompliance': 'Not defined',
+    'common:methodologicalCompliance': 'Fully compliant',
+    'common:reviewCompliance': 'Fully compliant',
+    'common:documentationCompliance': 'Not defined',
+    'common:qualityCompliance': 'Not defined',
+  },
+  {
+    'common:approvalOfOverallCompliance': 'Fully compliant',
+    'common:nomenclatureCompliance': 'Not defined',
+    'common:methodologicalCompliance': 'Fully compliant',
+    'common:reviewCompliance': 'Not defined',
+    'common:documentationCompliance': 'Fully compliant',
+    'common:qualityCompliance': 'Not defined',
+    'common:referenceToComplianceSystem': {
+      '@refObjectId': '1adb438d-4a8b-4919-885e-0a66da3c0f2a',
+      '@type': 'source data set',
+      '@uri': '../sources/1adb438d-4a8b-4919-885e-0a66da3c0f2a.xml',
+      '@version': '20.20.002',
+      'common:shortDescription': [
+        {
+          '@xml:lang': 'en',
+          '#text':
+            'ISO 14044:2006. Environmental Management – Life Cycle Assessment – Requirements and guidelines.',
+        },
+      ],
+    },
+  },
+  {
+    'common:approvalOfOverallCompliance': 'Fully compliant',
+    'common:nomenclatureCompliance': 'Fully compliant',
+    'common:methodologicalCompliance': 'Fully compliant',
+    'common:reviewCompliance': 'Fully compliant',
+    'common:documentationCompliance': 'Fully compliant',
+    'common:qualityCompliance': 'Not defined',
+    'common:referenceToComplianceSystem': {
+      '@refObjectId': 'd92a1a12-2545-49e2-a585-55c259997756',
+      '@type': 'source data set',
+      '@uri': '../sources/d92a1a12-2545-49e2-a585-55c259997756.xml',
+      '@version': '20.20.002',
+      'common:shortDescription': [
+        {
+          '@xml:lang': 'en',
+          '#text': 'ILCD Data Network - Entry-level',
+        },
+      ],
+    },
+  },
+  {
+    'common:approvalOfOverallCompliance': 'Fully compliant',
+    'common:nomenclatureCompliance': 'Fully compliant',
+    'common:methodologicalCompliance': 'Not defined',
+    'common:reviewCompliance': 'Not defined',
+    'common:documentationCompliance': 'Not defined',
+    'common:qualityCompliance': 'Not defined',
+    'common:referenceToComplianceSystem': {
+      '@refObjectId': 'c84c4185-d1b0-44fc-823e-d2ec630c7906',
+      '@type': 'source data set',
+      '@uri': '../sources/c84c4185-d1b0-44fc-823e-d2ec630c7906.xml',
+      '@version': '00.00.001',
+      'common:shortDescription': [
+        {
+          '@xml:lang': 'en',
+          '#text': 'Environmental Footprint (EF) 3.1',
+        },
+      ],
+    },
+  },
+  {
+    'common:approvalOfOverallCompliance': 'Fully compliant',
+    'common:nomenclatureCompliance': 'Fully compliant',
+    'common:methodologicalCompliance': 'Fully compliant',
+    'common:reviewCompliance': 'Fully compliant',
+    'common:documentationCompliance': 'Fully compliant',
+    'common:qualityCompliance': 'Fully compliant',
+    'common:referenceToComplianceSystem': {
+      '@refObjectId': '779fb9ea-de54-4707-b7fc-6154661552b5',
+      '@type': 'source data set',
+      '@uri': '../sources/779fb9ea-de54-4707-b7fc-6154661552b5.xml',
+      '@version': '01.00.000',
+      'common:shortDescription': [
+        {
+          '@xml:lang': 'en',
+          '#text':
+            'Commission Recommendation (EU) 2021/2279. (Annex I. Product Environmental Footprint Method)',
+        },
+      ],
+    },
+  },
+];
+
 export const getNewReviewJson = async (action: string, reviewId: string) => {
   const userId = await getUserId();
   const user = await getUsersByIds([userId]);
   const reviewDetail = await getReviewsDetail(reviewId);
+  const currentJson = reviewDetail?.json ?? {};
   const updateJson = {
-    ...reviewDetail?.json,
+    ...currentJson,
     logs: [
-      ...(reviewDetail?.json.logs ?? []),
+      ...(currentJson.logs ?? []),
       {
         action,
         time: new Date(),
@@ -73,8 +192,8 @@ const ReviewProcessDetail: FC<Props> = ({
   const [exchangeDataSource, setExchangeDataSource] = useState<any>([]);
   const [spinning, setSpinning] = useState(false);
   const intl = useIntl();
-  const [refCheckData, setRefCheckData] = useState<any[]>([]);
-  const [rejectedComments, setRejectedComments] = useState<any>([]);
+  const [refCheckData, setRefCheckData] = useState<RefCheckType[]>([]);
+  const [rejectedComments, setRejectedComments] = useState<Array<CommentJson | null>>([]);
 
   const handletFromData = () => {
     if (fromData?.id) {
@@ -109,8 +228,8 @@ const ReviewProcessDetail: FC<Props> = ({
       };
 
       setSpinning(true);
-      const { error } = await updateCommentApi(reviewId, { json: submitData }, tabType);
-      if (!error) {
+      const updateResult = await updateCommentApi(reviewId, { json: submitData }, tabType);
+      if (updateResult) {
         const newReviewJson = await getNewReviewJson('submit_comments_temporary', reviewId);
         const result = await updateReviewApi([reviewId], {
           json: newReviewJson,
@@ -142,127 +261,15 @@ const ReviewProcessDetail: FC<Props> = ({
     getProcessDetail(id, version).then(async (result: any) => {
       const { data, error } = await getCommentApi(reviewId, tabType);
       if (!error && data && data.length) {
-        const allReviews: any[] = [];
-        const allCompliance: any[] = [];
-        data.forEach((item: any) => {
-          if (item?.json?.modellingAndValidation?.validation?.review) {
-            allReviews.push(...item?.json?.modellingAndValidation.validation.review);
-          }
+        const allReviews: ProcessReviewItem[] = [];
+        const allCompliance: ProcessComplianceItem[] = [];
+        data.forEach((item) => {
+          allReviews.push(...getCommentReviews(item.json));
           // No review data has been saved yet.
           if (!item.json && tabType === 'review' && type === 'edit') {
-            allCompliance.push(
-              ...[
-                {
-                  'common:referenceToComplianceSystem': {
-                    '@refObjectId': '1ea48531-e397-4ca7-ac08-056e4fa11826',
-                    '@type': 'source data set',
-                    '@uri': '../sources/1ea48531-e397-4ca7-ac08-056e4fa11826.xml',
-                    '@version': '20.20.002',
-                    'common:shortDescription': [
-                      {
-                        '@xml:lang': 'en',
-                        '#text':
-                          'ISO 14040 Environmental Management – Life Cycle Assessment – Principles and Framework, 2006',
-                      },
-                    ],
-                  },
-                  'common:approvalOfOverallCompliance': 'Fully compliant',
-                  'common:nomenclatureCompliance': 'Not defined',
-                  'common:methodologicalCompliance': 'Fully compliant',
-                  'common:reviewCompliance': 'Fully compliant',
-                  'common:documentationCompliance': 'Not defined',
-                  'common:qualityCompliance': 'Not defined',
-                },
-                {
-                  'common:approvalOfOverallCompliance': 'Fully compliant',
-                  'common:nomenclatureCompliance': 'Not defined',
-                  'common:methodologicalCompliance': 'Fully compliant',
-                  'common:reviewCompliance': 'Not defined',
-                  'common:documentationCompliance': 'Fully compliant',
-                  'common:qualityCompliance': 'Not defined',
-                  'common:referenceToComplianceSystem': {
-                    '@refObjectId': '1adb438d-4a8b-4919-885e-0a66da3c0f2a',
-                    '@type': 'source data set',
-                    '@uri': '../sources/1adb438d-4a8b-4919-885e-0a66da3c0f2a.xml',
-                    '@version': '20.20.002',
-                    'common:shortDescription': [
-                      {
-                        '@xml:lang': 'en',
-                        '#text':
-                          'ISO 14044:2006. Environmental Management – Life Cycle Assessment – Requirements and guidelines.',
-                      },
-                    ],
-                  },
-                },
-                {
-                  'common:approvalOfOverallCompliance': 'Fully compliant',
-                  'common:nomenclatureCompliance': 'Fully compliant',
-                  'common:methodologicalCompliance': 'Fully compliant',
-                  'common:reviewCompliance': 'Fully compliant',
-                  'common:documentationCompliance': 'Fully compliant',
-                  'common:qualityCompliance': 'Not defined',
-                  'common:referenceToComplianceSystem': {
-                    '@refObjectId': 'd92a1a12-2545-49e2-a585-55c259997756',
-                    '@type': 'source data set',
-                    '@uri': '../sources/d92a1a12-2545-49e2-a585-55c259997756.xml',
-                    '@version': '20.20.002',
-                    'common:shortDescription': [
-                      {
-                        '@xml:lang': 'en',
-                        '#text': 'ILCD Data Network - Entry-level',
-                      },
-                    ],
-                  },
-                },
-                {
-                  'common:approvalOfOverallCompliance': 'Fully compliant',
-                  'common:nomenclatureCompliance': 'Fully compliant',
-                  'common:methodologicalCompliance': 'Not defined',
-                  'common:reviewCompliance': 'Not defined',
-                  'common:documentationCompliance': 'Not defined',
-                  'common:qualityCompliance': 'Not defined',
-                  'common:referenceToComplianceSystem': {
-                    '@refObjectId': 'c84c4185-d1b0-44fc-823e-d2ec630c7906',
-                    '@type': 'source data set',
-                    '@uri': '../sources/c84c4185-d1b0-44fc-823e-d2ec630c7906.xml',
-                    '@version': '00.00.001',
-                    'common:shortDescription': [
-                      {
-                        '@xml:lang': 'en',
-                        '#text': 'Environmental Footprint (EF) 3.1',
-                      },
-                    ],
-                  },
-                },
-                {
-                  'common:approvalOfOverallCompliance': 'Fully compliant',
-                  'common:nomenclatureCompliance': 'Fully compliant',
-                  'common:methodologicalCompliance': 'Fully compliant',
-                  'common:reviewCompliance': 'Fully compliant',
-                  'common:documentationCompliance': 'Fully compliant',
-                  'common:qualityCompliance': 'Fully compliant',
-                  'common:referenceToComplianceSystem': {
-                    '@refObjectId': '779fb9ea-de54-4707-b7fc-6154661552b5',
-                    '@type': 'source data set',
-                    '@uri': '../sources/779fb9ea-de54-4707-b7fc-6154661552b5.xml',
-                    '@version': '01.00.000',
-                    'common:shortDescription': [
-                      {
-                        '@xml:lang': 'en',
-                        '#text':
-                          'Commission Recommendation (EU) 2021/2279. (Annex I. Product Environmental Footprint Method)',
-                      },
-                    ],
-                  },
-                },
-              ],
-            );
+            allCompliance.push(...DEFAULT_COMMENT_COMPLIANCES);
           }
-          if (item?.json?.modellingAndValidation?.complianceDeclarations?.compliance) {
-            allCompliance.push(
-              ...item?.json?.modellingAndValidation.complianceDeclarations.compliance,
-            );
-          }
+          allCompliance.push(...getCommentCompliances(item.json));
         });
         if (result?.data?.json?.processDataSet) {
           const _compliance =
@@ -285,15 +292,7 @@ const ReviewProcessDetail: FC<Props> = ({
             validation: {
               review:
                 tabType === 'review' || tabType === 'reviewer-rejected'
-                  ? [
-                      ...(allReviews.length
-                        ? allReviews
-                        : [
-                            {
-                              'common:scope': [{ '@name': undefined }],
-                            },
-                          ]),
-                    ]
+                  ? [...(allReviews.length ? allReviews : DEFAULT_COMMENT_REVIEWS)]
                   : Array.isArray(_review)
                     ? [..._review, ...allReviews]
                     : _review
@@ -336,7 +335,7 @@ const ReviewProcessDetail: FC<Props> = ({
     });
   }, [exchangeDataSource]);
 
-  const updateCommentJsonRefsToUnderReview = async (data: any) => {
+  const updateCommentJsonRefsToUnderReview = async (data: CommentJson) => {
     const refObjs = getAllRefObj(data);
     const unReview: refDataType[] = []; //stateCode < 20
     const underReview: refDataType[] = []; //stateCode >= 20 && stateCode < 100
@@ -403,15 +402,15 @@ const ReviewProcessDetail: FC<Props> = ({
     try {
       setSpinning(true);
       const { data: commentData } = await getCommentApi(reviewId, tabType);
-      const comment = commentData ? commentData[0] : null;
-      if (commentData) {
+      const comment = commentData?.[0];
+      if (comment) {
         const updateJson = {
           ...comment.json,
           comment: {
             message: reason,
           },
         };
-        const { error } = await updateCommentApi(
+        const updateResult = await updateCommentApi(
           comment.review_id,
           {
             json: updateJson,
@@ -419,7 +418,7 @@ const ReviewProcessDetail: FC<Props> = ({
           },
           tabType,
         );
-        if (!error) {
+        if (updateResult) {
           message.success(
             intl.formatMessage({
               id: 'component.rejectReview.success',
@@ -537,12 +536,12 @@ const ReviewProcessDetail: FC<Props> = ({
                     return false;
                   }
 
-                  const { error } = await updateCommentApi(
+                  const updateResult = await updateCommentApi(
                     reviewId,
                     { json: submitData, state_code: 1 },
                     tabType,
                   );
-                  if (!error) {
+                  if (updateResult) {
                     const newReviewJson = await getNewReviewJson('submit_comments', reviewId);
                     const result = await updateReviewApi([reviewId], {
                       json: newReviewJson,

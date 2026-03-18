@@ -34,7 +34,6 @@ export type ClassificationLevelItem = {
   '#text'?: string;
   '@classId'?: string;
   '@catId'?: string;
-  [key: string]: unknown;
 };
 
 export type ReferenceItem = {

@@ -164,7 +164,8 @@ type LcaFunctionName = 'lca_solve' | 'lca_jobs' | 'lca_results' | 'lca_query_res
 type InvokeErrorBody = {
   error?: unknown;
   detail?: unknown;
-  [key: string]: unknown;
+  build_job_id?: string;
+  build_snapshot_id?: string;
 };
 
 type ResolvedInvokeError = {

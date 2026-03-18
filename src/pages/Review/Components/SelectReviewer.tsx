@@ -1,4 +1,5 @@
 import { addCommentApi, getReviewerIdsByReviewId } from '@/services/comments/api';
+import type { CommentInsertPayload } from '@/services/comments/data';
 import {
   getReviewerIdsApi,
   getReviewsDetail,
@@ -16,23 +17,29 @@ import { Button, DatePicker, Drawer, message, Space, Spin, theme, Tooltip } from
 import dayjs, { Dayjs } from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 
+type ReviewAssignmentResult = {
+  id?: string;
+  success: boolean;
+  data?: unknown;
+};
+
 type SelectReviewerProps = {
   reviewIds: React.Key[];
-  actionRef: any;
+  actionRef: React.MutableRefObject<ActionType | undefined>;
   tabType: 'unassigned' | 'assigned';
 };
 
 export default function SelectReviewer({ reviewIds, actionRef, tabType }: SelectReviewerProps) {
   const intl = useIntl();
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const defaultSelectedRowKeys = useRef<React.Key[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const defaultSelectedRowKeys = useRef<string[]>([]);
   const [spinning, setSpinning] = useState(false);
   const [reviewDeadline, setReviewDeadline] = useState<Dayjs | null>(dayjs().add(15, 'day'));
   const { token } = theme.useToken();
   const tableRef = useRef<ActionType>();
   const handleRowSelectionChange = (keys: React.Key[]) => {
-    setSelectedRowKeys(keys);
+    setSelectedRowKeys(keys.map(String));
   };
 
   useEffect(() => {
@@ -44,19 +51,23 @@ export default function SelectReviewer({ reviewIds, actionRef, tabType }: Select
     }
     const init = async () => {
       setSpinning(true);
+      const primaryReviewId = reviewIds[0]?.toString();
       switch (tabType) {
         case 'unassigned': {
           const result = await getReviewerIdsApi(reviewIds);
-          setSelectedRowKeys(result);
+          setSelectedRowKeys(result.map(String));
           tableRef.current?.reload();
           break;
         }
         case 'assigned': {
-          const result = await getReviewerIdsByReviewId(reviewIds[0] as string);
+          if (!primaryReviewId) {
+            break;
+          }
+          const result = await getReviewerIdsByReviewId(primaryReviewId);
           const keys = (result ?? [])
-            .filter((item: any) => item.state_code >= 0)
-            .map((item: any) => item.reviewer_id);
-          const riviewDetail = await getReviewsDetail(reviewIds[0] as string);
+            .filter((item) => (item.state_code ?? -1) >= 0)
+            .map((item) => item.reviewer_id);
+          const riviewDetail = await getReviewsDetail(primaryReviewId);
           if (riviewDetail?.deadline) {
             setReviewDeadline(dayjs(riviewDetail.deadline));
           }
@@ -99,7 +110,7 @@ export default function SelectReviewer({ reviewIds, actionRef, tabType }: Select
     },
   ];
 
-  const addComment = async (data: any) => {
+  const addComment = async (data: CommentInsertPayload[]) => {
     const { error } = await addCommentApi(data);
     if (!error) {
       setDrawerVisible(false);
@@ -118,12 +129,13 @@ export default function SelectReviewer({ reviewIds, actionRef, tabType }: Select
       }
       const userId = await getUserId();
       const user = await getUsersByIds([userId]);
-      const updatePromises = reviews.map(async (review: any) => {
+      const updatePromises = reviews.map(async (review): Promise<ReviewAssignmentResult> => {
         if (review && review.id) {
+          const currentReviewJson = review.json ?? {};
           const updatedJson = {
-            ...review.json,
+            ...currentReviewJson,
             logs: [
-              ...(review.json.logs ?? []),
+              ...(currentReviewJson.logs ?? []),
               {
                 action: 'assign_reviewers_temporary',
                 time: new Date(),
@@ -151,7 +163,7 @@ export default function SelectReviewer({ reviewIds, actionRef, tabType }: Select
       });
 
       const results = await Promise.all(updatePromises);
-      const successCount = results.filter((result: any) => result.success).length;
+      const successCount = results.filter((result) => result.success).length;
 
       if (successCount === reviews.length) {
         message.success(
@@ -189,14 +201,15 @@ export default function SelectReviewer({ reviewIds, actionRef, tabType }: Select
       }
       const userId = await getUserId();
       const user = await getUsersByIds([userId]);
-      const commentData: any[] = [];
+      const commentData: CommentInsertPayload[] = [];
 
-      const updatePromises = reviews.map(async (review: any) => {
+      const updatePromises = reviews.map(async (review): Promise<ReviewAssignmentResult> => {
         if (review && review.id) {
+          const currentReviewJson = review.json ?? {};
           const updatedJson = {
-            ...review.json,
+            ...currentReviewJson,
             logs: [
-              ...(review.json.logs ?? []),
+              ...(currentReviewJson.logs ?? []),
               {
                 action: 'assign_reviewers',
                 time: new Date(),
@@ -237,7 +250,7 @@ export default function SelectReviewer({ reviewIds, actionRef, tabType }: Select
       });
 
       const results = await Promise.all(updatePromises);
-      const successResults = results.filter((result: any) => result.success);
+      const successResults = results.filter((result) => result.success);
       const successCount = successResults.length;
 
       if (successCount === reviews.length) {
@@ -361,7 +374,7 @@ export default function SelectReviewer({ reviewIds, actionRef, tabType }: Select
             request={async (params, sort) => {
               const result = await getReviewMembersApi(params, sort, 'review-member');
               const data = result.data.filter(
-                (item: any) => !defaultSelectedRowKeys.current.includes(item.user_id),
+                (item) => !defaultSelectedRowKeys.current.includes(item.user_id),
               );
               return {
                 data: data || [],

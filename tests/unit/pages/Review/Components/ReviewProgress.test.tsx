@@ -353,7 +353,7 @@ describe('ReviewProgress component', () => {
           state_code: -3,
           updated_at: '2024-01-01T00:00:00Z',
           json: {
-            comment: JSON.stringify({ message: 'Needs revision' }),
+            comment: { message: 'Needs revision' },
           },
         },
       ],
