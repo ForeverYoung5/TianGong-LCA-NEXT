@@ -1,14 +1,15 @@
 /**
  * ILCD Data Cache Layer
  *
- * Provides caching support for ILCD reference data to avoid repeated database queries.
- * These data rarely change and are suitable for short-term caching.
+ * Provides in-memory caching support for dynamic ILCD reference data.
+ * Flow categorization is now sourced from the ILCD gzip cache managed by ILCDCacheMonitor.
  */
 
 import { supabase } from '@/services/supabase';
 import { getCPCClassification, getCPCClassificationZH } from '../flows/classification/api';
 import type { Classification } from '../general/data';
 import { getISICClassification, getISICClassificationZH } from '../processes/classification/api';
+import { getILCDFlowCategorization } from './api';
 import type { ILCDCategoryNode } from './util';
 import { genClass, genClassZH } from './util';
 
@@ -70,38 +71,8 @@ class ILCDCache {
 
   // Cache method for ILCD Flow Categorization
   async getILCDFlowCategorizationAll(lang: string): Promise<Classification[]> {
-    const cacheKey = this.getCacheKey('ilcd_flow_cat_all', lang);
-    const cached = this.get<Classification[] | undefined>(cacheKey);
-
-    if (cached) {
-      console.log('[Cache Hit] ILCD Flow Categorization All:', lang);
-      return cached;
-    }
-
-    console.log('[Cache Miss] ILCD Flow Categorization All:', lang);
-
-    // Call original API
-    const result = await supabase.rpc('ilcd_flow_categorization_get', {
-      this_file_name: 'ILCDFlowCategorization',
-      get_values: ['all'],
-    });
-
-    const resultData = (result.data ?? []) as ILCDCategoryNode[];
-    let resultZH: { data: ILCDCategoryNode[] | null } | null = null;
-    if (lang === 'zh') {
-      const getIds = resultData.map((item: ILCDCategoryNode) => item['@id']);
-      resultZH = await supabase.rpc('ilcd_flow_categorization_get', {
-        this_file_name: 'ILCDFlowCategorization_zh',
-        get_values: getIds,
-      });
-    }
-
-    const data = genClassZH(resultData, resultZH?.data ?? null);
-
-    // Cache with default TTL (5 minutes)
-    this.set(cacheKey, data, this.defaultTTL);
-
-    return data;
+    const result = await getILCDFlowCategorization(lang, ['all']);
+    return result.data;
   }
 
   // Cache method for ILCD Classification

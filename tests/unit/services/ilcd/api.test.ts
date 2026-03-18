@@ -38,6 +38,10 @@ jest.mock('@/services/processes/classification/api', () => ({
   getISICClassificationZH: jest.fn(),
 }));
 
+jest.mock('@/services/ilcdData/util', () => ({
+  getCachedOrFetchIlcdFileData: jest.fn(),
+}));
+
 jest.mock('@/services/ilcd/util', () => ({
   genClass: jest.fn(),
   genClassZH: jest.fn(),
@@ -50,11 +54,20 @@ const { getCPCClassification, getCPCClassificationZH } = jest.requireMock(
 const { getISICClassification, getISICClassificationZH } = jest.requireMock(
   '@/services/processes/classification/api',
 );
+const { getCachedOrFetchIlcdFileData } = jest.requireMock('@/services/ilcdData/util');
 const { genClass, genClassZH } = jest.requireMock('@/services/ilcd/util');
+
+const createFlowCategorizationDocument = (categories: any[]) => ({
+  CategorySystem: {
+    categories: {
+      category: categories,
+    },
+  },
+});
 
 describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   describe('getILCDClassification', () => {
@@ -206,44 +219,84 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
   });
 
   describe('getILCDFlowCategorization', () => {
-    it('should fetch flow categorization with English', async () => {
+    it('should fetch flow categorization from ILCD gzip cache with English', async () => {
       const mockData = [{ '@id': 'elem1', '@name': 'Elementary Flow' }];
-      supabase.rpc.mockResolvedValue({ data: mockData });
-      genClassZH.mockReturnValue([{ id: 'elem1', label: 'Elementary Flow' }]);
+      getCachedOrFetchIlcdFileData.mockResolvedValue(createFlowCategorizationDocument(mockData));
+      genClass.mockReturnValue([{ id: 'elem1', label: 'Elementary Flow' }]);
 
       const result = await getILCDFlowCategorization('en', ['all']);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_flow_categorization_get', {
-        this_file_name: 'ILCDFlowCategorization',
-        get_values: ['all'],
-      });
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenCalledWith(
+        'ILCDFlowCategorization.min.json.gz',
+      );
+      expect(genClass).toHaveBeenCalledWith(mockData);
       expect(result).toEqual({
         data: [{ id: 'elem1', label: 'Elementary Flow' }],
         success: true,
       });
     });
 
-    it('should fetch flow categorization with Chinese', async () => {
+    it('should fetch flow categorization from ILCD gzip cache with Chinese', async () => {
       const mockData = [{ '@id': 'elem1', '@name': 'Elementary Flow' }];
       const mockDataZH = [{ '@id': 'elem1', '@name': '基本流' }];
-      supabase.rpc
-        .mockResolvedValueOnce({ data: mockData })
-        .mockResolvedValueOnce({ data: mockDataZH });
+      getCachedOrFetchIlcdFileData
+        .mockResolvedValueOnce(createFlowCategorizationDocument(mockData))
+        .mockResolvedValueOnce(createFlowCategorizationDocument(mockDataZH));
       genClassZH.mockReturnValue([{ id: 'elem1', label: '基本流' }]);
 
       const result = await getILCDFlowCategorization('zh', ['all']);
 
-      expect(supabase.rpc).toHaveBeenCalledTimes(2);
-      expect(supabase.rpc).toHaveBeenNthCalledWith(2, 'ilcd_flow_categorization_get', {
-        this_file_name: 'ILCDFlowCategorization_zh',
-        get_values: ['elem1'],
-      });
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenNthCalledWith(
+        1,
+        'ILCDFlowCategorization.min.json.gz',
+      );
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenNthCalledWith(
+        2,
+        'ILCDFlowCategorization_zh.min.json.gz',
+      );
+      expect(genClassZH).toHaveBeenCalledWith(mockData, mockDataZH);
       expect(result.success).toBe(true);
+    });
+
+    it('should keep only matched subtree when getValues is not all', async () => {
+      const mockData = [
+        {
+          '@id': '1',
+          '@name': 'Emissions',
+          category: [
+            {
+              '@id': '1.1',
+              '@name': 'Emissions to water',
+            },
+          ],
+        },
+        {
+          '@id': '2',
+          '@name': 'Resources',
+        },
+      ];
+      getCachedOrFetchIlcdFileData.mockResolvedValue(createFlowCategorizationDocument(mockData));
+      genClass.mockReturnValue([{ id: '1', label: 'Emissions' }]);
+
+      await getILCDFlowCategorization('en', ['Emissions']);
+
+      expect(genClass).toHaveBeenCalledWith([
+        {
+          '@id': '1',
+          '@name': 'Emissions',
+          category: [
+            {
+              '@id': '1.1',
+              '@name': 'Emissions to water',
+            },
+          ],
+        },
+      ]);
     });
 
     it('should handle errors in flow categorization', async () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      supabase.rpc.mockRejectedValue(new Error('RPC error'));
+      getCachedOrFetchIlcdFileData.mockRejectedValue(new Error('Cache read error'));
 
       const result = await getILCDFlowCategorization('en', ['all']);
 
@@ -263,11 +316,10 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
 
       // Mock getILCDClassification
       getCPCClassification.mockResolvedValue({ data: [] });
-      genClass.mockReturnValue(mockClassData);
+      genClass.mockReturnValueOnce(mockClassData).mockReturnValueOnce(mockCatData);
 
       // Mock getILCDFlowCategorization
-      supabase.rpc.mockResolvedValue({ data: [] });
-      genClassZH.mockReturnValue(mockCatData);
+      getCachedOrFetchIlcdFileData.mockResolvedValue(createFlowCategorizationDocument([]));
 
       const result = await getILCDFlowCategorizationAll('en');
 

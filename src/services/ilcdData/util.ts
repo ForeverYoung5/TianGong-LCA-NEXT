@@ -142,6 +142,17 @@ export const getCachedIlcdFileList = async (): Promise<string[]> => {
   }
 };
 
+export const getCachedIlcdFileData = async <T>(filename: string): Promise<T | null> => {
+  try {
+    const db = await initDB();
+    const cachedEntry = await getCachedJsonEntry<T>(db, CACHE_STORE_NAME, filename);
+    return cachedEntry?.data ?? null;
+  } catch (error) {
+    console.error(`Failed to read ILCD cached file ${filename}:`, error);
+    return null;
+  }
+};
+
 export const cacheAndDecompressIlcdFile = async (filename: string): Promise<boolean> => {
   try {
     const response = await fetch(`/ilcd/${filename}`);
@@ -162,4 +173,18 @@ export const cacheAndDecompressIlcdFile = async (filename: string): Promise<bool
     console.error(`Failed to cache ILCD file ${filename}:`, error);
     return false;
   }
+};
+
+export const getCachedOrFetchIlcdFileData = async <T>(filename: string): Promise<T | null> => {
+  const cachedData = await getCachedIlcdFileData<T>(filename);
+  if (cachedData) {
+    return cachedData;
+  }
+
+  const cached = await cacheAndDecompressIlcdFile(filename);
+  if (!cached) {
+    return null;
+  }
+
+  return getCachedIlcdFileData<T>(filename);
 };
