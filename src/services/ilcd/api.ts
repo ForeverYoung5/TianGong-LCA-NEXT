@@ -1,9 +1,81 @@
 import { supabase } from '@/services/supabase';
 import { getCPCClassification, getCPCClassificationZH } from '../flows/classification/api';
 import type { Classification } from '../general/data';
+import { getCachedOrFetchIlcdFileData } from '../ilcdData/util';
 import { getISICClassification, getISICClassificationZH } from '../processes/classification/api';
 import { categoryTypeOptions } from './data';
-import { genClass, genClassZH } from './util';
+import { genClass, genClassZH, type ILCDCategoryNode } from './util';
+
+type ILCDFlowCategorizationDocument = {
+  CategorySystem?: {
+    categories?: {
+      category?: ILCDCategoryNode[] | ILCDCategoryNode | null;
+    } | null;
+  } | null;
+};
+
+const ILCD_FLOW_CATEGORIZATION_FILES = {
+  en: 'ILCDFlowCategorization.min.json.gz',
+  zh: 'ILCDFlowCategorization_zh.min.json.gz',
+} as const;
+
+function normalizeFlowCategorizationNodes(
+  category?: ILCDCategoryNode[] | ILCDCategoryNode | null,
+): ILCDCategoryNode[] {
+  if (Array.isArray(category)) {
+    return category;
+  }
+  if (category) {
+    return [category];
+  }
+  return [];
+}
+
+function filterFlowCategorizationNodes(
+  nodes: ILCDCategoryNode[],
+  getValues: string[],
+): ILCDCategoryNode[] {
+  if (getValues.includes('all')) {
+    return nodes;
+  }
+
+  const filters = new Set(getValues);
+  const filterNode = (node: ILCDCategoryNode): ILCDCategoryNode | null => {
+    const childNodes = Array.isArray(node.category) ? node.category : [];
+    const filteredChildren = childNodes
+      .map((child) => filterNode(child))
+      .filter((child): child is ILCDCategoryNode => child !== null);
+    const isMatched = filters.has(node['@id']) || filters.has(node['@name']);
+
+    if (isMatched) {
+      return node;
+    }
+
+    if (filteredChildren.length > 0) {
+      return {
+        ...node,
+        category: filteredChildren,
+      };
+    }
+
+    return null;
+  };
+
+  return nodes
+    .map((node) => filterNode(node))
+    .filter((node): node is ILCDCategoryNode => node !== null);
+}
+
+async function getFlowCategorizationNodes(lang: 'en' | 'zh'): Promise<ILCDCategoryNode[]> {
+  const fileName = ILCD_FLOW_CATEGORIZATION_FILES[lang];
+  const document = await getCachedOrFetchIlcdFileData<ILCDFlowCategorizationDocument>(fileName);
+
+  if (!document) {
+    throw new Error(`Failed to load ILCD flow categorization from ${fileName}`);
+  }
+
+  return normalizeFlowCategorizationNodes(document.CategorySystem?.categories?.category);
+}
 
 export async function getILCDClassification(
   categoryType: string,
@@ -70,20 +142,18 @@ export async function getILCDFlowCategorization(
   getValues: string[],
 ): Promise<{ data: Classification[]; success: boolean }> {
   try {
-    const result = await supabase.rpc('ilcd_flow_categorization_get', {
-      this_file_name: 'ILCDFlowCategorization',
-      get_values: getValues,
-    });
+    const resultData = filterFlowCategorizationNodes(
+      await getFlowCategorizationNodes('en'),
+      getValues,
+    );
 
-    let resultZH = null;
+    let newDatas: Classification[] = [];
     if (lang === 'zh') {
-      const getIds = result?.data?.map((i: any) => i['@id']);
-      resultZH = await supabase.rpc('ilcd_flow_categorization_get', {
-        this_file_name: 'ILCDFlowCategorization_zh',
-        get_values: getIds,
-      });
+      const resultZH = await getFlowCategorizationNodes('zh');
+      newDatas = genClassZH(resultData, resultZH);
+    } else {
+      newDatas = genClass(resultData);
     }
-    const newDatas = genClassZH(result?.data, resultZH?.data);
 
     return Promise.resolve({
       data: newDatas,

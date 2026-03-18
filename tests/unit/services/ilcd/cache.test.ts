@@ -39,6 +39,10 @@ jest.mock('@/services/processes/classification/api', () => ({
   getISICClassificationZH: jest.fn(),
 }));
 
+jest.mock('@/services/ilcd/api', () => ({
+  getILCDFlowCategorization: jest.fn(),
+}));
+
 jest.mock('@/services/ilcd/util', () => ({
   genClass: jest.fn(),
   genClassZH: jest.fn(),
@@ -51,11 +55,12 @@ const { getCPCClassification, getCPCClassificationZH } = jest.requireMock(
 const { getISICClassification, getISICClassificationZH } = jest.requireMock(
   '@/services/processes/classification/api',
 );
+const { getILCDFlowCategorization } = jest.requireMock('@/services/ilcd/api');
 const { genClass, genClassZH } = jest.requireMock('@/services/ilcd/util');
 
 describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     // Clear cache before each test to ensure isolation
     ilcdCache.clear();
   });
@@ -118,77 +123,43 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
   });
 
   describe('getILCDFlowCategorizationAll', () => {
-    it('should fetch and cache flow categorization data for English', async () => {
-      const mockData = [
-        { '@id': 'cat1', '@name': 'Category 1' },
-        { '@id': 'cat2', '@name': 'Category 2' },
-      ];
+    it('should fetch flow categorization data through ILCD API delegation for English', async () => {
       const mockGenerated = [
         { id: 'cat1', label: 'Category 1' },
         { id: 'cat2', label: 'Category 2' },
       ];
 
-      supabase.rpc.mockResolvedValue({ data: mockData });
-      genClassZH.mockReturnValue(mockGenerated);
+      getILCDFlowCategorization.mockResolvedValue({ data: mockGenerated, success: true });
 
       const result = await ilcdCache.getILCDFlowCategorizationAll('en');
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_flow_categorization_get', {
-        this_file_name: 'ILCDFlowCategorization',
-        get_values: ['all'],
-      });
-      expect(supabase.rpc).toHaveBeenCalledTimes(1);
-      expect(genClassZH).toHaveBeenCalledWith(mockData, null);
+      expect(getILCDFlowCategorization).toHaveBeenCalledWith('en', ['all']);
       expect(result).toEqual(mockGenerated);
     });
 
-    it('should fetch and cache flow categorization data for Chinese', async () => {
-      const mockData = [
-        { '@id': 'cat1', '@name': 'Category 1' },
-        { '@id': 'cat2', '@name': 'Category 2' },
-      ];
-      const mockDataZH = [
-        { '@id': 'cat1', '@name': '分类1' },
-        { '@id': 'cat2', '@name': '分类2' },
-      ];
+    it('should fetch flow categorization data through ILCD API delegation for Chinese', async () => {
       const mockGenerated = [
         { id: 'cat1', label: '分类1' },
         { id: 'cat2', label: '分类2' },
       ];
 
-      supabase.rpc
-        .mockResolvedValueOnce({ data: mockData })
-        .mockResolvedValueOnce({ data: mockDataZH });
-      genClassZH.mockReturnValue(mockGenerated);
+      getILCDFlowCategorization.mockResolvedValue({ data: mockGenerated, success: true });
 
       const result = await ilcdCache.getILCDFlowCategorizationAll('zh');
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_flow_categorization_get', {
-        this_file_name: 'ILCDFlowCategorization',
-        get_values: ['all'],
-      });
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_flow_categorization_get', {
-        this_file_name: 'ILCDFlowCategorization_zh',
-        get_values: ['cat1', 'cat2'],
-      });
-      expect(genClassZH).toHaveBeenCalledWith(mockData, mockDataZH);
+      expect(getILCDFlowCategorization).toHaveBeenCalledWith('zh', ['all']);
       expect(result).toEqual(mockGenerated);
     });
 
-    it('should return cached data on second call (cache hit)', async () => {
-      const mockData = [{ '@id': 'cat1', '@name': 'Category 1' }];
+    it('should bypass deprecated in-memory flow categorization cache', async () => {
       const mockGenerated = [{ id: 'cat1', label: 'Category 1' }];
 
-      supabase.rpc.mockResolvedValue({ data: mockData });
-      genClassZH.mockReturnValue(mockGenerated);
+      getILCDFlowCategorization.mockResolvedValue({ data: mockGenerated, success: true });
 
-      // First call - cache miss
       const result1 = await ilcdCache.getILCDFlowCategorizationAll('en');
-      expect(supabase.rpc).toHaveBeenCalledTimes(1);
-
-      // Second call - cache hit
       const result2 = await ilcdCache.getILCDFlowCategorizationAll('en');
-      expect(supabase.rpc).toHaveBeenCalledTimes(1); // No additional calls
+
+      expect(getILCDFlowCategorization).toHaveBeenCalledTimes(2);
       expect(result2).toEqual(result1);
       expect(result2).toEqual(mockGenerated);
     });
@@ -423,8 +394,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
       genClass.mockReturnValue(mockClassification);
 
       // Mock categorization
-      supabase.rpc.mockResolvedValue({ data: [{ '@id': 'cat1' }] });
-      genClassZH.mockReturnValue(mockCategorization);
+      getILCDFlowCategorization.mockResolvedValue({ data: mockCategorization, success: true });
 
       const result = await ilcdCache.getFlowReferenceDataAll('en');
 
@@ -440,8 +410,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
 
       getCPCClassification.mockReturnValue({ data: [{ '@id': 'class1' }] });
       genClass.mockReturnValue(mockClassification);
-      supabase.rpc.mockResolvedValue({ data: [{ '@id': 'cat1' }] });
-      genClassZH.mockReturnValue(mockCategorization);
+      getILCDFlowCategorization.mockResolvedValue({ data: mockCategorization, success: true });
 
       // First call
       await ilcdCache.getFlowReferenceDataAll('en');
@@ -453,7 +422,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
       const result = await ilcdCache.getFlowReferenceDataAll('en');
 
       expect(getCPCClassification).not.toHaveBeenCalled();
-      expect(supabase.rpc).not.toHaveBeenCalled();
+      expect(getILCDFlowCategorization).not.toHaveBeenCalled();
       expect(result).toEqual({
         category: mockClassification,
         categoryElementaryFlow: mockCategorization,
@@ -470,8 +439,10 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
 
       getCPCClassification.mockReturnValue({ data: [] });
       genClass.mockReturnValue(mockData.category);
-      supabase.rpc.mockResolvedValue({ data: [] });
-      genClassZH.mockReturnValue(mockData.categoryElementaryFlow);
+      getILCDFlowCategorization.mockResolvedValue({
+        data: mockData.categoryElementaryFlow,
+        success: true,
+      });
 
       const result = await getCachedFlowCategorizationAll('en');
 
@@ -532,32 +503,22 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
   });
 
   describe('Cache performance optimization scenarios', () => {
-    it('should avoid redundant database calls for same data across languages', async () => {
-      const mockData = [{ '@id': 'cat1', '@name': 'Category 1' }];
-      const mockDataZH = [{ '@id': 'cat1', '@name': '分类1' }];
-
-      supabase.rpc
-        .mockResolvedValueOnce({ data: mockData })
-        .mockResolvedValueOnce({ data: mockDataZH });
-      genClassZH.mockReturnValue([]);
+    it('should cache combined flow reference data independently by language', async () => {
+      getCPCClassification.mockReturnValue({ data: [{ '@id': 'cat1', '@name': 'Category 1' }] });
+      genClass.mockReturnValue([{ id: 'cat1', label: 'Category 1' }]);
+      getILCDFlowCategorization.mockResolvedValue({ data: [], success: true });
 
       // Fetch for English
       await ilcdCache.getILCDFlowCategorizationAll('en');
-      const enCalls = supabase.rpc.mock.calls.length;
+      const enCalls = getILCDFlowCategorization.mock.calls.length;
 
       // Fetch for Chinese
       await ilcdCache.getILCDFlowCategorizationAll('zh');
-      const zhCalls = supabase.rpc.mock.calls.length - enCalls;
+      const zhCalls = getILCDFlowCategorization.mock.calls.length - enCalls;
 
-      // Verify independent caching
+      // Direct flow categorization requests should not share the deprecated in-memory cache.
       expect(enCalls).toBe(1);
-      expect(zhCalls).toBe(2); // Base + ZH versions
-
-      // Subsequent calls should use cache
-      jest.clearAllMocks();
-      await ilcdCache.getILCDFlowCategorizationAll('en');
-      await ilcdCache.getILCDFlowCategorizationAll('zh');
-      expect(supabase.rpc).not.toHaveBeenCalled();
+      expect(zhCalls).toBe(1);
     });
 
     it('should cache with appropriate granularity for location data', async () => {
