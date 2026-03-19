@@ -334,55 +334,108 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
   });
 
   describe('getILCDLocationAll', () => {
-    it('should fetch all locations in English', async () => {
-      const mockLocations = [{ file_name: 'ILCDLocations', location: [] }];
-      const mockSelect = jest.fn().mockReturnThis();
-      const mockEq = jest.fn().mockResolvedValue({ data: mockLocations });
-
-      supabase.from.mockReturnValue({
-        select: mockSelect.mockReturnValue({
-          eq: mockEq,
-        }),
+    it('should fetch all locations in English from ILCD gzip cache', async () => {
+      const mockLocations = [
+        { '@value': 'US', '#text': 'United States' },
+        { '@value': 'CN', '#text': 'China' },
+      ];
+      getCachedOrFetchIlcdFileData.mockResolvedValue({
+        ILCDLocations: {
+          location: mockLocations,
+        },
       });
 
       const result = await getILCDLocationAll('en');
 
-      expect(supabase.from).toHaveBeenCalledWith('ilcd');
-      expect(mockEq).toHaveBeenCalledWith('file_name', 'ILCDLocations');
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenCalledWith('ILCDLocations.min.json.gz');
       expect(result).toEqual({
-        data: mockLocations,
+        data: [{ file_name: 'ILCDLocations', location: mockLocations }],
         success: true,
       });
     });
 
-    it('should fetch all locations in Chinese', async () => {
-      const mockLocations = [{ file_name: 'ILCDLocations_zh', location: [] }];
-      const mockSelect = jest.fn().mockReturnThis();
-      const mockEq = jest.fn().mockResolvedValue({ data: mockLocations });
-
-      supabase.from.mockReturnValue({
-        select: mockSelect.mockReturnValue({
-          eq: mockEq,
-        }),
+    it('should fetch all locations in Chinese from ILCD gzip cache', async () => {
+      const mockLocations = [{ '@value': 'CN', '#text': '中国' }];
+      getCachedOrFetchIlcdFileData.mockResolvedValue({
+        ILCDLocations: {
+          location: mockLocations,
+        },
       });
 
       const result = await getILCDLocationAll('zh');
 
-      expect(mockEq).toHaveBeenCalledWith('file_name', 'ILCDLocations_zh');
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenCalledWith('ILCDLocations_zh.min.json.gz');
+      expect(result).toEqual({
+        data: [{ file_name: 'ILCDLocations_zh', location: mockLocations }],
+        success: true,
+      });
       expect(result.success).toBe(true);
     });
 
-    it('should handle null data gracefully', async () => {
-      const mockSelect = jest.fn().mockReturnThis();
-      const mockEq = jest.fn().mockResolvedValue({ data: null });
-
-      supabase.from.mockReturnValue({
-        select: mockSelect.mockReturnValue({
-          eq: mockEq,
-        }),
-      });
+    it('should handle missing local data gracefully', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      getCachedOrFetchIlcdFileData.mockResolvedValue(null);
 
       const result = await getILCDLocationAll('en');
+
+      expect(result).toEqual({
+        data: [],
+        success: false,
+      });
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('getILCDLocationByValues', () => {
+    it('should fetch locations by values in English from ILCD gzip cache', async () => {
+      getCachedOrFetchIlcdFileData.mockResolvedValue({
+        ILCDLocations: {
+          location: [
+            { '@value': 'US', '#text': 'United States' },
+            { '@value': 'CN', '#text': 'China' },
+          ],
+        },
+      });
+
+      const result = await getILCDLocationByValues('en', ['US', 'CN']);
+
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenCalledWith('ILCDLocations.min.json.gz');
+      expect(result).toEqual({
+        data: [
+          { '@value': 'US', '#text': 'United States' },
+          { '@value': 'CN', '#text': 'China' },
+        ],
+        success: true,
+      });
+    });
+
+    it('should fetch locations by values in Chinese from ILCD gzip cache', async () => {
+      const mockData = [{ '@value': 'CN', '#text': '中国' }];
+      getCachedOrFetchIlcdFileData.mockResolvedValue({
+        ILCDLocations: {
+          location: [mockData[0], { '@value': 'US', '#text': '美国' }],
+        },
+      });
+
+      const result = await getILCDLocationByValues('zh', ['CN']);
+
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenCalledWith('ILCDLocations_zh.min.json.gz');
+      expect(result).toEqual({
+        data: mockData,
+        success: true,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should return empty array when get_values is empty', async () => {
+      getCachedOrFetchIlcdFileData.mockResolvedValue({
+        ILCDLocations: {
+          location: [{ '@value': 'CN', '#text': 'China' }],
+        },
+      });
+
+      const result = await getILCDLocationByValues('en', []);
 
       expect(result).toEqual({
         data: [],
@@ -391,48 +444,16 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
     });
   });
 
-  describe('getILCDLocationByValues', () => {
-    it('should fetch locations by values in English', async () => {
-      const mockData = [{ '@value': 'US', '#text': 'United States' }];
-      supabase.rpc.mockResolvedValue({ data: mockData });
-
-      const result = await getILCDLocationByValues('en', ['US', 'CN']);
-
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_location_get', {
-        this_file_name: 'ILCDLocations',
-        get_values: ['US', 'CN'],
-      });
-      expect(result).toEqual({
-        data: mockData,
-        success: true,
-      });
-    });
-
-    it('should fetch locations by values in Chinese', async () => {
-      const mockData = [{ '@value': 'CN', '#text': '中国' }];
-      supabase.rpc.mockResolvedValue({ data: mockData });
-
-      const result = await getILCDLocationByValues('zh', ['CN']);
-
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_location_get', {
-        this_file_name: 'ILCDLocations_zh',
-        get_values: ['CN'],
-      });
-      expect(result.success).toBe(true);
-    });
-  });
-
   describe('getILCDLocationByValue', () => {
     it('should format location with description when available', async () => {
-      const mockData = [{ '@value': 'US', '#text': 'United States' }];
-      supabase.rpc.mockResolvedValue({ data: mockData });
+      getCachedOrFetchIlcdFileData.mockResolvedValue({
+        ILCDLocations: {
+          location: [{ '@value': 'US', '#text': 'United States' }],
+        },
+      });
 
       const result = await getILCDLocationByValue('en', 'US');
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_location_get', {
-        this_file_name: 'ILCDLocations',
-        get_values: ['US'],
-      });
       expect(result).toEqual({
         data: 'US (United States)',
         success: true,
@@ -440,8 +461,11 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
     });
 
     it('should return code only when description not available', async () => {
-      const mockData = [{ '@value': 'XX' }];
-      supabase.rpc.mockResolvedValue({ data: mockData });
+      getCachedOrFetchIlcdFileData.mockResolvedValue({
+        ILCDLocations: {
+          location: [{ '@value': 'XX' }],
+        },
+      });
 
       const result = await getILCDLocationByValue('en', 'XX');
 
@@ -452,7 +476,11 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
     });
 
     it('should handle empty result array', async () => {
-      supabase.rpc.mockResolvedValue({ data: [] });
+      getCachedOrFetchIlcdFileData.mockResolvedValue({
+        ILCDLocations: {
+          location: [],
+        },
+      });
 
       const result = await getILCDLocationByValue('en', 'UNKNOWN');
 
@@ -463,15 +491,15 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
     });
 
     it('should use Chinese file for Chinese language', async () => {
-      const mockData = [{ '@value': 'CN', '#text': '中国' }];
-      supabase.rpc.mockResolvedValue({ data: mockData });
+      getCachedOrFetchIlcdFileData.mockResolvedValue({
+        ILCDLocations: {
+          location: [{ '@value': 'CN', '#text': '中国' }],
+        },
+      });
 
       const result = await getILCDLocationByValue('zh', 'CN');
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_location_get', {
-        this_file_name: 'ILCDLocations_zh',
-        get_values: ['CN'],
-      });
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenCalledWith('ILCDLocations_zh.min.json.gz');
       expect(result.data).toBe('CN (中国)');
     });
   });

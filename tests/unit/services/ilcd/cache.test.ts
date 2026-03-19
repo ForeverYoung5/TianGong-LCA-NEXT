@@ -41,6 +41,7 @@ jest.mock('@/services/processes/classification/api', () => ({
 
 jest.mock('@/services/ilcd/api', () => ({
   getILCDFlowCategorization: jest.fn(),
+  getILCDLocationEntries: jest.fn(),
 }));
 
 jest.mock('@/services/ilcd/util', () => ({
@@ -56,6 +57,7 @@ const { getISICClassification, getISICClassificationZH } = jest.requireMock(
   '@/services/processes/classification/api',
 );
 const { getILCDFlowCategorization } = jest.requireMock('@/services/ilcd/api');
+const { getILCDLocationEntries } = jest.requireMock('@/services/ilcd/api');
 const { genClass, genClassZH } = jest.requireMock('@/services/ilcd/util');
 
 describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
@@ -281,13 +283,13 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
     it('should return empty array for empty input', async () => {
       const result = await ilcdCache.getILCDLocationByValues('en', []);
       expect(result).toEqual([]);
-      expect(supabase.rpc).not.toHaveBeenCalled();
+      expect(getILCDLocationEntries).not.toHaveBeenCalled();
     });
 
     it('should return empty array for null input', async () => {
       const result = await ilcdCache.getILCDLocationByValues('en', null as any);
       expect(result).toEqual([]);
-      expect(supabase.rpc).not.toHaveBeenCalled();
+      expect(getILCDLocationEntries).not.toHaveBeenCalled();
     });
 
     it('should filter out null and undefined values', async () => {
@@ -296,7 +298,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
         { '@value': 'US', '#text': 'United States' },
       ];
 
-      supabase.rpc.mockResolvedValue({ data: mockLocations });
+      getILCDLocationEntries.mockResolvedValue(mockLocations);
 
       const result = await ilcdCache.getILCDLocationByValues('en', [
         'CN',
@@ -305,10 +307,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
         undefined as any,
       ]);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_location_get', {
-        this_file_name: 'ILCDLocations',
-        get_values: ['CN', 'US'],
-      });
+      expect(getILCDLocationEntries).toHaveBeenCalledWith('en', ['CN', 'US']);
       expect(result).toEqual(mockLocations);
     });
 
@@ -318,14 +317,11 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
         { '@value': 'US', '#text': 'United States' },
       ];
 
-      supabase.rpc.mockResolvedValue({ data: mockLocations });
+      getILCDLocationEntries.mockResolvedValue(mockLocations);
 
       const result = await ilcdCache.getILCDLocationByValues('en', ['CN', 'US']);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_location_get', {
-        this_file_name: 'ILCDLocations',
-        get_values: ['CN', 'US'],
-      });
+      expect(getILCDLocationEntries).toHaveBeenCalledWith('en', ['CN', 'US']);
       expect(result).toEqual(mockLocations);
     });
 
@@ -335,19 +331,16 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
         { '@value': 'US', '#text': '美国' },
       ];
 
-      supabase.rpc.mockResolvedValue({ data: mockLocations });
+      getILCDLocationEntries.mockResolvedValue(mockLocations);
 
       const result = await ilcdCache.getILCDLocationByValues('zh', ['CN', 'US']);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_location_get', {
-        this_file_name: 'ILCDLocations_zh',
-        get_values: ['CN', 'US'],
-      });
+      expect(getILCDLocationEntries).toHaveBeenCalledWith('zh', ['CN', 'US']);
       expect(result).toEqual(mockLocations);
     });
 
-    it('should handle null data from database gracefully', async () => {
-      supabase.rpc.mockResolvedValue({ data: null });
+    it('should handle null local data gracefully', async () => {
+      getILCDLocationEntries.mockResolvedValue(null);
 
       const result = await ilcdCache.getILCDLocationByValues('en', ['CN']);
 
@@ -357,22 +350,22 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
     it('should return cached data on second call with same parameters', async () => {
       const mockLocations = [{ '@value': 'CN', '#text': 'China' }];
 
-      supabase.rpc.mockResolvedValue({ data: mockLocations });
+      getILCDLocationEntries.mockResolvedValue(mockLocations);
 
       // First call - cache miss
       const result1 = await ilcdCache.getILCDLocationByValues('en', ['CN', 'US']);
-      expect(supabase.rpc).toHaveBeenCalledTimes(1);
+      expect(getILCDLocationEntries).toHaveBeenCalledTimes(1);
 
       // Second call - cache hit (order matters due to sorting)
       const result2 = await ilcdCache.getILCDLocationByValues('en', ['US', 'CN']);
-      expect(supabase.rpc).toHaveBeenCalledTimes(1); // No additional calls
+      expect(getILCDLocationEntries).toHaveBeenCalledTimes(1); // No additional calls
       expect(result2).toEqual(result1);
     });
 
     it('should handle different order of location values (cache key sorting)', async () => {
       const mockLocations = [{ '@value': 'CN', '#text': 'China' }];
 
-      supabase.rpc.mockResolvedValue({ data: mockLocations });
+      getILCDLocationEntries.mockResolvedValue(mockLocations);
 
       // First call with order: CN, US
       await ilcdCache.getILCDLocationByValues('en', ['CN', 'US']);
@@ -380,7 +373,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
       // Second call with order: US, CN - should hit cache
       await ilcdCache.getILCDLocationByValues('en', ['US', 'CN']);
 
-      expect(supabase.rpc).toHaveBeenCalledTimes(1); // Only one DB call
+      expect(getILCDLocationEntries).toHaveBeenCalledTimes(1); // Only one local data fetch
     });
   });
 
@@ -452,14 +445,11 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
     it('getCachedLocationData should call getILCDLocationByValues', async () => {
       const mockLocations = [{ '@value': 'CN', '#text': 'China' }];
 
-      supabase.rpc.mockResolvedValue({ data: mockLocations });
+      getILCDLocationEntries.mockResolvedValue(mockLocations);
 
       const result = await getCachedLocationData('en', ['CN']);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_location_get', {
-        this_file_name: 'ILCDLocations',
-        get_values: ['CN'],
-      });
+      expect(getILCDLocationEntries).toHaveBeenCalledWith('en', ['CN']);
       expect(result).toEqual(mockLocations);
     });
   });
@@ -522,7 +512,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
     });
 
     it('should cache with appropriate granularity for location data', async () => {
-      supabase.rpc.mockResolvedValue({ data: [{ '@value': 'CN', '#text': 'China' }] });
+      getILCDLocationEntries.mockResolvedValue([{ '@value': 'CN', '#text': 'China' }]);
 
       // Different location sets should have separate cache entries
       await ilcdCache.getILCDLocationByValues('en', ['CN']);
@@ -530,7 +520,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
       await ilcdCache.getILCDLocationByValues('en', ['CN', 'US']);
 
       // Each should have triggered a database call
-      expect(supabase.rpc).toHaveBeenCalledTimes(3);
+      expect(getILCDLocationEntries).toHaveBeenCalledTimes(3);
     });
   });
 });

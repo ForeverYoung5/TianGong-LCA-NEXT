@@ -7,10 +7,12 @@ import {
 } from '@/services/ilcdData/util';
 import { useEffect } from 'react';
 
-const ILCD_CACHE_VERSION = '1.0.0';
+const ILCD_CACHE_VERSION = '1.1.0';
 const ILCD_GZ_FILES = [
   'ILCDFlowCategorization.min.json.gz',
   'ILCDFlowCategorization_zh.min.json.gz',
+  'ILCDLocations.min.json.gz',
+  'ILCDLocations_zh.min.json.gz',
 ];
 
 const ILCDCacheMonitor = () => {
