@@ -1,17 +1,16 @@
 /**
  * ILCD Data Cache Layer
  *
- * Provides in-memory caching support for dynamic ILCD reference data.
- * Flow categorization is now sourced from the ILCD gzip cache managed by ILCDCacheMonitor.
+ * Provides in-memory caching for ILCD reference data loaded by the local ILCD API helpers.
+ * The cache layer does not fetch classification data from remote RPC endpoints.
  */
 
-import { supabase } from '@/services/supabase';
-import { getCPCClassification, getCPCClassificationZH } from '../flows/classification/api';
 import type { Classification } from '../general/data';
-import { getISICClassification, getISICClassificationZH } from '../processes/classification/api';
-import { getILCDFlowCategorization, getILCDLocationEntries } from './api';
-import type { ILCDCategoryNode } from './util';
-import { genClass, genClassZH } from './util';
+import {
+  getILCDClassification as fetchILCDClassification,
+  getILCDFlowCategorization,
+  getILCDLocationEntries,
+} from './api';
 
 // In-memory cache
 interface CacheEntry<T> {
@@ -69,13 +68,13 @@ class ILCDCache {
     keysToDelete.forEach((key) => this.cache.delete(key));
   }
 
-  // Cache method for ILCD Flow Categorization
+  // Cache wrapper for ILCD flow categorization loaded from local ILCD resources.
   async getILCDFlowCategorizationAll(lang: string): Promise<Classification[]> {
     const result = await getILCDFlowCategorization(lang, ['all']);
     return result.data;
   }
 
-  // Cache method for ILCD Classification
+  // Cache wrapper for ILCD classification trees resolved by local ILCD data helpers.
   async getILCDClassification(
     categoryType: string,
     lang: string,
@@ -95,57 +94,8 @@ class ILCDCache {
     }
 
     console.log('[Cache Miss] ILCD Classification:', categoryType, lang);
-
-    let result: { data: ILCDCategoryNode[] | null } | null = null;
-
-    if (categoryType === 'Process' || categoryType === 'LifeCycleModel') {
-      result = getISICClassification(getValues);
-    } else if (categoryType === 'Flow') {
-      result = getCPCClassification(getValues);
-    } else {
-      result = await supabase.rpc('ilcd_classification_get', {
-        this_file_name: 'ILCDClassification',
-        category_type: categoryType,
-        get_values: getValues,
-      });
-    }
-
-    const resultData = result?.data ?? [];
-    let newDatas: Classification[];
-    let resultZH: { data: ILCDCategoryNode[] | null } | null = null;
-
-    if (lang === 'zh') {
-      let getIds: string[] = [];
-      if (getValues.includes('all')) {
-        getIds = ['all'];
-      } else {
-        getIds = resultData.map((item: ILCDCategoryNode) => item['@id']);
-      }
-
-      if (categoryType === 'Process' || categoryType === 'LifeCycleModel') {
-        resultZH = getISICClassificationZH(getIds);
-      } else if (categoryType === 'Flow') {
-        resultZH = getCPCClassificationZH(getIds);
-      } else {
-        const categoryTypeZHMap: Record<string, string> = {
-          Flow: '流',
-          Process: '过程',
-          LifeCycleModel: '生命周期模型',
-          Contact: '联系信息',
-          Source: '来源',
-          FlowProperty: '流属性',
-          UnitGroup: '单位组',
-        };
-        resultZH = await supabase.rpc('ilcd_classification_get', {
-          this_file_name: 'ILCDClassification_zh',
-          category_type: categoryTypeZHMap[categoryType] || categoryType,
-          get_values: getIds,
-        });
-      }
-      newDatas = genClassZH(resultData, resultZH?.data ?? null);
-    } else {
-      newDatas = genClass(resultData);
-    }
+    const result = await fetchILCDClassification(categoryType, lang, getValues);
+    const newDatas = result.data;
 
     // Cache with default TTL (5 minutes)
     this.set(cacheKey, newDatas, this.defaultTTL);
@@ -153,7 +103,7 @@ class ILCDCache {
     return newDatas;
   }
 
-  // Cache method for ILCD Location
+  // Cache wrapper for ILCD location entries loaded from local ILCD resources.
   async getILCDLocationByValues(
     lang: string,
     get_values: string[],

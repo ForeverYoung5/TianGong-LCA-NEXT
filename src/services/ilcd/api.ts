@@ -1,4 +1,3 @@
-import { supabase } from '@/services/supabase';
 import { getCPCClassification, getCPCClassificationZH } from '../flows/classification/api';
 import type { Classification } from '../general/data';
 import { getCachedOrFetchIlcdFileData } from '../ilcdData/util';
@@ -11,6 +10,17 @@ type ILCDFlowCategorizationDocument = {
     categories?: {
       category?: ILCDCategoryNode[] | ILCDCategoryNode | null;
     } | null;
+  } | null;
+};
+
+type ILCDClassificationGroup = {
+  '@dataType'?: string;
+  category?: ILCDCategoryNode[] | ILCDCategoryNode | null;
+};
+
+type ILCDClassificationDocument = {
+  CategorySystem?: {
+    categories?: ILCDClassificationGroup[] | ILCDClassificationGroup | null;
   } | null;
 };
 
@@ -30,6 +40,11 @@ const ILCD_FLOW_CATEGORIZATION_FILES = {
   zh: 'ILCDFlowCategorization_zh.min.json.gz',
 } as const;
 
+const ILCD_CLASSIFICATION_FILES = {
+  en: 'ILCDClassification.min.json.gz',
+  zh: 'ILCDClassification_zh.min.json.gz',
+} as const;
+
 const ILCD_LOCATION_FILES = {
   en: 'ILCDLocations.min.json.gz',
   zh: 'ILCDLocations_zh.min.json.gz',
@@ -47,6 +62,18 @@ function normalizeFlowCategorizationNodes(
   }
   if (category) {
     return [category];
+  }
+  return [];
+}
+
+function normalizeClassificationGroups(
+  categories?: ILCDClassificationGroup[] | ILCDClassificationGroup | null,
+): ILCDClassificationGroup[] {
+  if (Array.isArray(categories)) {
+    return categories;
+  }
+  if (categories) {
+    return [categories];
   }
   return [];
 }
@@ -98,6 +125,45 @@ function filterFlowCategorizationNodes(
     .filter((node): node is ILCDCategoryNode => node !== null);
 }
 
+function filterClassificationNodes(
+  nodes: ILCDCategoryNode[],
+  getValues: string[],
+): ILCDCategoryNode[] {
+  if (getValues.includes('all')) {
+    return nodes;
+  }
+
+  const filters = new Set(getValues.filter(Boolean));
+  if (filters.size === 0) {
+    return [];
+  }
+
+  const filterNode = (node: ILCDCategoryNode): ILCDCategoryNode | null => {
+    const childNodes = Array.isArray(node.category) ? node.category : [];
+    const filteredChildren = childNodes
+      .map((child) => filterNode(child))
+      .filter((child): child is ILCDCategoryNode => child !== null);
+    const isMatched = filters.has(node['@id']) || filters.has(node['@name']);
+
+    if (isMatched) {
+      return node;
+    }
+
+    if (filteredChildren.length > 0) {
+      return {
+        ...node,
+        category: filteredChildren,
+      };
+    }
+
+    return null;
+  };
+
+  return nodes
+    .map((node) => filterNode(node))
+    .filter((node): node is ILCDCategoryNode => node !== null);
+}
+
 async function getFlowCategorizationNodes(lang: 'en' | 'zh'): Promise<ILCDCategoryNode[]> {
   const fileName = ILCD_FLOW_CATEGORIZATION_FILES[lang];
   const document = await getCachedOrFetchIlcdFileData<ILCDFlowCategorizationDocument>(fileName);
@@ -107,6 +173,24 @@ async function getFlowCategorizationNodes(lang: 'en' | 'zh'): Promise<ILCDCatego
   }
 
   return normalizeFlowCategorizationNodes(document.CategorySystem?.categories?.category);
+}
+
+async function getClassificationNodesByType(
+  categoryType: string,
+  lang: 'en' | 'zh',
+): Promise<ILCDCategoryNode[]> {
+  const fileName = ILCD_CLASSIFICATION_FILES[lang];
+  const document = await getCachedOrFetchIlcdFileData<ILCDClassificationDocument>(fileName);
+
+  if (!document) {
+    throw new Error(`Failed to load ILCD classification data from ${fileName}`);
+  }
+
+  const group = normalizeClassificationGroups(document.CategorySystem?.categories).find(
+    (item) => item['@dataType'] === categoryType,
+  );
+
+  return normalizeFlowCategorizationNodes(group?.category);
 }
 
 async function getLocationNodes(lang: 'en' | 'zh'): Promise<ILCDLocationNode[]> {
@@ -148,8 +232,6 @@ export async function getILCDClassification(
   getValues: string[],
 ): Promise<{ data: Classification[]; success: boolean }> {
   try {
-    const thisCategoryType = categoryTypeOptions.find((i) => i.en === categoryType);
-
     let result = null;
 
     if (categoryType === 'Process' || categoryType === 'LifeCycleModel') {
@@ -157,32 +239,35 @@ export async function getILCDClassification(
     } else if (categoryType === 'Flow') {
       result = getCPCClassification(getValues);
     } else {
-      result = await supabase.rpc('ilcd_classification_get', {
-        this_file_name: 'ILCDClassification',
-        category_type: categoryType,
-        get_values: getValues,
-      });
+      result = {
+        data: filterClassificationNodes(
+          await getClassificationNodesByType(categoryType, 'en'),
+          getValues,
+        ),
+      };
     }
 
     let newDatas: Classification[] = [];
     let resultZH = null;
     if (lang === 'zh') {
-      let getIds = [];
+      let getIds: string[] = [];
       if (getValues.includes('all')) {
         getIds = ['all'];
       } else {
-        getIds = result?.data?.map((i: any) => i['@id']);
+        getIds = (result?.data ?? []).map((item: ILCDCategoryNode) => item['@id']);
       }
       if (categoryType === 'Process' || categoryType === 'LifeCycleModel') {
         resultZH = getISICClassificationZH(getIds);
       } else if (categoryType === 'Flow') {
         resultZH = getCPCClassificationZH(getIds);
       } else {
-        resultZH = await supabase.rpc('ilcd_classification_get', {
-          this_file_name: 'ILCDClassification_zh',
-          category_type: thisCategoryType?.zh,
-          get_values: getIds,
-        });
+        const categoryTypeZH = categoryTypeOptions.find((item) => item.en === categoryType)?.zh;
+        resultZH = {
+          data: filterClassificationNodes(
+            await getClassificationNodesByType(categoryTypeZH ?? categoryType, 'zh'),
+            getIds,
+          ),
+        };
       }
       newDatas = genClassZH(result?.data, resultZH?.data);
     } else {

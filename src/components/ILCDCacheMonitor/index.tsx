@@ -9,6 +9,8 @@ import { useEffect } from 'react';
 
 const ILCD_CACHE_VERSION = '1.1.0';
 const ILCD_GZ_FILES = [
+  'ILCDClassification.min.json.gz',
+  'ILCDClassification_zh.min.json.gz',
   'ILCDFlowCategorization.min.json.gz',
   'ILCDFlowCategorization_zh.min.json.gz',
   'ILCDLocations.min.json.gz',

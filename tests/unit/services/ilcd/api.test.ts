@@ -21,13 +21,6 @@ import {
 } from '@/services/ilcd/api';
 
 // Mock dependencies
-jest.mock('@/services/supabase', () => ({
-  supabase: {
-    rpc: jest.fn(),
-    from: jest.fn(),
-  },
-}));
-
 jest.mock('@/services/flows/classification/api', () => ({
   getCPCClassification: jest.fn(),
   getCPCClassificationZH: jest.fn(),
@@ -47,7 +40,6 @@ jest.mock('@/services/ilcd/util', () => ({
   genClassZH: jest.fn(),
 }));
 
-const { supabase } = jest.requireMock('@/services/supabase');
 const { getCPCClassification, getCPCClassificationZH } = jest.requireMock(
   '@/services/flows/classification/api',
 );
@@ -62,6 +54,17 @@ const createFlowCategorizationDocument = (categories: any[]) => ({
     categories: {
       category: categories,
     },
+  },
+});
+
+const createClassificationDocument = (dataType: string, categories: any[]) => ({
+  CategorySystem: {
+    categories: [
+      {
+        '@dataType': dataType,
+        category: categories,
+      },
+    ],
   },
 });
 
@@ -130,42 +133,39 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should handle other category types with RPC call', async () => {
+    it('should handle other category types with local ILCD classification data', async () => {
       const mockData = [{ '@id': 'cat1', '@name': 'Category 1' }];
-      supabase.rpc.mockResolvedValue({ data: mockData });
+      getCachedOrFetchIlcdFileData.mockResolvedValue(
+        createClassificationDocument('FlowProperty', mockData),
+      );
       genClass.mockReturnValue([{ id: 'cat1', label: 'Category 1' }]);
 
       const result = await getILCDClassification('FlowProperty', 'en', ['all']);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_classification_get', {
-        this_file_name: 'ILCDClassification',
-        category_type: 'FlowProperty',
-        get_values: ['all'],
-      });
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenCalledWith('ILCDClassification.min.json.gz');
+      expect(genClass).toHaveBeenCalledWith(mockData);
       expect(result.success).toBe(true);
     });
 
-    it('should handle other category types with Chinese via RPC', async () => {
+    it('should handle other category types with Chinese via local ILCD classification data', async () => {
       const mockData = [{ '@id': 'cat1', '@name': 'Category 1' }];
       const mockDataZH = [{ '@id': 'cat1', '@name': '分类 1' }];
-      supabase.rpc
-        .mockResolvedValueOnce({ data: mockData })
-        .mockResolvedValueOnce({ data: mockDataZH });
+      getCachedOrFetchIlcdFileData
+        .mockResolvedValueOnce(createClassificationDocument('Contact', mockData))
+        .mockResolvedValueOnce(createClassificationDocument('联系信息', mockDataZH));
       genClassZH.mockReturnValue([{ id: 'cat1', label: '分类 1' }]);
 
       const result = await getILCDClassification('Contact', 'zh', ['all']);
 
-      expect(supabase.rpc).toHaveBeenCalledTimes(2);
-      expect(supabase.rpc).toHaveBeenNthCalledWith(1, 'ilcd_classification_get', {
-        this_file_name: 'ILCDClassification',
-        category_type: 'Contact',
-        get_values: ['all'],
-      });
-      expect(supabase.rpc).toHaveBeenNthCalledWith(2, 'ilcd_classification_get', {
-        this_file_name: 'ILCDClassification_zh',
-        category_type: '联系信息',
-        get_values: ['all'],
-      });
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenNthCalledWith(
+        1,
+        'ILCDClassification.min.json.gz',
+      );
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenNthCalledWith(
+        2,
+        'ILCDClassification_zh.min.json.gz',
+      );
+      expect(genClassZH).toHaveBeenCalledWith(mockData, mockDataZH);
       expect(result.success).toBe(true);
     });
 
@@ -182,7 +182,7 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
 
     it('should handle errors gracefully', async () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      supabase.rpc.mockRejectedValue(new Error('Database error'));
+      getCachedOrFetchIlcdFileData.mockRejectedValue(new Error('Cache read error'));
 
       const result = await getILCDClassification('Source', 'en', ['all']);
 
@@ -203,18 +203,18 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
         { '@id': 'id1', '@name': '名称 1' },
         { '@id': 'id2', '@name': '名称 2' },
       ];
-      supabase.rpc
-        .mockResolvedValueOnce({ data: mockData })
-        .mockResolvedValueOnce({ data: mockDataZH });
+      getCachedOrFetchIlcdFileData
+        .mockResolvedValueOnce(createClassificationDocument('UnitGroup', mockData))
+        .mockResolvedValueOnce(createClassificationDocument('单位组', mockDataZH));
       genClassZH.mockReturnValue([]);
 
       await getILCDClassification('UnitGroup', 'zh', ['id1', 'id2']);
 
-      expect(supabase.rpc).toHaveBeenNthCalledWith(2, 'ilcd_classification_get', {
-        this_file_name: 'ILCDClassification_zh',
-        category_type: '单位组',
-        get_values: ['id1', 'id2'],
-      });
+      expect(getCachedOrFetchIlcdFileData).toHaveBeenNthCalledWith(
+        2,
+        'ILCDClassification_zh.min.json.gz',
+      );
+      expect(genClassZH).toHaveBeenCalledWith(mockData, mockDataZH);
     });
   });
 
@@ -506,7 +506,7 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
 
   describe('Edge cases and error scenarios', () => {
     it('should handle unknown category types', async () => {
-      supabase.rpc.mockResolvedValue({ data: [] });
+      getCachedOrFetchIlcdFileData.mockResolvedValue(createClassificationDocument('Contact', []));
       genClass.mockReturnValue([]);
 
       const result = await getILCDClassification('UnknownType', 'en', ['all']);
@@ -516,7 +516,7 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
     });
 
     it('should handle empty get_values array', async () => {
-      supabase.rpc.mockResolvedValue({ data: [] });
+      getCachedOrFetchIlcdFileData.mockResolvedValue(createClassificationDocument('Source', []));
       genClass.mockReturnValue([]);
 
       const result = await getILCDClassification('Source', 'en', []);
@@ -524,14 +524,16 @@ describe('ILCD API Service (src/services/ilcd/api.ts)', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should handle RPC returning null data', async () => {
-      supabase.rpc.mockResolvedValue({ data: null });
-      genClass.mockReturnValue(null);
+    it('should handle empty local classification results', async () => {
+      getCachedOrFetchIlcdFileData.mockResolvedValue(
+        createClassificationDocument('LCIAMethod', []),
+      );
+      genClass.mockReturnValue([]);
 
       const result = await getILCDClassification('LCIAMethod', 'en', ['all']);
 
       expect(result).toEqual({
-        data: null,
+        data: [],
         success: true,
       });
     });

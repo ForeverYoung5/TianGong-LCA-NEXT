@@ -39,12 +39,11 @@ jest.mock('antd', () => {
   );
   const Form = ({ children }: any) => <form>{children}</form>;
   Form.Item = ({ label, children, getValueProps }: any) => {
-    const content = React.Children.only(children);
-    if (content && React.isValidElement(content) && getValueProps) {
+    if (children && React.isValidElement(children) && getValueProps) {
       return (
         <label>
           <span>{toText(label)}</span>
-          {React.cloneElement(content, getValueProps(content.props.value))}
+          {React.cloneElement(children, getValueProps(children.props.value))}
         </label>
       );
     }

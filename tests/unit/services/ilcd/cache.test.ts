@@ -23,42 +23,14 @@ import {
 } from '@/services/ilcd/cache';
 
 // Mock dependencies
-jest.mock('@/services/supabase', () => ({
-  supabase: {
-    rpc: jest.fn(),
-  },
-}));
-
-jest.mock('@/services/flows/classification/api', () => ({
-  getCPCClassification: jest.fn(),
-  getCPCClassificationZH: jest.fn(),
-}));
-
-jest.mock('@/services/processes/classification/api', () => ({
-  getISICClassification: jest.fn(),
-  getISICClassificationZH: jest.fn(),
-}));
-
 jest.mock('@/services/ilcd/api', () => ({
+  getILCDClassification: jest.fn(),
   getILCDFlowCategorization: jest.fn(),
   getILCDLocationEntries: jest.fn(),
 }));
-
-jest.mock('@/services/ilcd/util', () => ({
-  genClass: jest.fn(),
-  genClassZH: jest.fn(),
-}));
-
-const { supabase } = jest.requireMock('@/services/supabase');
-const { getCPCClassification, getCPCClassificationZH } = jest.requireMock(
-  '@/services/flows/classification/api',
-);
-const { getISICClassification, getISICClassificationZH } = jest.requireMock(
-  '@/services/processes/classification/api',
-);
+const { getILCDClassification } = jest.requireMock('@/services/ilcd/api');
 const { getILCDFlowCategorization } = jest.requireMock('@/services/ilcd/api');
 const { getILCDLocationEntries } = jest.requireMock('@/services/ilcd/api');
-const { genClass, genClassZH } = jest.requireMock('@/services/ilcd/util');
 
 describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
   beforeEach(() => {
@@ -169,113 +141,83 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
 
   describe('getILCDClassification', () => {
     it('should fetch and cache Process classification with English', async () => {
-      const mockData = [{ '@id': 'proc1', '@name': 'Process 1' }];
       const mockGenerated = [{ id: 'proc1', label: 'Process 1' }];
 
-      getISICClassification.mockReturnValue({ data: mockData });
-      genClass.mockReturnValue(mockGenerated);
+      getILCDClassification.mockResolvedValue({ data: mockGenerated, success: true });
 
       const result = await ilcdCache.getILCDClassification('Process', 'en', ['all']);
 
-      expect(getISICClassification).toHaveBeenCalledWith(['all']);
-      expect(genClass).toHaveBeenCalledWith(mockData);
+      expect(getILCDClassification).toHaveBeenCalledWith('Process', 'en', ['all']);
       expect(result).toEqual(mockGenerated);
     });
 
     it('should fetch and cache Process classification with Chinese', async () => {
-      const mockData = [{ '@id': 'proc1', '@name': 'Process 1' }];
-      const mockDataZH = [{ '@id': 'proc1', '@name': '过程1' }];
       const mockGenerated = [{ id: 'proc1', label: '过程1' }];
 
-      getISICClassification.mockReturnValue({ data: mockData });
-      getISICClassificationZH.mockReturnValue({ data: mockDataZH });
-      genClassZH.mockReturnValue(mockGenerated);
+      getILCDClassification.mockResolvedValue({ data: mockGenerated, success: true });
 
       const result = await ilcdCache.getILCDClassification('Process', 'zh', ['all']);
 
-      expect(getISICClassification).toHaveBeenCalledWith(['all']);
-      expect(getISICClassificationZH).toHaveBeenCalledWith(['all']);
-      expect(genClassZH).toHaveBeenCalledWith(mockData, mockDataZH);
+      expect(getILCDClassification).toHaveBeenCalledWith('Process', 'zh', ['all']);
       expect(result).toEqual(mockGenerated);
     });
 
     it('should fetch and cache Flow classification with English', async () => {
-      const mockData = [{ '@id': 'flow1', '@name': 'Flow 1' }];
       const mockGenerated = [{ id: 'flow1', label: 'Flow 1' }];
 
-      getCPCClassification.mockReturnValue({ data: mockData });
-      genClass.mockReturnValue(mockGenerated);
+      getILCDClassification.mockResolvedValue({ data: mockGenerated, success: true });
 
       const result = await ilcdCache.getILCDClassification('Flow', 'en', ['val1']);
 
-      expect(getCPCClassification).toHaveBeenCalledWith(['val1']);
-      expect(genClass).toHaveBeenCalledWith(mockData);
+      expect(getILCDClassification).toHaveBeenCalledWith('Flow', 'en', ['val1']);
       expect(result).toEqual(mockGenerated);
     });
 
     it('should fetch and cache Flow classification with Chinese', async () => {
-      const mockData = [{ '@id': 'flow1', '@name': 'Flow 1' }];
-      const mockDataZH = [{ '@id': 'flow1', '@name': '流1' }];
       const mockGenerated = [{ id: 'flow1', label: '流1' }];
 
-      getCPCClassification.mockReturnValue({ data: mockData });
-      getCPCClassificationZH.mockReturnValue({ data: mockDataZH });
-      genClassZH.mockReturnValue(mockGenerated);
+      getILCDClassification.mockResolvedValue({ data: mockGenerated, success: true });
 
       const result = await ilcdCache.getILCDClassification('Flow', 'zh', ['flow1']);
 
-      expect(getCPCClassification).toHaveBeenCalledWith(['flow1']);
-      expect(getCPCClassificationZH).toHaveBeenCalledWith(['flow1']);
-      expect(genClassZH).toHaveBeenCalledWith(mockData, mockDataZH);
+      expect(getILCDClassification).toHaveBeenCalledWith('Flow', 'zh', ['flow1']);
       expect(result).toEqual(mockGenerated);
     });
 
     it('should fetch and cache LifeCycleModel classification', async () => {
-      const mockData = [{ '@id': 'lcm1', '@name': 'LCM 1' }];
       const mockGenerated = [{ id: 'lcm1', label: 'LCM 1' }];
 
-      getISICClassification.mockReturnValue({ data: mockData });
-      genClass.mockReturnValue(mockGenerated);
+      getILCDClassification.mockResolvedValue({ data: mockGenerated, success: true });
 
       const result = await ilcdCache.getILCDClassification('LifeCycleModel', 'en', ['all']);
 
-      expect(getISICClassification).toHaveBeenCalledWith(['all']);
-      expect(genClass).toHaveBeenCalledWith(mockData);
+      expect(getILCDClassification).toHaveBeenCalledWith('LifeCycleModel', 'en', ['all']);
       expect(result).toEqual(mockGenerated);
     });
 
-    it('should use supabase RPC for other category types', async () => {
-      const mockData = [{ '@id': 'other1', '@name': 'Other 1' }];
+    it('should delegate other category types to ILCD API', async () => {
       const mockGenerated = [{ id: 'other1', label: 'Other 1' }];
 
-      supabase.rpc.mockResolvedValue({ data: mockData });
-      genClass.mockReturnValue(mockGenerated);
+      getILCDClassification.mockResolvedValue({ data: mockGenerated, success: true });
 
       const result = await ilcdCache.getILCDClassification('OtherType', 'en', ['val1']);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('ilcd_classification_get', {
-        this_file_name: 'ILCDClassification',
-        category_type: 'OtherType',
-        get_values: ['val1'],
-      });
-      expect(genClass).toHaveBeenCalledWith(mockData);
+      expect(getILCDClassification).toHaveBeenCalledWith('OtherType', 'en', ['val1']);
       expect(result).toEqual(mockGenerated);
     });
 
     it('should return cached data on subsequent calls with same parameters', async () => {
-      const mockData = [{ '@id': 'proc1', '@name': 'Process 1' }];
       const mockGenerated = [{ id: 'proc1', label: 'Process 1' }];
 
-      getISICClassification.mockReturnValue({ data: mockData });
-      genClass.mockReturnValue(mockGenerated);
+      getILCDClassification.mockResolvedValue({ data: mockGenerated, success: true });
 
       // First call
       await ilcdCache.getILCDClassification('Process', 'en', ['all']);
-      expect(getISICClassification).toHaveBeenCalledTimes(1);
+      expect(getILCDClassification).toHaveBeenCalledTimes(1);
 
       // Second call - should use cache
       await ilcdCache.getILCDClassification('Process', 'en', ['all']);
-      expect(getISICClassification).toHaveBeenCalledTimes(1); // No additional calls
+      expect(getILCDClassification).toHaveBeenCalledTimes(1); // No additional calls
     });
   });
 
@@ -382,11 +324,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
       const mockClassification = [{ id: 'class1', label: 'Classification 1' }];
       const mockCategorization = [{ id: 'cat1', label: 'Category 1' }];
 
-      // Mock classification
-      getCPCClassification.mockReturnValue({ data: [{ '@id': 'class1' }] });
-      genClass.mockReturnValue(mockClassification);
-
-      // Mock categorization
+      getILCDClassification.mockResolvedValue({ data: mockClassification, success: true });
       getILCDFlowCategorization.mockResolvedValue({ data: mockCategorization, success: true });
 
       const result = await ilcdCache.getFlowReferenceDataAll('en');
@@ -401,8 +339,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
       const mockClassification = [{ id: 'class1', label: 'Classification 1' }];
       const mockCategorization = [{ id: 'cat1', label: 'Category 1' }];
 
-      getCPCClassification.mockReturnValue({ data: [{ '@id': 'class1' }] });
-      genClass.mockReturnValue(mockClassification);
+      getILCDClassification.mockResolvedValue({ data: mockClassification, success: true });
       getILCDFlowCategorization.mockResolvedValue({ data: mockCategorization, success: true });
 
       // First call
@@ -414,7 +351,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
       // Second call - should use cache
       const result = await ilcdCache.getFlowReferenceDataAll('en');
 
-      expect(getCPCClassification).not.toHaveBeenCalled();
+      expect(getILCDClassification).not.toHaveBeenCalled();
       expect(getILCDFlowCategorization).not.toHaveBeenCalled();
       expect(result).toEqual({
         category: mockClassification,
@@ -430,8 +367,7 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
         categoryElementaryFlow: [{ id: 'ce1' }],
       };
 
-      getCPCClassification.mockReturnValue({ data: [] });
-      genClass.mockReturnValue(mockData.category);
+      getILCDClassification.mockResolvedValue({ data: mockData.category, success: true });
       getILCDFlowCategorization.mockResolvedValue({
         data: mockData.categoryElementaryFlow,
         success: true,
@@ -494,8 +430,10 @@ describe('ILCD Cache Service (src/services/ilcd/cache.ts)', () => {
 
   describe('Cache performance optimization scenarios', () => {
     it('should cache combined flow reference data independently by language', async () => {
-      getCPCClassification.mockReturnValue({ data: [{ '@id': 'cat1', '@name': 'Category 1' }] });
-      genClass.mockReturnValue([{ id: 'cat1', label: 'Category 1' }]);
+      getILCDClassification.mockResolvedValue({
+        data: [{ id: 'cat1', label: 'Category 1' }],
+        success: true,
+      });
       getILCDFlowCategorization.mockResolvedValue({ data: [], success: true });
 
       // Fetch for English

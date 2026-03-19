@@ -39,12 +39,11 @@ jest.mock('antd', () => {
   );
   const Form = ({ children }: any) => <form>{children}</form>;
   Form.Item = ({ label, children, getValueProps }: any) => {
-    const content = React.Children.only(children);
-    if (content && React.isValidElement(content) && getValueProps) {
+    if (children && React.isValidElement(children) && getValueProps) {
       return (
         <label>
           <span>{toText(label)}</span>
-          {React.cloneElement(content, getValueProps(content.props.value))}
+          {React.cloneElement(children, getValueProps(children.props.value))}
         </label>
       );
     }
@@ -311,7 +310,7 @@ describe('ContactSelectForm', () => {
     await waitFor(() =>
       expect(mockGetRefData).toHaveBeenCalledWith('contact-1', '1.0.0', 'contacts', ''),
     );
-    expect(screen.getByText('err-ref')).toBeInTheDocument();
+    expect(await screen.findByText('err-ref')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /update reference/i })).toBeInTheDocument();
     expect(screen.getByText('view contact-1:1.0.0')).toBeInTheDocument();
     expect(screen.queryByText('edit contact-1:1.0.0')).not.toBeInTheDocument();
