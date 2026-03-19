@@ -1,15 +1,15 @@
 /**
- * Tests for ILCD utility functions
- * Path: src/services/ilcd/util.ts
+ * Tests for classification utility functions
+ * Path: src/services/classifications/util.ts
  *
  * Coverage focuses on:
  * - genClass: Used in various components for classification tree generation
  * - genClassZH: Used for Chinese language classification tree generation
  */
 
-import { genClass, genClassZH } from '@/services/ilcd/util';
+import { genClass, genClassZH } from '@/services/classifications/util';
 
-describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
+describe('Classification Utility Functions (src/services/classifications/util.ts)', () => {
   describe('genClass', () => {
     it('should handle null or undefined data', () => {
       expect(genClass(null)).toEqual([]);
@@ -157,7 +157,7 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
       const result = genClassZH(data, dataZH);
 
       expect(result[0].label).toBe('分类 1');
-      expect(result[1].label).toBe('Category 2'); // Falls back to English
+      expect(result[1].label).toBe('Category 2');
     });
 
     it('should handle hierarchical data with Chinese translations', () => {
@@ -224,14 +224,13 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
         {
           '@id': 'parent1',
           '@name': '父分类',
-          // Missing category for children
         },
       ];
 
       const result = genClassZH(data, dataZH);
 
       expect(result[0].label).toBe('父分类');
-      expect(result[0].children[0].label).toBe('Child Category 1'); // Fallback to English
+      expect(result[0].children[0].label).toBe('Child Category 1');
     });
 
     it('should handle deeply nested structure with partial Chinese translations', () => {
@@ -257,7 +256,6 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
             {
               '@id': 'level2',
               '@name': '层级 2',
-              // level3 missing
             },
           ],
         },
@@ -267,7 +265,7 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
 
       expect(result[0].label).toBe('层级 1');
       expect(result[0].children[0].label).toBe('层级 2');
-      expect(result[0].children[0].children[0].label).toBe('Level 3'); // Fallback
+      expect(result[0].children[0].children[0].label).toBe('Level 3');
     });
 
     it('should handle empty arrays', () => {
@@ -281,14 +279,13 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
 
       const result = genClassZH(data, dataZH);
 
-      expect(result[0].value).toBe('Category 1'); // English value preserved
-      expect(result[0].label).toBe('分类 1'); // Chinese label
+      expect(result[0].value).toBe('Category 1');
+      expect(result[0].label).toBe('分类 1');
     });
   });
 
   describe('Integration scenarios', () => {
     it('should handle real-world ILCD classification structure', () => {
-      // Based on actual ILCD classification data structure
       const data = [
         {
           '@id': '01.00.000',
@@ -326,7 +323,6 @@ describe('ILCD Utility Functions (src/services/ilcd/util.ts)', () => {
         {
           '@id': 'mixed1',
           '@name': '中文名称',
-          // Intentionally missing child translation
         },
       ];
 

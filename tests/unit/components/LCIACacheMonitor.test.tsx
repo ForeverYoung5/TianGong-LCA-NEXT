@@ -9,11 +9,13 @@ import { act, render } from '@testing-library/react';
 const mockCacheAndDecompressMethod = jest.fn();
 const mockGetCacheManifest = jest.fn();
 const mockGetCachedMethodList = jest.fn();
+const mockSetCacheManifest = jest.fn();
 
 jest.mock('@/services/lciaMethods/util', () => ({
   cacheAndDecompressMethod: (...args: any[]) => mockCacheAndDecompressMethod(...args),
   getCacheManifest: (...args: any[]) => mockGetCacheManifest(...args),
   getCachedMethodList: (...args: any[]) => mockGetCachedMethodList(...args),
+  setCacheManifest: (...args: any[]) => mockSetCacheManifest(...args),
 }));
 
 describe('LCIACacheMonitor', () => {
@@ -22,6 +24,9 @@ describe('LCIACacheMonitor', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
+    mockSetCacheManifest.mockImplementation((manifest) => {
+      localStorage.setItem('lcia_methods_cache_manifest', JSON.stringify(manifest));
+    });
   });
 
   afterEach(() => {

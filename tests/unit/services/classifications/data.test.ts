@@ -1,14 +1,14 @@
 /**
- * Tests for ILCD data type definitions
- * Path: src/services/ilcd/data.ts
+ * Tests for classification data type definitions
+ * Path: src/services/classifications/util.ts
  *
  * This module defines type options for ILCD category types.
  * Tests verify the correctness of category type options.
  */
 
-import { categoryTypeOptions } from '@/services/ilcd/data';
+import { categoryTypeOptions } from '@/services/classifications/util';
 
-describe('ILCD Data Types (src/services/ilcd/data.ts)', () => {
+describe('Classification Data Types (src/services/classifications/util.ts)', () => {
   describe('categoryTypeOptions', () => {
     it('should contain correct number of category types', () => {
       expect(categoryTypeOptions).toHaveLength(7);
@@ -96,7 +96,7 @@ describe('ILCD Data Types (src/services/ilcd/data.ts)', () => {
     });
 
     it('should be used for category type lookups', () => {
-      // Simulate usage pattern from src/services/ilcd/api.ts
+      // Simulate usage pattern from src/services/classifications/api.ts
       const categoryType = 'FlowProperty';
       const thisCategoryType = categoryTypeOptions.find((i) => i.en === categoryType);
 

@@ -8,7 +8,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 const mockGetILCDClassification = jest.fn();
 const mockGetILCDFlowCategorization = jest.fn();
 
-jest.mock('@/services/ilcd/api', () => ({
+jest.mock('@/services/classifications/api', () => ({
   getILCDClassification: (...args: any[]) => mockGetILCDClassification(...args),
   getILCDFlowCategorization: (...args: any[]) => mockGetILCDFlowCategorization(...args),
 }));

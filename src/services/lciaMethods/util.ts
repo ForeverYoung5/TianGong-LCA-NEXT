@@ -1,4 +1,15 @@
 import { toBigNumberOrNaN, toBigNumberOrZero } from '@/services/general/bignumber';
+import {
+  clearCachedStore,
+  decompressGzipData,
+  getAllCachedKeys,
+  getCachedJsonEntry,
+  getCachedStoreSize,
+  getLocalStorageJson,
+  initIndexedDbStore,
+  putCachedJsonEntry,
+  setLocalStorageJson,
+} from '@/services/general/browserResourceCache';
 import { getLangJson } from '@/services/general/util';
 import type { ProcessExchangeData } from '@/services/processes/data';
 import type BigNumber from 'bignumber.js';
@@ -22,31 +33,14 @@ export interface LciaCacheManifest {
   decompressed: boolean; // Track if files are stored decompressed
 }
 
-export interface CachedLciaMethod<T = unknown> {
-  filename: string;
-  data: T;
-  size: number;
-  cachedAt: number;
-}
+export type CachedLciaMethod<T = unknown> =
+  import('@/services/general/browserResourceCache').CachedJsonEntry<T>;
 
 /**
  * Initialize IndexedDB for storing decompressed LCIA methods
  */
 const initDB = (): Promise<IDBDatabase> => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(CACHE_DB_NAME, CACHE_DB_VERSION);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
-        const store = db.createObjectStore(CACHE_STORE_NAME, { keyPath: 'filename' });
-        store.createIndex('cachedAt', 'cachedAt', { unique: false });
-      }
-    };
-  });
+  return initIndexedDbStore(CACHE_DB_NAME, CACHE_DB_VERSION, CACHE_STORE_NAME);
 };
 
 /**
@@ -54,23 +48,7 @@ const initDB = (): Promise<IDBDatabase> => {
  */
 const decompressGzip = async (gzipData: ArrayBuffer): Promise<string> => {
   try {
-    // Check if DecompressionStream is supported (modern browsers)
-    if (typeof DecompressionStream !== 'undefined') {
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new Uint8Array(gzipData));
-          controller.close();
-        },
-      });
-
-      const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
-      const response = new Response(decompressedStream);
-      return await response.text();
-    } else {
-      throw new Error(
-        'DecompressionStream not supported in this browser. Please use a modern browser.',
-      );
-    }
+    return await decompressGzipData(gzipData);
   } catch (error) {
     throw new Error(`Failed to decompress data: ${error}`);
   }
@@ -84,21 +62,7 @@ const storeDecompressedMethod = async (
   filename: string,
   data: unknown,
 ): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(CACHE_STORE_NAME);
-
-    const cachedMethod: CachedLciaMethod = {
-      filename,
-      data,
-      size: JSON.stringify(data).length,
-      cachedAt: Date.now(),
-    };
-
-    const request = store.put(cachedMethod);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-  });
+  return putCachedJsonEntry(db, CACHE_STORE_NAME, filename, data);
 };
 
 /**
@@ -107,18 +71,8 @@ const storeDecompressedMethod = async (
 export const getDecompressedMethod = async <T>(filename: string): Promise<T | null> => {
   try {
     const db = await initDB();
-
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
-      const store = transaction.objectStore(CACHE_STORE_NAME);
-      const request = store.get(filename);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        const result = request.result as CachedLciaMethod<T> | undefined;
-        resolve(result ? result.data : null);
-      };
-    });
+    const cachedEntry = await getCachedJsonEntry<T>(db, CACHE_STORE_NAME, filename);
+    return cachedEntry?.data ?? null;
   } catch (error) {
     console.error(`Failed to get decompressed method ${filename}:`, error);
     return null;
@@ -163,13 +117,11 @@ export const cacheAndDecompressMethod = async (filename: string): Promise<boolea
  * Get the current cache manifest from localStorage
  */
 export const getCacheManifest = (): LciaCacheManifest | null => {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    return cached ? JSON.parse(cached) : null;
-  } catch (error) {
-    console.error('Failed to read cache manifest:', error);
-    return null;
-  }
+  return getLocalStorageJson<LciaCacheManifest>(CACHE_KEY);
+};
+
+export const setCacheManifest = (manifest: LciaCacheManifest): void => {
+  setLocalStorageJson(CACHE_KEY, manifest);
 };
 
 /**
@@ -197,25 +149,7 @@ export const getCacheStatus = async () => {
   let indexedDBSize = 0;
   try {
     const db = await initDB();
-    const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
-    const store = transaction.objectStore(CACHE_STORE_NAME);
-
-    indexedDBSize = await new Promise<number>((resolve) => {
-      let totalSize = 0;
-      const request = store.openCursor();
-
-      request.onsuccess = (event) => {
-        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-        if (cursor) {
-          totalSize += cursor.value.size || 0;
-          cursor.continue();
-        } else {
-          resolve(totalSize);
-        }
-      };
-
-      request.onerror = () => resolve(0);
-    });
+    indexedDBSize = await getCachedStoreSize(db, CACHE_STORE_NAME);
   } catch (error) {
     console.warn('Failed to calculate IndexedDB size:', error);
   }
@@ -243,13 +177,7 @@ export const clearCache = async (): Promise<boolean> => {
 
     // Clear IndexedDB
     const db = await initDB();
-    const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(CACHE_STORE_NAME);
-    await new Promise<void>((resolve, reject) => {
-      const request = store.clear();
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve();
-    });
+    await clearCachedStore(db, CACHE_STORE_NAME);
 
     return true;
   } catch (error) {
@@ -283,15 +211,7 @@ export const isMethodCached = async (filename: string): Promise<boolean> => {
 export const getCachedMethodList = async (): Promise<string[]> => {
   try {
     const db = await initDB();
-
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
-      const store = transaction.objectStore(CACHE_STORE_NAME);
-      const request = store.getAllKeys();
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result as string[]);
-    });
+    return await getAllCachedKeys(db, CACHE_STORE_NAME);
   } catch (error) {
     console.error('Failed to get cached method list:', error);
     return [];

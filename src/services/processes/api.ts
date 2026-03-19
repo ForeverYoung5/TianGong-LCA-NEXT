@@ -5,6 +5,7 @@ import { getLifeCyclesByIdAndVersion } from '@/services/lifeCycleModels/api';
 import { supabase } from '@/services/supabase';
 import { FunctionRegion } from '@supabase/supabase-js';
 import { SortOrder } from 'antd/es/table/interface';
+import { getCachedClassificationData } from '../classifications/cache';
 import { getTeamIdByUserId } from '../general/api';
 import {
   classificationToString,
@@ -12,7 +13,7 @@ import {
   getLangText,
   jsonToList,
 } from '../general/util';
-import { getCachedClassificationData, getCachedLocationData } from '../ilcd/cache';
+import { getCachedLocationData } from '../locations/cache';
 import type { ProcessDetailByVersionResponse } from './data';
 import { genProcessJsonOrdered, genProcessName, validateProcessJson } from './util';
 

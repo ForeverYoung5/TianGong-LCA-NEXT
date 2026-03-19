@@ -30,9 +30,14 @@ jest.mock('@/components/LCIACacheMonitor', () => ({
   default: 'lcia-cache-monitor',
 }));
 
-jest.mock('@/components/ILCDCacheMonitor', () => ({
+jest.mock('@/components/ClassificationCacheMonitor', () => ({
   __esModule: true,
-  default: 'ilcd-cache-monitor',
+  default: 'classification-cache-monitor',
+}));
+
+jest.mock('@/components/LocationCacheMonitor', () => ({
+  __esModule: true,
+  default: 'location-cache-monitor',
 }));
 
 jest.mock('@/services/auth', () => ({
@@ -199,14 +204,15 @@ describe('app runtime config', () => {
     });
 
     const actions = runtimeLayout.actionsRender?.();
-    expect(actions).toHaveLength(7);
+    expect(actions).toHaveLength(8);
     expect(actions[0].type).toBe('lcia-cache-monitor');
-    expect(actions[1].type).toBe('ilcd-cache-monitor');
-    expect(actions[2].type).toBe('dark-mode');
-    expect(actions[5].type).toBe('lca-task-center');
-    expect(actions[6].type).toBe('notification-center');
+    expect(actions[1].type).toBe('classification-cache-monitor');
+    expect(actions[2].type).toBe('location-cache-monitor');
+    expect(actions[3].type).toBe('dark-mode');
+    expect(actions[6].type).toBe('lca-task-center');
+    expect(actions[7].type).toBe('notification-center');
 
-    actions[2].props.handleClick();
+    actions[3].props.handleClick();
     expect(setInitialState).toHaveBeenCalledTimes(1);
     const updater = setInitialState.mock.calls[0][0];
     const nextState = updater({
