@@ -20,12 +20,14 @@ let mockLocation = {
 };
 
 const mockContributeSource = jest.fn();
+const mockAttachStateCodesToRows = jest.fn(async (_table: string, rows: any[]) => rows);
 const mockGetSourceTableAll = jest.fn();
 const mockGetSourceTablePgroongaSearch = jest.fn();
 const mockSourceHybridSearch = jest.fn();
 const mockGetDataSource = jest.fn(() => 'my');
 const mockGetLang = jest.fn(() => 'en');
 const mockGetLangText = jest.fn((value: any) => value?.[0]?.['#text'] ?? 'Team title');
+const mockIsDataUnderReview = jest.fn(() => false);
 const mockGetTeamById = jest.fn();
 
 const baseSourceRow = {
@@ -57,6 +59,7 @@ jest.mock('@/services/sources/api', () => ({
 
 jest.mock('@/services/general/api', () => ({
   __esModule: true,
+  attachStateCodesToRows: (...args: any[]) => mockAttachStateCodesToRows(...args),
   contributeSource: (...args: any[]) => mockContributeSource(...args),
 }));
 
@@ -65,6 +68,7 @@ jest.mock('@/services/general/util', () => ({
   getDataSource: (...args: any[]) => mockGetDataSource(...args),
   getLang: (...args: any[]) => mockGetLang(...args),
   getLangText: (...args: any[]) => mockGetLangText(...args),
+  isDataUnderReview: (...args: any[]) => mockIsDataUnderReview(...args),
 }));
 
 jest.mock('@/services/teams/api', () => ({

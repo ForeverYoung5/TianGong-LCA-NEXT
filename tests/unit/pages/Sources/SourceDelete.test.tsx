@@ -201,6 +201,29 @@ describe('SourceDelete component', () => {
     );
   });
 
+  it('disables delete trigger when disabled is true', async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <SourceDelete
+        disabled
+        id='source-123'
+        version='01.00.000'
+        buttonType='icon'
+        actionRef={{ current: { reload: jest.fn() } } as any}
+        setViewDrawerVisible={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockGetSourceDetail).not.toHaveBeenCalled();
+    expect(mockDeleteSource).not.toHaveBeenCalled();
+  });
+
   it('closes the confirmation modal when cancelled', async () => {
     const user = userEvent.setup();
 

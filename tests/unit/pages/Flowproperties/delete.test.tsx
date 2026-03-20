@@ -121,6 +121,28 @@ describe('FlowpropertiesDelete', () => {
     expect(actionRef.current.reload).toHaveBeenCalledTimes(1);
   });
 
+  it('disables delete trigger when disabled is true', async () => {
+    await act(async () => {
+      renderWithProviders(
+        <FlowpropertiesDelete
+          disabled
+          id='fp-1'
+          version='1.0.0'
+          buttonType='text'
+          actionRef={{ current: { reload: jest.fn() } } as any}
+          setViewDrawerVisible={jest.fn()}
+        />,
+      );
+    });
+
+    expect(screen.getByRole('button', { name: /delete/i })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole('button', { name: /delete/i }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockDeleteFlowproperties).not.toHaveBeenCalled();
+  });
+
   it('shows the returned error message when delete fails', async () => {
     mockDeleteFlowproperties.mockResolvedValueOnce({
       status: 400,

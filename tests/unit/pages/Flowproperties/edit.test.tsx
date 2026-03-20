@@ -30,6 +30,11 @@ jest.mock('@ant-design/icons', () => ({
   FormOutlined: () => <span>edit</span>,
 }));
 
+jest.mock('@/components/ValidationIssueModal', () => ({
+  __esModule: true,
+  showValidationIssueModal: jest.fn(),
+}));
+
 jest.mock('antd', () => {
   const React = require('react');
 
@@ -250,6 +255,7 @@ jest.mock('@/contexts/refCheckContext', () => {
 
 jest.mock('@/pages/Utils/review', () => ({
   __esModule: true,
+  buildValidationIssues: jest.fn(() => []),
   checkData: jest.fn(),
   ReffPath: jest.fn(() => ({
     findProblemNodes: () => [],
@@ -268,6 +274,7 @@ jest.mock('@/pages/Utils/review', () => ({
     };
     return tableDict[type];
   }),
+  validateDatasetWithSdk: jest.fn(() => ({ success: true, issues: [] })),
 }));
 
 describe('FlowpropertiesEdit', () => {
@@ -317,6 +324,42 @@ describe('FlowpropertiesEdit', () => {
     expect(updateErrRef).toHaveBeenCalledWith(null);
     expect(actionRef.current.reload).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('blocks data check when the dataset is under review', async () => {
+    mockGetFlowpropertyDetail.mockResolvedValueOnce({
+      data: {
+        stateCode: 20,
+        json: {
+          flowPropertyDataSet: {
+            flowPropertiesInformation: {
+              dataSetInformation: {
+                'common:name': [{ '#text': 'Existing name', '@lang': 'en' }],
+              },
+            },
+          },
+        },
+        version: '1.0.0',
+      },
+    });
+
+    await act(async () => {
+      renderWithProviders(
+        <FlowpropertiesEdit id='fp-1' version='1.0.0' buttonType='text' lang='en' />,
+      );
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: /edit/i }));
+
+    await waitFor(() => expect(mockGetFlowpropertyDetail).toHaveBeenCalledWith('fp-1', '1.0.0'));
+
+    await userEvent.click(screen.getByRole('button', { name: /data check/i }));
+
+    expect(mockUpdateFlowproperties).not.toHaveBeenCalled();
+    const { message } = jest.requireMock('antd');
+    expect(message.error).toHaveBeenCalledWith(
+      'This data set is under review and cannot be validated',
+    );
   });
 
   it('marks the edited flow property as invalid when rule verification fails', async () => {

@@ -30,6 +30,7 @@ import {
   getLangText,
   getLangValidationErrorMessage,
   getUnitData,
+  isDataUnderReview,
   isJsonObject,
   isLangTextEntry,
   isSupabaseDuplicateKeyError,
@@ -297,6 +298,17 @@ describe('General Utility Functions', () => {
       const result = (await getUnitData('unitgroup', mockData)) as any[];
 
       expect(result[0].refUnitRes).toBeUndefined();
+    });
+  });
+
+  describe('isDataUnderReview', () => {
+    it('returns true only for review state codes between 20 and 99', () => {
+      expect(isDataUnderReview(20)).toBe(true);
+      expect(isDataUnderReview(99)).toBe(true);
+      expect(isDataUnderReview(19)).toBe(false);
+      expect(isDataUnderReview(100)).toBe(false);
+      expect(isDataUnderReview(undefined)).toBe(false);
+      expect(isDataUnderReview(null)).toBe(false);
     });
   });
 

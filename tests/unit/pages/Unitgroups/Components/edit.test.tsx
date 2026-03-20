@@ -186,6 +186,8 @@ jest.mock('@/pages/Utils/updateReference', () => ({
 
 const mockCheckData = jest.fn(async () => undefined);
 const mockGetErrRefTab = jest.fn(() => null);
+const mockBuildValidationIssues = jest.fn(() => []);
+const mockValidateDatasetWithSdk = jest.fn(() => ({ success: true, issues: [] }));
 
 jest.mock('@/pages/Utils/review', () => ({
   __esModule: true,
@@ -194,8 +196,10 @@ jest.mock('@/pages/Utils/review', () => ({
       return [];
     }
   },
+  buildValidationIssues: (...args: any[]) => mockBuildValidationIssues(...args),
   checkData: (...args: any[]) => mockCheckData(...args),
   getErrRefTab: (...args: any[]) => mockGetErrRefTab(...args),
+  validateDatasetWithSdk: (...args: any[]) => mockValidateDatasetWithSdk(...args),
 }));
 
 const mockGetUnitGroupDetail = jest.fn();
@@ -264,6 +268,8 @@ describe('UnitGroupEdit', () => {
     mockUpdateUnitGroup.mockResolvedValue({
       data: [{ rule_verification: true }],
     });
+    mockBuildValidationIssues.mockReturnValue([]);
+    mockValidateDatasetWithSdk.mockReturnValue({ success: true, issues: [] });
     mockValidateEnhanced.mockReturnValue({ success: true });
   });
 

@@ -28,12 +28,17 @@ jest.mock('@/services/supabase', () => ({
 const mockGetTeamIdByUserId = jest.fn();
 const mockGetRefData = jest.fn();
 const mockContributeSource = jest.fn();
+const mockNormalizeLangPayloadForSave = jest.fn();
+const mockResolveFunctionInvokeError = jest.fn(async (error: any) => error);
 
 jest.mock('@/services/general/api', () => ({
   __esModule: true,
   getTeamIdByUserId: (...args: any[]) => mockGetTeamIdByUserId.apply(null, args),
   getRefData: (...args: any[]) => mockGetRefData.apply(null, args),
   contributeSource: (...args: any[]) => mockContributeSource.apply(null, args),
+  normalizeLangPayloadForSave: (...args: any[]) =>
+    mockNormalizeLangPayloadForSave.apply(null, args),
+  resolveFunctionInvokeError: (...args: any[]) => mockResolveFunctionInvokeError.apply(null, args),
 }));
 
 const mockGetCachedLocationData = jest.fn();
@@ -65,13 +70,11 @@ jest.mock('@/services/lifeCycleModels/api', () => ({
 
 const mockGenProcessJsonOrdered = jest.fn();
 const mockGenProcessName = jest.fn();
-const mockValidateProcessJson = jest.fn();
 
 jest.mock('@/services/processes/util', () => ({
   __esModule: true,
   genProcessJsonOrdered: (...args: any[]) => mockGenProcessJsonOrdered.apply(null, args),
   genProcessName: (...args: any[]) => mockGenProcessName.apply(null, args),
-  validateProcessJson: (...args: any[]) => mockValidateProcessJson.apply(null, args),
 }));
 
 const mockClassificationToString = jest.fn();
@@ -96,11 +99,14 @@ jest.mock('@/services/auth', () => ({
 
 const mockGetAllRefObj = jest.fn();
 const mockGetRefTableName = jest.fn();
+const mockValidateDatasetRuleVerification = jest.fn();
 
 jest.mock('@/pages/Utils/review', () => ({
   __esModule: true,
   getAllRefObj: (...args: any[]) => mockGetAllRefObj.apply(null, args),
   getRefTableName: (...args: any[]) => mockGetRefTableName.apply(null, args),
+  validateDatasetRuleVerification: (...args: any[]) =>
+    mockValidateDatasetRuleVerification.apply(null, args),
 }));
 
 const createQueryBuilder = <T>(resolvedValue: T) => {
@@ -133,15 +139,26 @@ beforeEach(() => {
   mockGetLifeCyclesByIdAndVersion.mockReset();
   mockGenProcessJsonOrdered.mockReset();
   mockGenProcessName.mockReset();
-  mockValidateProcessJson.mockReset();
+  mockNormalizeLangPayloadForSave.mockReset();
   mockClassificationToString.mockReset();
   mockGenClassificationZH.mockReset();
   mockGetLangText.mockReset();
   mockJsonToList.mockReset();
+  mockResolveFunctionInvokeError.mockReset().mockImplementation(async (error: any) => error);
+  mockValidateDatasetRuleVerification.mockReset().mockResolvedValue({
+    datasetSdkIssues: [],
+    datasetSdkValid: true,
+    nonExistentRef: [],
+    ruleVerification: true,
+    unRuleVerification: [],
+  });
 
   mockGenProcessJsonOrdered.mockReturnValue({ ordered: true });
   mockGenProcessName.mockReturnValue('Process Name');
-  mockValidateProcessJson.mockReturnValue({ success: true });
+  mockNormalizeLangPayloadForSave.mockResolvedValue({
+    payload: { ordered: true },
+    validationError: undefined,
+  });
   mockClassificationToString.mockReturnValue('classification-string');
   mockGenClassificationZH.mockReturnValue(['classification-zh']);
   mockGetLangText.mockReturnValue('General comment');
@@ -176,15 +193,12 @@ describe('createProcess', () => {
   });
 
   it('sets rule verification to false when non-validation issues exist', async () => {
-    mockValidateProcessJson.mockReturnValueOnce({
-      success: false,
-      error: {
-        issues: [
-          { path: ['validation'] },
-          { path: ['compliance'] },
-          { path: ['processDataSet', 'name'] },
-        ],
-      },
+    mockValidateDatasetRuleVerification.mockResolvedValueOnce({
+      datasetSdkIssues: [{ path: ['processDataSet', 'name'] }],
+      datasetSdkValid: false,
+      nonExistentRef: [],
+      ruleVerification: false,
+      unRuleVerification: [],
     });
     const insertResult = { data: [{ id: sampleId, version: sampleVersion }], error: null };
     const selectMock = jest.fn().mockResolvedValue(insertResult);
@@ -262,11 +276,12 @@ describe('updateProcess', () => {
   });
 
   it('uses fallback bearer token and keeps rule verification false when validation fails', async () => {
-    mockValidateProcessJson.mockReturnValueOnce({
-      success: false,
-      error: {
-        issues: [{ path: ['processDataSet', 'exchanges'] }],
-      },
+    mockValidateDatasetRuleVerification.mockResolvedValueOnce({
+      datasetSdkIssues: [{ path: ['processDataSet', 'exchanges'] }],
+      datasetSdkValid: false,
+      nonExistentRef: [],
+      ruleVerification: false,
+      unRuleVerification: [],
     });
     mockAuthGetSession.mockResolvedValueOnce({
       data: {
@@ -357,7 +372,7 @@ describe('updateProcessApi', () => {
       region: FunctionRegion.UsEast1,
     });
     expect(logSpy).toHaveBeenCalledWith('error', { message: 'bad req' });
-    expect(result).toBeUndefined();
+    expect(result).toEqual({ error: { message: 'bad req' } });
     logSpy.mockRestore();
   });
 });

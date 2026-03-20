@@ -78,10 +78,14 @@ const { getCachedFlowCategorizationAll: mockGetCachedFlowCategorizationAll } = j
 jest.mock('@/services/general/api', () => ({
   getDataDetail: jest.fn(),
   getTeamIdByUserId: jest.fn(),
+  resolveFunctionInvokeError: jest.fn(async (error: any) => error),
 }));
 
-const { getDataDetail: mockGetDataDetail, getTeamIdByUserId: mockGetTeamIdByUserId } =
-  jest.requireMock('@/services/general/api');
+const {
+  getDataDetail: mockGetDataDetail,
+  getTeamIdByUserId: mockGetTeamIdByUserId,
+  resolveFunctionInvokeError: mockResolveFunctionInvokeError,
+} = jest.requireMock('@/services/general/api');
 
 class MockQuery<T = any> {
   public calls = {
@@ -236,6 +240,7 @@ beforeEach(() => {
 
   mockGetDataDetail.mockResolvedValue({ data: null });
   mockGetTeamIdByUserId.mockResolvedValue(null);
+  mockResolveFunctionInvokeError.mockImplementation(async (error: any) => error);
 
   mockAuthGetSession.mockResolvedValue({
     data: {
@@ -306,7 +311,7 @@ describe('updateFlows', () => {
     expect(response).toBeUndefined();
   });
 
-  it('logs edge-function errors and returns null data', async () => {
+  it('logs edge-function errors and returns resolved error data', async () => {
     const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
     const mockError = { message: 'update failed' };
     mockFunctionsInvoke.mockResolvedValue({ data: null, error: mockError });
@@ -314,7 +319,7 @@ describe('updateFlows', () => {
     const response = await updateFlows('flow-id', '01.00.000', { name: 'Updated flow' });
 
     expect(consoleLogSpy).toHaveBeenCalledWith('error', mockError);
-    expect(response).toBeNull();
+    expect(response).toEqual({ error: mockError });
     consoleLogSpy.mockRestore();
   });
 });

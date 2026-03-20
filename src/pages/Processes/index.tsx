@@ -18,8 +18,9 @@ import TableFilter from '@/components/TableFilter';
 import LifeCycleModelCreate from '@/pages/LifeCycleModels/Components/create';
 import LifeCycleModelEdit from '@/pages/LifeCycleModels/Components/edit';
 import LifeCycleModelView from '@/pages/LifeCycleModels/Components/view';
+import { attachStateCodesToRows } from '@/services/general/api';
 import { ListPagination } from '@/services/general/data';
-import { getDataSource, getLang, getLangText } from '@/services/general/util';
+import { getDataSource, getLang, getLangText, isDataUnderReview } from '@/services/general/util';
 import { ProcessImportData, ProcessTable } from '@/services/processes/data';
 import { getTeamById } from '@/services/teams/api';
 import type { TeamTable } from '@/services/teams/data';
@@ -63,6 +64,7 @@ const TableList: FC = () => {
   const tid = searchParams.get('tid');
   const id = searchParams.get('id');
   const version = searchParams.get('version');
+  const required = searchParams.get('required') === '1';
 
   const intl = useIntl();
 
@@ -72,6 +74,32 @@ const TableList: FC = () => {
   const keyWordRef = useRef('');
   const stateCodeRef = useRef<string | number>('all');
   const typeOfDataSetRef = useRef<string>('all');
+  const attachReviewState = async (
+    result?:
+      | {
+          data?: ProcessTable[];
+          page?: number;
+          success?: boolean;
+          total?: number;
+        }
+      | undefined,
+  ) => {
+    if (!result) {
+      return {
+        data: [] as ProcessTable[],
+        success: false,
+      };
+    }
+
+    if (dataSource !== 'my' || !Array.isArray(result.data)) {
+      return result;
+    }
+
+    return {
+      ...result,
+      data: await attachStateCodesToRows('processes', result.data),
+    };
+  };
   const typeOfDataSetFilter = () => {
     const onChange = (value: string) => {
       typeOfDataSetRef.current = value;
@@ -205,6 +233,7 @@ const TableList: FC = () => {
       dataIndex: 'option',
       search: false,
       render: (_, row) => {
+        const actionDisabled = isDataUnderReview(row.stateCode);
         if (dataSource === 'my') {
           return [
             <Space size={'small'} key={0}>
@@ -227,6 +256,7 @@ const TableList: FC = () => {
               />
               {row.modelId ? (
                 <LifeCycleModelEdit
+                  disabled={actionDisabled}
                   id={row.modelId}
                   version={row.version}
                   lang={lang}
@@ -235,6 +265,7 @@ const TableList: FC = () => {
                 />
               ) : (
                 <ProcessEdit
+                  disabled={actionDisabled}
                   id={row.id}
                   version={row.version}
                   lang={lang}
@@ -245,6 +276,7 @@ const TableList: FC = () => {
               )}
 
               <ProcessDelete
+                disabled={actionDisabled}
                 id={row.id}
                 version={row.version}
                 buttonType={'icon'}
@@ -561,7 +593,20 @@ const TableList: FC = () => {
               }
             }
             if (openAI) {
-              return process_hybrid_search(
+              return attachReviewState(
+                await process_hybrid_search(
+                  params,
+                  lang,
+                  dataSource,
+                  currentKeyWord,
+                  {},
+                  currentStateCode,
+                  currentTypeOfDataSet,
+                ),
+              );
+            }
+            return attachReviewState(
+              await getProcessTablePgroongaSearch(
                 params,
                 lang,
                 dataSource,
@@ -569,17 +614,8 @@ const TableList: FC = () => {
                 {},
                 currentStateCode,
                 currentTypeOfDataSet,
-              );
-            }
-            return getProcessTablePgroongaSearch(
-              params,
-              lang,
-              dataSource,
-              currentKeyWord,
-              {},
-              currentStateCode,
-              currentTypeOfDataSet,
-              orderBy,
+                orderBy,
+              ),
             );
           }
 
@@ -599,14 +635,16 @@ const TableList: FC = () => {
             }
           }
 
-          return getProcessTableAll(
-            params,
-            convertedSort,
-            lang,
-            dataSource,
-            tid ?? '',
-            currentStateCode,
-            currentTypeOfDataSet,
+          return attachReviewState(
+            await getProcessTableAll(
+              params,
+              convertedSort,
+              lang,
+              dataSource,
+              tid ?? '',
+              currentStateCode,
+              currentTypeOfDataSet,
+            ),
           );
         }}
         columns={processColumns}
@@ -621,6 +659,7 @@ const TableList: FC = () => {
           actionRef={actionRef}
           setViewDrawerVisible={handleEditClose}
           autoOpen={true}
+          autoCheckRequired={required}
         />
       )}
     </PageContainer>

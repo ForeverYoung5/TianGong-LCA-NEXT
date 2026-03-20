@@ -72,6 +72,12 @@ jest.mock('@/services/classifications/cache', () => ({
 jest.mock('@/services/general/api', () => ({
   getDataDetail: jest.fn(),
   getTeamIdByUserId: jest.fn(),
+  normalizeLangPayloadForSave: jest.fn(),
+  resolveFunctionInvokeError: jest.fn(async (error: any) => error),
+}));
+
+jest.mock('@/pages/Utils/review', () => ({
+  validateDatasetRuleVerification: jest.fn(),
 }));
 
 jest.mock('@/services/sources/util', () => ({
@@ -83,8 +89,10 @@ const { supabase } = jest.requireMock('@/services/supabase');
 const { classificationToString, genClassificationZH, getLangText, jsonToList } =
   jest.requireMock('@/services/general/util');
 const { getCachedClassificationData } = jest.requireMock('@/services/classifications/cache');
-const { getDataDetail, getTeamIdByUserId } = jest.requireMock('@/services/general/api');
-const { genSourceJsonOrdered, validateSourceJson } = jest.requireMock('@/services/sources/util');
+const { getDataDetail, getTeamIdByUserId, normalizeLangPayloadForSave } =
+  jest.requireMock('@/services/general/api');
+const { validateDatasetRuleVerification } = jest.requireMock('@/pages/Utils/review');
+const { genSourceJsonOrdered } = jest.requireMock('@/services/sources/util');
 
 describe('Sources API Service (src/services/sources/api.ts)', () => {
   const mockSession = createMockSession('user-123', 'test-token');
@@ -92,7 +100,18 @@ describe('Sources API Service (src/services/sources/api.ts)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     supabase.auth.getSession.mockResolvedValue(mockSession);
-    validateSourceJson.mockReturnValue({ success: true });
+    normalizeLangPayloadForSave.mockImplementation(async (payload: any) => ({
+      payload,
+      validationError: undefined,
+    }));
+    getTeamIdByUserId.mockResolvedValue('');
+    validateDatasetRuleVerification.mockResolvedValue({
+      datasetSdkIssues: [],
+      datasetSdkValid: true,
+      nonExistentRef: [],
+      ruleVerification: true,
+      unRuleVerification: [],
+    });
   });
 
   describe('createSource', () => {
@@ -110,7 +129,6 @@ describe('Sources API Service (src/services/sources/api.ts)', () => {
       const result = await createSource(mockId, mockData);
 
       expect(genSourceJsonOrdered).toHaveBeenCalledWith(mockId, mockData);
-      expect(validateSourceJson).toHaveBeenCalledWith(mockOrderedData);
       expect(supabase.from).toHaveBeenCalledWith('sources');
       expect(builder.insert).toHaveBeenCalledWith([
         { id: mockId, json_ordered: mockOrderedData, rule_verification: true },
@@ -126,7 +144,13 @@ describe('Sources API Service (src/services/sources/api.ts)', () => {
       const mockInsertResult = createMockSuccessResponse([{ id: mockId }]);
 
       genSourceJsonOrdered.mockReturnValue(mockOrderedData);
-      validateSourceJson.mockReturnValue({ success: false });
+      validateDatasetRuleVerification.mockResolvedValueOnce({
+        datasetSdkIssues: [{ path: ['sourceDataSet', 'sourceInformation'] }],
+        datasetSdkValid: false,
+        nonExistentRef: [],
+        ruleVerification: false,
+        unRuleVerification: [],
+      });
 
       const builder = createQueryBuilder(mockInsertResult);
       supabase.from.mockReturnValue(builder);
@@ -212,7 +236,7 @@ describe('Sources API Service (src/services/sources/api.ts)', () => {
       const result = await updateSource(mockId, mockVersion, mockData);
 
       expect(consoleLogSpy).toHaveBeenCalledWith('error', mockError);
-      expect(result).toBeNull();
+      expect(result).toEqual({ error: mockError });
 
       consoleLogSpy.mockRestore();
     });

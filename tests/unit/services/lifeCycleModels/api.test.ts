@@ -39,12 +39,17 @@ jest.mock('@/services/supabase', () => ({
 const mockGetTeamIdByUserId = jest.fn();
 const mockContributeSource = jest.fn();
 const mockGetRefData = jest.fn();
+const mockNormalizeLangPayloadForSave = jest.fn();
+const mockResolveFunctionInvokeError = jest.fn(async (error: any) => error);
 
 jest.mock('@/services/general/api', () => ({
   __esModule: true,
   getTeamIdByUserId: (...args: any[]) => mockGetTeamIdByUserId.apply(null, args),
   contributeSource: (...args: any[]) => mockContributeSource.apply(null, args),
   getRefData: (...args: any[]) => mockGetRefData.apply(null, args),
+  normalizeLangPayloadForSave: (...args: any[]) =>
+    mockNormalizeLangPayloadForSave.apply(null, args),
+  resolveFunctionInvokeError: (...args: any[]) => mockResolveFunctionInvokeError.apply(null, args),
 }));
 
 const mockClassificationToString = jest.fn();
@@ -108,7 +113,6 @@ jest.mock('@/services/auth', () => ({
 }));
 
 const mockGenLifeCycleModelJsonOrdered = jest.fn();
-const mockValidateLifeCycleModelJson = jest.fn();
 
 const mockGenReferenceToResultingProcess = jest
   .fn()
@@ -143,7 +147,6 @@ jest.mock('@/services/lifeCycleModels/util', () => ({
     mockGenLifeCycleModelJsonOrdered.apply(null, args),
   genReferenceToResultingProcess: (...args: any[]) =>
     mockGenReferenceToResultingProcess.apply(null, args),
-  validateLifeCycleModelJson: (...args: any[]) => mockValidateLifeCycleModelJson.apply(null, args),
 }));
 
 const mockGenLifeCycleModelProcesses = jest.fn();
@@ -157,6 +160,7 @@ const mockControllerAdd = jest.fn();
 const mockControllerWaitForAll = jest.fn();
 const mockGetAllRefObj = jest.fn();
 const mockGetRefTableName = jest.fn();
+const mockValidateDatasetRuleVerification = jest.fn();
 
 jest.mock('@/pages/Utils/review', () => ({
   __esModule: true,
@@ -166,6 +170,8 @@ jest.mock('@/pages/Utils/review', () => ({
   })),
   getAllRefObj: (...args: any[]) => mockGetAllRefObj.apply(null, args),
   getRefTableName: (...args: any[]) => mockGetRefTableName.apply(null, args),
+  validateDatasetRuleVerification: (...args: any[]) =>
+    mockValidateDatasetRuleVerification.apply(null, args),
 }));
 
 import * as lifeCycleModelsApi from '@/services/lifeCycleModels/api';
@@ -200,6 +206,8 @@ beforeEach(() => {
   mockGetTeamIdByUserId.mockReset();
   mockContributeSource.mockReset();
   mockGetRefData.mockReset();
+  mockNormalizeLangPayloadForSave.mockReset();
+  mockResolveFunctionInvokeError.mockReset().mockImplementation(async (error: any) => error);
   mockClassificationToString.mockReset();
   mockGenClassificationZH.mockReset();
   mockGetLangText.mockReset();
@@ -219,11 +227,22 @@ beforeEach(() => {
   mockGetCurrentUser.mockReset();
   mockGetAllRefObj.mockReset();
   mockGetRefTableName.mockReset();
+  mockValidateDatasetRuleVerification.mockReset().mockResolvedValue({
+    datasetSdkIssues: [],
+    datasetSdkValid: true,
+    nonExistentRef: [],
+    ruleVerification: true,
+    unRuleVerification: [],
+  });
 
   mockAuthGetSession.mockResolvedValue(createMockSession(sampleUserId, sampleAccessToken));
   mockGetTeamIdByUserId.mockResolvedValue('team-default');
   mockContributeSource.mockResolvedValue({ success: true });
   mockGetRefData.mockResolvedValue({ success: true, data: null });
+  mockNormalizeLangPayloadForSave.mockImplementation(async (payload: any) => ({
+    payload,
+    validationError: undefined,
+  }));
   mockClassificationToString.mockReturnValue('classification-string');
   mockGenClassificationZH.mockReturnValue(['classification-zh']);
   mockGetLangText.mockReturnValue('localized-text');
@@ -240,7 +259,6 @@ beforeEach(() => {
   mockGetUserId.mockResolvedValue(sampleUserId);
   mockGetCurrentUser.mockResolvedValue({ userid: sampleUserId });
   mockGenLifeCycleModelJsonOrdered.mockReturnValue({ lifeCycleModelDataSet: {} });
-  mockValidateLifeCycleModelJson.mockReturnValue({ success: true });
   mockGenLifeCycleModelProcesses.mockResolvedValue({ lifeCycleModelProcesses: [] });
   mockControllerWaitForAll.mockResolvedValue(undefined);
   mockGetAllRefObj.mockReturnValue([]);
@@ -1167,11 +1185,12 @@ describe('createLifeCycleModel', () => {
   });
 
   it('marks rule verification false and enriches primary processes with included refs', async () => {
-    mockValidateLifeCycleModelJson.mockReturnValueOnce({
-      success: false,
-      error: {
-        issues: [{ path: 'lifeCycleModelDataSet.someField' }, { path: 'validation.review' }],
-      },
+    mockValidateDatasetRuleVerification.mockResolvedValueOnce({
+      datasetSdkIssues: [{ path: ['lifeCycleModelDataSet', 'someField'] }],
+      datasetSdkValid: false,
+      nonExistentRef: [],
+      ruleVerification: false,
+      unRuleVerification: [{ path: ['validation', 'review'] }],
     });
     mockGenLifeCycleModelJsonOrdered.mockReturnValueOnce({
       lifeCycleModelDataSet: {
@@ -1486,7 +1505,7 @@ describe('updateLifeCycleModel', () => {
     expect(result).toBeUndefined();
   });
 
-  it('logs update errors and skips process synchronization when update_data fails', async () => {
+  it('logs update errors, returns the resolved error, and skips process synchronization when update_data fails', async () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
@@ -1512,7 +1531,7 @@ describe('updateLifeCycleModel', () => {
     expect(mockDeleteProcess).not.toHaveBeenCalled();
     expect(mockUpdateProcess).not.toHaveBeenCalled();
     expect(mockCreateProcess).not.toHaveBeenCalled();
-    expect(result).toBeUndefined();
+    expect(result).toEqual({ error: { message: 'update failed' } });
     consoleErrorSpy.mockRestore();
   });
 
@@ -1690,7 +1709,7 @@ describe('updateLifeCycleModelJsonApi', () => {
     expect(result).toBeUndefined();
   });
 
-  it('logs top-level update errors and returns null data', async () => {
+  it('logs top-level update errors and returns the resolved error payload', async () => {
     const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
     mockFunctionsInvoke.mockResolvedValueOnce({
       data: null,
@@ -1704,7 +1723,7 @@ describe('updateLifeCycleModelJsonApi', () => {
     );
 
     expect(consoleLogSpy).toHaveBeenCalledWith('error', { message: 'json update failed' });
-    expect(result).toBeNull();
+    expect(result).toEqual({ error: { message: 'json update failed' } });
     expect(mockControllerAdd).not.toHaveBeenCalled();
     consoleLogSpy.mockRestore();
   });

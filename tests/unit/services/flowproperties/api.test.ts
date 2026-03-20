@@ -63,16 +63,22 @@ jest.mock('@/services/classifications/cache', () => ({
 jest.mock('@/services/general/api', () => ({
   getDataDetail: jest.fn(),
   getTeamIdByUserId: jest.fn(),
+  normalizeLangPayloadForSave: jest.fn(),
+  resolveFunctionInvokeError: jest.fn(async (error: any) => error),
+}));
+
+jest.mock('@/pages/Utils/review', () => ({
+  validateDatasetRuleVerification: jest.fn(),
 }));
 
 const { supabase } = jest.requireMock('@/services/supabase');
-const { genFlowpropertyJsonOrdered, validateFlowPropertyJson } = jest.requireMock(
-  '@/services/flowproperties/util',
-);
+const { genFlowpropertyJsonOrdered } = jest.requireMock('@/services/flowproperties/util');
 const { getLangText, classificationToString, jsonToList, genClassificationZH } =
   jest.requireMock('@/services/general/util');
 const { getCachedClassificationData } = jest.requireMock('@/services/classifications/cache');
-const { getDataDetail, getTeamIdByUserId } = jest.requireMock('@/services/general/api');
+const { getDataDetail, getTeamIdByUserId, normalizeLangPayloadForSave } =
+  jest.requireMock('@/services/general/api');
+const { validateDatasetRuleVerification } = jest.requireMock('@/pages/Utils/review');
 
 describe('FlowProperties API Service (src/services/flowproperties/api.ts)', () => {
   const mockSession = createMockSession('user-123', 'test-token');
@@ -80,7 +86,18 @@ describe('FlowProperties API Service (src/services/flowproperties/api.ts)', () =
   beforeEach(() => {
     jest.clearAllMocks();
     supabase.auth.getSession.mockResolvedValue(mockSession);
-    validateFlowPropertyJson.mockReturnValue({ success: true });
+    normalizeLangPayloadForSave.mockImplementation(async (payload: any) => ({
+      payload,
+      validationError: undefined,
+    }));
+    getTeamIdByUserId.mockResolvedValue('');
+    validateDatasetRuleVerification.mockResolvedValue({
+      datasetSdkIssues: [],
+      datasetSdkValid: true,
+      nonExistentRef: [],
+      ruleVerification: true,
+      unRuleVerification: [],
+    });
   });
 
   describe('createFlowproperties', () => {
@@ -104,7 +121,6 @@ describe('FlowProperties API Service (src/services/flowproperties/api.ts)', () =
       const result = await createFlowproperties(mockId, mockData);
 
       expect(genFlowpropertyJsonOrdered).toHaveBeenCalledWith(mockId, mockData);
-      expect(validateFlowPropertyJson).toHaveBeenCalledWith(mockOrderedData);
       expect(supabase.from).toHaveBeenCalledWith('flowproperties');
       expect(mockInsert).toHaveBeenCalledWith([
         {
@@ -118,7 +134,13 @@ describe('FlowProperties API Service (src/services/flowproperties/api.ts)', () =
 
     it('should handle validation failure', async () => {
       genFlowpropertyJsonOrdered.mockReturnValue({});
-      validateFlowPropertyJson.mockReturnValue({ success: false });
+      validateDatasetRuleVerification.mockResolvedValueOnce({
+        datasetSdkIssues: [{ path: ['flowPropertyDataSet', 'flowPropertiesInformation'] }],
+        datasetSdkValid: false,
+        nonExistentRef: [],
+        ruleVerification: false,
+        unRuleVerification: [],
+      });
 
       const mockInsert = jest.fn().mockReturnThis();
       const mockSelect = jest.fn().mockResolvedValue({ data: [], error: null });
@@ -183,7 +205,7 @@ describe('FlowProperties API Service (src/services/flowproperties/api.ts)', () =
       const result = await updateFlowproperties('id', 'version', {});
 
       expect(consoleLogSpy).toHaveBeenCalledWith('error', mockError);
-      expect(result).toBeNull(); // Function returns result?.data which is null on error
+      expect(result).toEqual({ error: mockError });
       consoleLogSpy.mockRestore();
     });
 

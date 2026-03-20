@@ -17,16 +17,21 @@ jest.mock('@/services/general/api');
 jest.mock('@/services/classifications/cache');
 jest.mock('@/services/general/util');
 jest.mock('@/services/contacts/util');
+jest.mock('@/pages/Utils/review');
 
 describe('Contacts API Service', () => {
   const { supabase } = jest.requireMock('@/services/supabase');
-  const { getTeamIdByUserId, getDataDetail } = jest.requireMock('@/services/general/api');
+  const {
+    getTeamIdByUserId,
+    getDataDetail,
+    normalizeLangPayloadForSave,
+    resolveFunctionInvokeError,
+  } = jest.requireMock('@/services/general/api');
   const { getCachedClassificationData } = jest.requireMock('@/services/classifications/cache');
   const { getLangText, jsonToList, genClassificationZH, classificationToString } =
     jest.requireMock('@/services/general/util');
-  const { genContactJsonOrdered, validateContactJson } = jest.requireMock(
-    '@/services/contacts/util',
-  );
+  const { genContactJsonOrdered } = jest.requireMock('@/services/contacts/util');
+  const { validateDatasetRuleVerification } = jest.requireMock('@/pages/Utils/review');
 
   let mockFrom: jest.Mock;
   let mockAuth: jest.Mock;
@@ -60,12 +65,29 @@ describe('Contacts API Service', () => {
         },
       },
     }));
-    validateContactJson.mockReturnValue({ success: true });
 
     getLangText.mockImplementation((value: any) => value?.[0]?.['#text'] || '');
     jsonToList.mockImplementation((value: any) => (Array.isArray(value) ? value : [value]));
     genClassificationZH.mockReturnValue([{ '@level': '0', '#text': 'Test Classification' }]);
     classificationToString.mockReturnValue('Test Classification');
+    normalizeLangPayloadForSave.mockResolvedValue({
+      payload: {
+        contactDataSet: {
+          contactInformation: {
+            dataSetInformation: {},
+          },
+        },
+      },
+      validationError: undefined,
+    });
+    validateDatasetRuleVerification.mockResolvedValue({
+      datasetSdkIssues: [],
+      datasetSdkValid: true,
+      nonExistentRef: [],
+      ruleVerification: true,
+      unRuleVerification: [],
+    });
+    resolveFunctionInvokeError.mockImplementation(async (error: any) => error);
   });
 
   describe('createContact', () => {
@@ -123,7 +145,13 @@ describe('Contacts API Service', () => {
         select: mockSelect,
       });
 
-      validateContactJson.mockReturnValueOnce({ success: false });
+      validateDatasetRuleVerification.mockResolvedValueOnce({
+        datasetSdkIssues: [{ path: ['contactDataSet', 'contactInformation'] }],
+        datasetSdkValid: false,
+        nonExistentRef: [],
+        ruleVerification: false,
+        unRuleVerification: [],
+      });
 
       const result = await createContact('contact-123', {});
 
@@ -212,7 +240,7 @@ describe('Contacts API Service', () => {
       const result = await updateContact('contact-123', 'v1.0', {});
 
       expect(consoleLogSpy).toHaveBeenCalledWith('error', { message: 'Update failed' });
-      expect(result).toBeNull();
+      expect(result).toEqual({ error: { message: 'Update failed' } });
 
       consoleLogSpy.mockRestore();
     });

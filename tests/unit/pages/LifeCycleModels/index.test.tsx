@@ -22,6 +22,8 @@ let mockLocation = {
 const mockGetDataSource = jest.fn(() => 'my');
 const mockGetLang = jest.fn(() => 'en');
 const mockGetLangText = jest.fn((value: any) => value?.[0]?.['#text'] ?? 'Team title');
+const mockIsDataUnderReview = jest.fn(() => false);
+const mockAttachStateCodesToRows = jest.fn(async (_table: string, rows: any[]) => rows);
 const mockGetLifeCycleModelTableAll = jest.fn();
 const mockGetLifeCycleModelTablePgroongaSearch = jest.fn();
 const mockLifeCycleModelHybridSearch = jest.fn();
@@ -38,11 +40,17 @@ jest.mock('umi', () => ({
   useLocation: () => mockLocation,
 }));
 
+jest.mock('@/services/general/api', () => ({
+  __esModule: true,
+  attachStateCodesToRows: (...args: any[]) => mockAttachStateCodesToRows(...args),
+}));
+
 jest.mock('@/services/general/util', () => ({
   __esModule: true,
   getDataSource: (...args: any[]) => mockGetDataSource(...args),
   getLang: (...args: any[]) => mockGetLang(...args),
   getLangText: (...args: any[]) => mockGetLangText(...args),
+  isDataUnderReview: (...args: any[]) => mockIsDataUnderReview(...args),
 }));
 
 jest.mock('@/services/lifeCycleModels/api', () => ({

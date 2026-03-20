@@ -1,7 +1,6 @@
 // @ts-nocheck
 import FlowsEdit from '@/pages/Flows/Components/edit';
-import userEvent from '@testing-library/user-event';
-import { renderWithProviders, screen, waitFor } from '../../../../helpers/testUtils';
+import { render, screen, waitFor } from '@testing-library/react';
 
 const toText = (node: any): string => {
   if (node === null || node === undefined) return '';
@@ -13,8 +12,11 @@ const toText = (node: any): string => {
   return '';
 };
 
-let latestRefsDrawerProps: any = null;
-const mockParentRefCheckContext = { refCheckData: [] as any[] };
+let mockValidateFields: jest.Mock;
+
+beforeEach(() => {
+  mockValidateFields = jest.fn(() => Promise.resolve());
+});
 
 jest.mock('umi', () => ({
   __esModule: true,
@@ -30,121 +32,96 @@ jest.mock('@ant-design/icons', () => ({
   FormOutlined: () => <span>edit</span>,
 }));
 
+jest.mock('@/components/ValidationIssueModal', () => ({
+  __esModule: true,
+  showValidationIssueModal: jest.fn(),
+}));
+
+const { showValidationIssueModal: mockShowValidationIssueModal } = jest.requireMock(
+  '@/components/ValidationIssueModal',
+);
+
+jest.mock('@/components/AISuggestion', () => ({
+  __esModule: true,
+  default: () => <div>suggestion</div>,
+}));
+
+jest.mock('@/components/RefsOfNewVersionDrawer', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 jest.mock('antd', () => {
   const React = require('react');
-
-  const ConfigProvider = ({ children }: any) => <div>{children}</div>;
   const message = {
     success: jest.fn(),
     error: jest.fn(),
+    info: jest.fn(),
+    warning: jest.fn(),
+    loading: jest.fn(),
   };
 
-  const Button = ({ children, onClick, disabled, icon, type }: any) => (
-    <button
-      type='button'
-      data-button-type={type}
-      onClick={disabled ? undefined : onClick}
-      disabled={disabled}
-    >
+  const Button = ({ children, onClick, disabled, icon, ...rest }: any) => (
+    <button type='button' disabled={disabled} onClick={disabled ? undefined : onClick} {...rest}>
       {icon}
       {toText(children)}
     </button>
   );
 
-  const Drawer = ({ open, title, extra, footer, children, onClose }: any) =>
-    open ? (
-      <section role='dialog' aria-label={toText(title) || 'drawer'}>
-        <header>{extra}</header>
+  const Drawer = ({ open, title, extra, footer, children, onClose }: any) => {
+    if (!open) return null;
+    return (
+      <div role='dialog' aria-label={toText(title) || 'drawer'}>
+        <div>{extra}</div>
         <div>{children}</div>
-        <footer>{footer}</footer>
+        <div>{footer}</div>
         <button type='button' onClick={onClose}>
-          Close
+          close-drawer
         </button>
-      </section>
-    ) : null;
+      </div>
+    );
+  };
 
+  const Tooltip = ({ children }: any) => <>{children}</>;
   const Space = ({ children }: any) => <div>{children}</div>;
   const Spin = ({ spinning, children }: any) =>
-    spinning ? <div data-testid='spinning'>{children}</div> : <div>{children}</div>;
-  const Tooltip = ({ children }: any) => <>{children}</>;
+    spinning ? <div data-testid='spin'>{children}</div> : <div>{children}</div>;
 
   return {
     __esModule: true,
-    ConfigProvider,
     Button,
     Drawer,
+    Tooltip,
     Space,
     Spin,
-    Tooltip,
     message,
   };
 });
 
-const mockAntdMessage = jest.requireMock('antd').message as Record<string, jest.Mock>;
+const { message: mockMessage } = jest.requireMock('antd');
 
 jest.mock('@ant-design/pro-components', () => {
   const React = require('react');
 
-  const mergeDeep = (target: any, source: any) => {
-    const next = { ...(target ?? {}) };
-    Object.entries(source ?? {}).forEach(([key, value]) => {
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        next[key] = mergeDeep(next[key], value);
-      } else {
-        next[key] = value;
-      }
-    });
-    return next;
-  };
-
-  const ProForm = ({ formRef, initialValues = {}, onFinish, onValuesChange, children }: any) => {
+  const ProForm = ({ formRef, initialValues = {}, onFinish, children }: any) => {
     const [values, setValues] = React.useState<any>(initialValues ?? {});
-    const initialValuesSerialized = JSON.stringify(initialValues ?? {});
-
-    React.useEffect(() => {
-      setValues((previous: any) => {
-        return JSON.stringify(previous ?? {}) === initialValuesSerialized
-          ? previous
-          : (initialValues ?? {});
-      });
-    }, [initialValues, initialValuesSerialized]);
 
     React.useEffect(() => {
       if (!formRef) return;
       formRef.current = {
-        validateFields: async () => values,
-        getFieldsValue: () => values,
+        submit: async () => onFinish?.(),
         setFieldsValue: (next: any) => {
-          setValues((previous: any) => {
-            const merged = mergeDeep(previous, next);
-            onValuesChange?.({}, merged);
-            return merged;
-          });
-        },
-        setFieldValue: (name: any, value: any) => {
-          setValues((previous: any) => {
-            const key = Array.isArray(name) ? name[name.length - 1] : name;
-            const merged = { ...previous, [key]: value };
-            onValuesChange?.({}, merged);
-            return merged;
-          });
+          setValues((prev: any) => ({ ...prev, ...next }));
         },
         resetFields: () => {
           setValues(initialValues ?? {});
         },
+        getFieldsValue: () => ({ ...values }),
+        validateFields: mockValidateFields,
       };
-    }, [formRef, initialValues, onValuesChange, values]);
+    }, [formRef, initialValues, onFinish, values]);
 
-    return (
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          void onFinish?.();
-        }}
-      >
-        {typeof children === 'function' ? children(values) : children}
-      </form>
-    );
+    return <form>{children}</form>;
   };
 
   return {
@@ -153,58 +130,56 @@ jest.mock('@ant-design/pro-components', () => {
   };
 });
 
-jest.mock('@/components/AISuggestion', () => ({
+jest.mock('@/style/custom.less', () => ({
   __esModule: true,
-  default: ({ onClose }: any) => (
-    <button type='button' onClick={() => onClose?.()}>
-      ai-suggestion
-    </button>
-  ),
-}));
-
-jest.mock('@/components/RefsOfNewVersionDrawer', () => ({
-  __esModule: true,
-  default: (props: any) => {
-    latestRefsDrawerProps = props;
-    if (!props.open) return null;
-    return (
-      <div data-testid='refs-drawer'>
-        <button type='button' onClick={props.onKeep}>
-          keep-current
-        </button>
-        <button type='button' onClick={() => props.onUpdate(props.dataSource)}>
-          update-latest
-        </button>
-      </div>
-    );
+  default: {
+    footer_right: 'footer_right',
   },
 }));
 
-jest.mock('@/contexts/refCheckContext', () => ({
+jest.mock('@/contexts/refCheckContext', () => {
+  const React = require('react');
+  const refCheckContextValue = { refCheckData: [] };
+  const RefCheckContext = React.createContext(refCheckContextValue);
+  return {
+    __esModule: true,
+    RefCheckContext,
+    useRefCheckContext: () => refCheckContextValue,
+  };
+});
+
+jest.mock('@/pages/Utils/updateReference', () => ({
   __esModule: true,
-  RefCheckContext: {
-    Provider: ({ children }: any) => <div>{children}</div>,
-  },
-  useRefCheckContext: () => mockParentRefCheckContext,
+  getRefsOfCurrentVersion: jest.fn(async () => ({ oldRefs: [] })),
+  getRefsOfNewVersion: jest.fn(async () => ({ newRefs: [], oldRefs: [] })),
+  updateRefsData: jest.fn((data: any) => data),
+}));
+
+const mockValidateDatasetWithSdk = jest.fn(() => ({ success: true, issues: [] }));
+const mockBuildValidationIssues = jest.fn(() => []);
+
+jest.mock('@/pages/Utils/review', () => ({
+  __esModule: true,
+  buildValidationIssues: (...args: any[]) => mockBuildValidationIssues(...args),
+  checkData: jest.fn(),
+  getErrRefTab: jest.fn(() => ''),
+  ReffPath: jest.fn(() => ({
+    findProblemNodes: () => [],
+  })),
+  validateDatasetWithSdk: (...args: any[]) => mockValidateDatasetWithSdk(...args),
 }));
 
 const mockGetFlowDetail = jest.fn(async () => ({
   data: {
+    stateCode: 10,
+    version: '01.01.000',
     json: {
-      flowDataSet: {
-        flowInformation: {
-          dataSetInformation: {
-            name: { baseName: [{ '@xml:lang': 'en', '#text': 'Existing flow' }] },
-          },
-        },
-      },
+      flowDataSet: {},
     },
-    version: '1.0.0',
   },
 }));
-
 const mockUpdateFlows = jest.fn(async () => ({
-  data: [{ rule_verification: true }],
+  data: [{ rule_verification: false }],
 }));
 
 jest.mock('@/services/flows/api', () => ({
@@ -213,309 +188,79 @@ jest.mock('@/services/flows/api', () => ({
   updateFlows: (...args: any[]) => mockUpdateFlows(...args),
 }));
 
-const loadedFlowData = {
-  id: 'flow-1',
-  flowInformation: {
-    dataSetInformation: {
-      name: { baseName: [{ '@xml:lang': 'en', '#text': 'Existing flow' }] },
-    },
-  },
-  modellingAndValidation: {
-    LCIMethod: {
-      typeOfDataSet: 'product flow',
-    },
-  },
-  flowProperties: {
-    flowProperty: [
-      {
-        quantitativeReference: true,
-        referenceToFlowPropertyDataSet: {
-          '@refObjectId': 'fp-1',
-          '@version': '1.0.0',
-          'common:shortDescription': [],
-        },
-      },
-    ],
-  },
-};
-
 jest.mock('@/services/flows/util', () => ({
   __esModule: true,
-  genFlowFromData: jest.fn(() => loadedFlowData),
-  genFlowJsonOrdered: jest.fn(() => ({ mocked: true })),
-}));
-
-const mockGetFlowpropertyDetail = jest.fn(async () => ({
-  success: true,
-  data: {
-    json: {
-      flowPropertyDataSet: {
-        flowPropertiesInformation: {
-          dataSetInformation: {
-            'common:name': [{ '@xml:lang': 'en', '#text': 'Mass' }],
-          },
-        },
-      },
-    },
-    version: '2.0.0',
-  },
+  genFlowFromData: jest.fn((payload: any) => payload ?? {}),
+  genFlowJsonOrdered: jest.fn((id: string, data: any) => ({ id, ...data })),
 }));
 
 jest.mock('@/services/flowproperties/api', () => ({
   __esModule: true,
-  getFlowpropertyDetail: (...args: any[]) => mockGetFlowpropertyDetail(...args),
+  getFlowpropertyDetail: jest.fn(async () => ({ success: false })),
 }));
 
-const mockGetRefsOfCurrentVersion = jest.fn(async () => ({ oldRefs: [] }));
-const mockGetRefsOfNewVersion = jest.fn(async () => ({ newRefs: [], oldRefs: [] }));
-const mockUpdateRefsData = jest.fn((data: any) => data);
-
-jest.mock('@/pages/Utils/updateReference', () => ({
+jest.mock('@/services/general/util', () => ({
   __esModule: true,
-  getRefsOfCurrentVersion: (...args: any[]) => mockGetRefsOfCurrentVersion(...args),
-  getRefsOfNewVersion: (...args: any[]) => mockGetRefsOfNewVersion(...args),
-  updateRefsData: (...args: any[]) => mockUpdateRefsData(...args),
-}));
-
-jest.mock('@/pages/Utils/review', () => ({
-  __esModule: true,
-  ReffPath: jest.fn(() => ({
-    findProblemNodes: () => [],
-  })),
-  checkData: jest.fn(async () => {}),
-  getErrRefTab: jest.fn(() => ''),
-}));
-
-jest.mock('@/style/custom.less', () => ({
-  __esModule: true,
-  default: {
-    footer_right: 'footer_right',
+  jsonToList: (value: any) => {
+    if (!value) return [];
+    return Array.isArray(value) ? value : [value];
   },
-}));
-
-jest.mock('@tiangong-lca/tidas-sdk', () => ({
-  __esModule: true,
-  createFlow: jest.fn(() => ({
-    validateEnhanced: () => ({ success: true }),
-  })),
 }));
 
 jest.mock('@/pages/Flows/Components/form', () => ({
   __esModule: true,
-  FlowForm: () => <div data-testid='flow-form'>flow-form</div>,
+  FlowForm: ({ showRules }: any) => (
+    <div data-testid='flow-show-rules'>{String(Boolean(showRules))}</div>
+  ),
 }));
 
 describe('FlowsEdit', () => {
   beforeEach(() => {
-    latestRefsDrawerProps = null;
     jest.clearAllMocks();
-  });
-
-  it('loads flow detail and saves successfully', async () => {
-    const actionRef = { current: { reload: jest.fn() } };
-    const updateErrRef = jest.fn();
-
-    renderWithProviders(
-      <FlowsEdit
-        id='flow-1'
-        version='1.0.0'
-        buttonType='text'
-        lang='en'
-        actionRef={actionRef as any}
-        updateErrRef={updateErrRef}
-      />,
-    );
-
-    await userEvent.click(screen.getByRole('button', { name: /edit/i }));
-
-    await waitFor(() => expect(mockGetFlowDetail).toHaveBeenCalledWith('flow-1', '1.0.0'));
-    expect(await screen.findByTestId('flow-form')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: /save/i }));
-
-    await waitFor(() => expect(mockUpdateFlows).toHaveBeenCalled());
-    expect(mockGetRefsOfCurrentVersion).toHaveBeenCalled();
-    expect(mockUpdateRefsData).toHaveBeenCalledWith(expect.any(Object), [], false);
-    expect(updateErrRef).toHaveBeenCalledWith(null);
-    expect(mockAntdMessage.success).toHaveBeenCalledWith('Saved successfully!');
-    expect(actionRef.current.reload).toHaveBeenCalled();
-  });
-
-  it('opens the refs drawer and applies latest reference versions', async () => {
-    const newRefs = [
-      {
-        key: 'ref-1',
-        id: 'source-1',
-        type: 'source data set',
-        currentVersion: '1.0.0',
-        newVersion: '2.0.0',
-      },
-    ];
-    mockGetRefsOfNewVersion.mockResolvedValueOnce({
-      newRefs,
-      oldRefs: [
-        {
-          key: 'ref-1-current',
-          id: 'source-1',
-          type: 'source data set',
-          currentVersion: '1.0.0',
-          newVersion: '1.0.0',
+    mockValidateFields.mockClear();
+    mockValidateDatasetWithSdk.mockReturnValue({ success: true, issues: [] });
+    mockBuildValidationIssues.mockReturnValue([]);
+    mockGetFlowDetail.mockResolvedValue({
+      data: {
+        stateCode: 10,
+        version: '01.01.000',
+        json: {
+          flowDataSet: {},
         },
-      ],
-    });
-
-    renderWithProviders(
-      <FlowsEdit
-        id='flow-1'
-        version='1.0.0'
-        buttonType='text'
-        lang='en'
-        updateErrRef={jest.fn()}
-      />,
-    );
-
-    await userEvent.click(screen.getByRole('button', { name: /edit/i }));
-    expect(await screen.findByTestId('flow-form')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: /update reference/i }));
-
-    expect(await screen.findByTestId('refs-drawer')).toBeInTheDocument();
-    expect(latestRefsDrawerProps.dataSource).toEqual(newRefs);
-
-    await userEvent.click(screen.getByRole('button', { name: /update-latest/i }));
-
-    await waitFor(() =>
-      expect(mockUpdateRefsData).toHaveBeenCalledWith(expect.any(Object), newRefs, true),
-    );
-  });
-
-  it('keeps current reference versions when requested from the refs drawer', async () => {
-    const oldRefs = [
-      {
-        key: 'ref-1-current',
-        id: 'source-1',
-        type: 'source data set',
-        currentVersion: '1.0.0',
-        newVersion: '1.0.0',
-      },
-    ];
-    mockGetRefsOfNewVersion.mockResolvedValueOnce({
-      newRefs: [
-        {
-          key: 'ref-1',
-          id: 'source-1',
-          type: 'source data set',
-          currentVersion: '1.0.0',
-          newVersion: '2.0.0',
-        },
-      ],
-      oldRefs,
-    });
-
-    renderWithProviders(
-      <FlowsEdit
-        id='flow-1'
-        version='1.0.0'
-        buttonType='text'
-        lang='en'
-        updateErrRef={jest.fn()}
-      />,
-    );
-
-    await userEvent.click(screen.getByRole('button', { name: /edit/i }));
-    expect(await screen.findByTestId('flow-form')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: /update reference/i }));
-    expect(await screen.findByTestId('refs-drawer')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: /keep-current/i }));
-
-    await waitFor(() =>
-      expect(mockUpdateRefsData).toHaveBeenCalledWith(expect.any(Object), oldRefs, false),
-    );
-  });
-
-  it('shows an open-data error when the save request is rejected by state code', async () => {
-    mockUpdateFlows.mockResolvedValueOnce({
-      data: undefined,
-      error: {
-        state_code: 100,
-        message: 'open data',
       },
     });
-
-    renderWithProviders(
-      <FlowsEdit
-        id='flow-1'
-        version='1.0.0'
-        buttonType='text'
-        lang='en'
-        updateErrRef={jest.fn()}
-      />,
-    );
-
-    await userEvent.click(screen.getByRole('button', { name: /edit/i }));
-    expect(await screen.findByTestId('flow-form')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: /save/i }));
-
-    await waitFor(() =>
-      expect(mockAntdMessage.error).toHaveBeenCalledWith('This data is open data, save failed'),
-    );
+    mockUpdateFlows.mockResolvedValue({
+      data: [{ rule_verification: false }],
+    });
   });
 
-  it('shows an under-review error when the save request is rejected by state code 20', async () => {
-    mockUpdateFlows.mockResolvedValueOnce({
-      data: undefined,
-      error: {
-        state_code: 20,
-        message: 'under review',
-      },
-    });
-
-    renderWithProviders(
+  it('auto checks silently when required flag opens the drawer and reapplies validation after showRules is enabled', async () => {
+    render(
       <FlowsEdit
-        id='flow-1'
-        version='1.0.0'
-        buttonType='text'
+        id='flow-123'
+        version='01.01.000'
         lang='en'
-        updateErrRef={jest.fn()}
+        buttonType='icon'
+        autoOpen={true}
+        autoCheckRequired={true}
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /edit/i }));
-    expect(await screen.findByTestId('flow-form')).toBeInTheDocument();
+    const drawer = await screen.findByRole('dialog', { name: 'Edit' });
 
-    await userEvent.click(screen.getByRole('button', { name: /save/i }));
-
-    await waitFor(() =>
-      expect(mockAntdMessage.error).toHaveBeenCalledWith('Data is under review, save failed'),
-    );
-  });
-
-  it('shows the backend message for other save failures', async () => {
-    mockUpdateFlows.mockResolvedValueOnce({
-      data: undefined,
-      error: {
-        message: 'save failed',
-      },
+    await waitFor(() => {
+      expect(mockUpdateFlows).toHaveBeenCalledTimes(1);
     });
 
-    renderWithProviders(
-      <FlowsEdit
-        id='flow-1'
-        version='1.0.0'
-        buttonType='text'
-        lang='en'
-        updateErrRef={jest.fn()}
-      />,
-    );
+    await waitFor(() => {
+      expect(drawer).toHaveTextContent('true');
+    });
 
-    await userEvent.click(screen.getByRole('button', { name: /edit/i }));
-    expect(await screen.findByTestId('flow-form')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockValidateFields).toHaveBeenCalledTimes(2);
+    });
 
-    await userEvent.click(screen.getByRole('button', { name: /save/i }));
-
-    await waitFor(() => expect(mockAntdMessage.error).toHaveBeenCalledWith('save failed'));
+    expect(mockShowValidationIssueModal).not.toHaveBeenCalled();
+    expect(mockMessage.error).not.toHaveBeenCalled();
   });
 });

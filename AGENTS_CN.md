@@ -59,6 +59,8 @@ npm run build
 - `src/pages/<Feature>/`：页面入口与 `Components/` 抽屉/弹窗。
 - `src/components/**`、`src/contexts/**`、`types/**`：共享 UI/上下文/类型。
 - `tests/{unit,integration}/**`：Jest 测试，通用能力在 `tests/helpers/**`。
+- `docker/volumes/functions/**`：自托管 edge-functions 的同步镜像，禁止在 `tiangong-lca-next` 中直接编辑。
+- `docker/pull-edge-functions.sh`：本仓库刷新 `docker/volumes/functions/**` 的唯一正确方式。
 
 ## 交付约束
 
@@ -69,6 +71,7 @@ npm run build
 - 运行与变更相关的聚焦 Jest 套件。
 - 如果测试工程发生变化（命令、覆盖率基线、backlog 状态、工作流），必须同步 `docs/agents/ai-testing-guide.md`、`docs/agents/test_todo_list.md`；若长期策略也变化，还要同步 `docs/agents/test_improvement_plan.md` 及全部 `_CN` 镜像。
 - 控制 diff 范围；行为或流程变化时同步更新文档。
+- 严禁手改 `docker/volumes/functions/**`；需要同步时执行 `./docker/pull-edge-functions.sh`。
 
 ## 文档维护规则
 
