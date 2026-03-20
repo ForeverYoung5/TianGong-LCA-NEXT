@@ -5,18 +5,6 @@ export interface CachedJsonEntry<T = unknown> {
   cachedAt: number;
 }
 
-const CACHE_KEY = 'ilcd_cache_manifest';
-const CACHE_DB_NAME = 'ilcd_cache_db';
-const CACHE_DB_VERSION = 1;
-const CACHE_STORE_NAME = 'ilcd_files';
-
-export interface IlcdCacheManifest {
-  version: string;
-  files: string[];
-  cachedAt: number;
-  decompressed: boolean;
-}
-
 export const initIndexedDbStore = (
   dbName: string,
   dbVersion: number,
@@ -107,6 +95,39 @@ export const getAllCachedKeys = async (db: IDBDatabase, storeName: string): Prom
   });
 };
 
+export const clearCachedStore = async (db: IDBDatabase, storeName: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([storeName], 'readwrite');
+    const store = transaction.objectStore(storeName);
+    const request = store.clear();
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
+};
+
+export const getCachedStoreSize = async (db: IDBDatabase, storeName: string): Promise<number> => {
+  return new Promise((resolve) => {
+    let totalSize = 0;
+    const transaction = db.transaction([storeName], 'readonly');
+    const store = transaction.objectStore(storeName);
+    const request = store.openCursor();
+
+    request.onsuccess = (event) => {
+      const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+      if (cursor) {
+        totalSize += cursor.value.size || 0;
+        cursor.continue();
+        return;
+      }
+
+      resolve(totalSize);
+    };
+
+    request.onerror = () => resolve(0);
+  });
+};
+
 export const getLocalStorageJson = <T>(key: string): T | null => {
   try {
     const value = localStorage.getItem(key);
@@ -118,73 +139,4 @@ export const getLocalStorageJson = <T>(key: string): T | null => {
 
 export const setLocalStorageJson = (key: string, value: unknown): void => {
   localStorage.setItem(key, JSON.stringify(value));
-};
-
-const initDB = (): Promise<IDBDatabase> => {
-  return initIndexedDbStore(CACHE_DB_NAME, CACHE_DB_VERSION, CACHE_STORE_NAME);
-};
-
-export const getIlcdCacheManifest = (): IlcdCacheManifest | null => {
-  return getLocalStorageJson<IlcdCacheManifest>(CACHE_KEY);
-};
-
-export const setIlcdCacheManifest = (manifest: IlcdCacheManifest): void => {
-  setLocalStorageJson(CACHE_KEY, manifest);
-};
-
-export const getCachedIlcdFileList = async (): Promise<string[]> => {
-  try {
-    const db = await initDB();
-    return await getAllCachedKeys(db, CACHE_STORE_NAME);
-  } catch (error) {
-    console.error('Failed to get ILCD cached file list:', error);
-    return [];
-  }
-};
-
-export const getCachedIlcdFileData = async <T>(filename: string): Promise<T | null> => {
-  try {
-    const db = await initDB();
-    const cachedEntry = await getCachedJsonEntry<T>(db, CACHE_STORE_NAME, filename);
-    return cachedEntry?.data ?? null;
-  } catch (error) {
-    console.error(`Failed to read ILCD cached file ${filename}:`, error);
-    return null;
-  }
-};
-
-export const cacheAndDecompressIlcdFile = async (filename: string): Promise<boolean> => {
-  try {
-    const response = await fetch(`/ilcd/${filename}`);
-    if (!response.ok) {
-      console.warn(`ILCD source file not found: ${filename}`);
-      return false;
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const decompressedText = await decompressGzipData(arrayBuffer);
-    const data = JSON.parse(decompressedText);
-
-    const db = await initDB();
-    await putCachedJsonEntry(db, CACHE_STORE_NAME, filename, data);
-
-    return true;
-  } catch (error) {
-    console.error(`Failed to cache ILCD file ${filename}:`, error);
-    return false;
-  }
-};
-
-export const getCachedOrFetchIlcdFileData = async <T>(filename: string): Promise<T | null> => {
-  const cachedData = await getCachedIlcdFileData<T>(filename);
-  if (cachedData) {
-    return cachedData;
-  }
-
-  const cached = await cacheAndDecompressIlcdFile(filename);
-  if (!cached) {
-    return null;
-  }
-
-  return getCachedIlcdFileData<T>(filename);
 };

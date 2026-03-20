@@ -1,6 +1,6 @@
 import RequiredMark from '@/components/RequiredMark';
+import { getILCDClassification, getILCDFlowCategorization } from '@/services/classifications/api';
 import type { Classification } from '@/services/general/data';
-import { getILCDClassification, getILCDFlowCategorization } from '@/services/ilcd/api';
 import type { FormInstance } from 'antd';
 import { Cascader, Form, Input, TreeSelect } from 'antd';
 import type { NamePath, Rule } from 'rc-field-form/lib/interface';

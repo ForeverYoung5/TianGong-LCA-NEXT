@@ -1,4 +1,4 @@
-import { getILCDLocationAll } from '@/services/ilcd/api';
+import { getILCDLocationAll } from '@/services/locations/api';
 import { Form, Select, Space } from 'antd';
 import type { NamePath, Rule } from 'rc-field-form/lib/interface';
 import { FC, ReactNode, useEffect, useState } from 'react';

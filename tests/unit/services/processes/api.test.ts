@@ -39,9 +39,13 @@ jest.mock('@/services/general/api', () => ({
 const mockGetCachedLocationData = jest.fn();
 const mockGetCachedClassificationData = jest.fn();
 
-jest.mock('@/services/ilcd/cache', () => ({
+jest.mock('@/services/locations/cache', () => ({
   __esModule: true,
   getCachedLocationData: (...args: any[]) => mockGetCachedLocationData.apply(null, args),
+}));
+
+jest.mock('@/services/classifications/cache', () => ({
+  __esModule: true,
   getCachedClassificationData: (...args: any[]) =>
     mockGetCachedClassificationData.apply(null, args),
   ilcdCache: {

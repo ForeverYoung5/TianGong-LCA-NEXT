@@ -47,7 +47,7 @@ const {
   jsonToList: mockJsonToList,
 } = jest.requireMock('@/services/general/util');
 
-jest.mock('@/services/ilcd/cache', () => ({
+jest.mock('@/services/classifications/cache', () => ({
   getCachedClassificationData: jest.fn(),
   ilcdCache: {
     get: jest.fn(),
@@ -56,8 +56,9 @@ jest.mock('@/services/ilcd/cache', () => ({
   },
 }));
 
-const { getCachedClassificationData: mockGetCachedClassificationData } =
-  jest.requireMock('@/services/ilcd/cache');
+const { getCachedClassificationData: mockGetCachedClassificationData } = jest.requireMock(
+  '@/services/classifications/cache',
+);
 
 jest.mock('@/services/general/api', () => ({
   getDataDetail: jest.fn(),

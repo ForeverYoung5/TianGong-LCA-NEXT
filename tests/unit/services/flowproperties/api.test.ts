@@ -51,7 +51,7 @@ jest.mock('@/services/general/util', () => ({
   jsonToList: jest.fn(),
 }));
 
-jest.mock('@/services/ilcd/cache', () => ({
+jest.mock('@/services/classifications/cache', () => ({
   getCachedClassificationData: jest.fn(),
   ilcdCache: {
     get: jest.fn(),
@@ -71,7 +71,7 @@ const { genFlowpropertyJsonOrdered, validateFlowPropertyJson } = jest.requireMoc
 );
 const { getLangText, classificationToString, jsonToList, genClassificationZH } =
   jest.requireMock('@/services/general/util');
-const { getCachedClassificationData } = jest.requireMock('@/services/ilcd/cache');
+const { getCachedClassificationData } = jest.requireMock('@/services/classifications/cache');
 const { getDataDetail, getTeamIdByUserId } = jest.requireMock('@/services/general/api');
 
 describe('FlowProperties API Service (src/services/flowproperties/api.ts)', () => {

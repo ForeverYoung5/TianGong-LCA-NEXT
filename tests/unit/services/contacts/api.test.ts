@@ -14,14 +14,14 @@ jest.mock('@tiangong-lca/tidas-sdk', () => ({
 // Mock dependencies
 jest.mock('@/services/supabase');
 jest.mock('@/services/general/api');
-jest.mock('@/services/ilcd/cache');
+jest.mock('@/services/classifications/cache');
 jest.mock('@/services/general/util');
 jest.mock('@/services/contacts/util');
 
 describe('Contacts API Service', () => {
   const { supabase } = jest.requireMock('@/services/supabase');
   const { getTeamIdByUserId, getDataDetail } = jest.requireMock('@/services/general/api');
-  const { getCachedClassificationData } = jest.requireMock('@/services/ilcd/cache');
+  const { getCachedClassificationData } = jest.requireMock('@/services/classifications/cache');
   const { getLangText, jsonToList, genClassificationZH, classificationToString } =
     jest.requireMock('@/services/general/util');
   const { genContactJsonOrdered, validateContactJson } = jest.requireMock(

@@ -8,7 +8,7 @@ import {
   Question,
   SelectLang,
 } from '@/components';
-import ILCDCacheMonitor from '@/components/ILCDCacheMonitor';
+import ClassificationCacheMonitor from '@/components/ClassificationCacheMonitor';
 import LCIACacheMonitor from '@/components/LCIACacheMonitor';
 import { Link, getIntl, history } from '@umijs/max';
 
@@ -20,6 +20,7 @@ import { SettingDrawer } from '@ant-design/pro-components';
 import type { RunTimeLayoutConfig } from '@umijs/max';
 import { getBrandTheme } from '../config/branding';
 import defaultSettings, { defaultAppTitle, getLocalizedAppTitle } from '../config/defaultSettings';
+import LocationCacheMonitor from './components/LocationCacheMonitor';
 import { errorConfig } from './requestErrorConfig';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -100,7 +101,8 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
   return {
     actionsRender: () => [
       <LCIACacheMonitor key='LCIACacheMonitor' />,
-      <ILCDCacheMonitor key='ILCDCacheMonitor' />,
+      <ClassificationCacheMonitor key='ClassificationCacheMonitor' />,
+      <LocationCacheMonitor key='LocaltionCacheMonitor' />,
       <DarkMode
         key='DarkMode'
         handleClick={handleClickFunction}

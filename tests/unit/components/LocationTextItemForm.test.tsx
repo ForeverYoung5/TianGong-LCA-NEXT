@@ -1,5 +1,5 @@
 import LocationTextItemForm from '@/components/LocationTextItem/form';
-import { getILCDLocationAll } from '@/services/ilcd/api';
+import { getILCDLocationAll } from '@/services/locations/api';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ConfigProvider, Form } from 'antd';
 
@@ -11,7 +11,7 @@ jest.mock('umi', () => ({
   }),
 }));
 
-jest.mock('@/services/ilcd/api', () => ({
+jest.mock('@/services/locations/api', () => ({
   getILCDLocationAll: jest.fn(),
 }));
 
