@@ -523,6 +523,46 @@ describe('review utilities', () => {
     expect(mockGetRefData).not.toHaveBeenCalled();
   });
 
+  it('does not persist workflow version-state failures into rule verification', async () => {
+    mockGetRefData.mockResolvedValue({
+      success: true,
+      data: {
+        id: 'contact-2',
+        stateCode: 30,
+        ruleVerification: true,
+        json: {},
+      },
+    });
+
+    const result = await validateDatasetRuleVerification('contact data set', {
+      contactDataSet: {
+        contactInformation: {
+          dataSetInformation: {
+            'common:UUID': 'contact-1',
+          },
+        },
+        administrativeInformation: {
+          publicationAndOwnership: {
+            'common:dataSetVersion': '01.00.000',
+            'common:referenceToOwnershipOfDataSet': {
+              '@refObjectId': 'contact-2',
+              '@type': 'contact data set',
+              '@version': '01.00.000',
+            },
+          },
+        },
+      },
+    });
+
+    expect(result.ruleVerification).toBe(true);
+    expect(result.datasetSdkValid).toBe(true);
+    expect(result.unRuleVerification).toEqual([]);
+    expect(result.nonExistentRef).toEqual([]);
+    expect(mockGetRefData).toHaveBeenCalledWith('contact-2', '01.00.000', 'contacts', '', {
+      fallbackToLatest: false,
+    });
+  });
+
   it('updates under review items to pending review', async () => {
     mockGetReviewsOfData.mockResolvedValue([{ id: 'existing-review' }]);
     mockUpdateDateToReviewState.mockResolvedValue({ success: true });
